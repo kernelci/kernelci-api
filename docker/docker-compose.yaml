@@ -1,0 +1,10 @@
+version: '3'
+services:
+  api:
+    container_name: 'kernelci-api'
+    build:
+      context: api
+    volumes:
+      - '../api:/home/kernelci/api'
+    ports:
+      - '8001:8000'
