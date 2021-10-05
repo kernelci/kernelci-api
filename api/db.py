@@ -1,6 +1,6 @@
 from bson import ObjectId
 from pymongo import MongoClient
-from .models import Thing
+from .models import Thing, User
 
 # ToDo: use motor
 # https://motor.readthedocs.io/en/stable/
@@ -9,6 +9,7 @@ from .models import Thing
 class Database(object):
     COLLECTIONS = {
         Thing: 'thing',
+        User: 'user',
     }
 
     def __init__(self, host='db', db_name='kernelci'):

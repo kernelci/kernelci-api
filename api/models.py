@@ -20,13 +20,26 @@ class PyObjectId(ObjectId):
         return ObjectId(v)
 
 
-class Thing(BaseModel):
+class ModelId(BaseModel):
     id: Optional[PyObjectId] = Field(alias='_id')
-    name: str
-    value: int
 
     class Config:
         arbitrary_types_allowed = True
         json_encoders = {
             ObjectId: str,
         }
+
+
+# -----------------------------------------------------------------------------
+# Database models
+#
+
+class User(ModelId):
+    username: str
+    hashed_password: str
+    active: bool
+
+
+class Thing(ModelId):
+    name: str
+    value: int
