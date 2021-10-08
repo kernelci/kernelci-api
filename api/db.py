@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2021 Collabora Limited
+# Author: Guillaume Tucker <guillaume.tucker@collabora.com>
+
 from bson import ObjectId
 from pymongo import MongoClient
 from .models import Thing, User
