@@ -6,6 +6,7 @@
 from bson import ObjectId
 from pymongo import MongoClient
 from .models import Thing, User
+from motor import motor_asyncio
 
 # ToDo: use motor
 # https://motor.readthedocs.io/en/stable/
@@ -19,7 +20,8 @@ class Database(object):
 
     def __init__(self, host='db', db_name='kernelci'):
         self._mongo = MongoClient(host=host)
-        self._db = self._mongo[db_name]
+        self._motor = motor_asyncio.AsyncIOMotorClient(host=host)
+        self._db = self._motor[db_name]
 
     def _get_collection(self, model):
         col = self.COLLECTIONS[model]
