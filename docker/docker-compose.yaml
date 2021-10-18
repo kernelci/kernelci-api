@@ -5,6 +5,7 @@
 
 version: '3'
 services:
+
   api:
     container_name: 'kernelci-api'
     build:
@@ -15,8 +16,15 @@ services:
       - '8001:8000'
     env_file:
       - ../.env
+
   db:
     container_name: 'kernelci-db'
     image: 'mongo:5.0'
     volumes:
       - './db/data:/data/db'
+
+  redis:
+    container_name: 'kernelci-redis'
+    image: 'redis:6.2'
+    volumes:
+      - './redis/data:/data'
