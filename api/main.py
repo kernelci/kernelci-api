@@ -26,7 +26,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
-async def get_current_active_user(user: User = Depends(get_current_user)):
+async def get_user(user: User = Depends(get_current_user)):
     if not user.active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user
@@ -52,7 +52,7 @@ async def login_for_access_token(
 
 
 @app.get('/me', response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
+async def read_users_me(current_user: User = Depends(get_user)):
     return current_user
 
 
