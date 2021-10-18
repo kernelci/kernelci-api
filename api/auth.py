@@ -6,7 +6,7 @@
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from pydantic import BaseModel, BaseSettings
 from typing import Optional
 from .models import User
 
@@ -20,12 +20,11 @@ class TokenData(BaseModel):
     username: Optional[str] = None
 
 
-class Authentication:
-    # ToDo: use settings https://fastapi.tiangolo.com/advanced/settings/
+class Settings(BaseSettings):
+    secret_key: str
 
-    # To generate a secret key: openssl rand -hex 32
-    SECRET_KEY = \
-        "fad13f9cf6e5ff51daac4e6784529daa9d1dc8a80703730221f1090066d929c4"
+
+class Authentication:
 
     ALGORITHM = "HS256"
 
@@ -35,6 +34,7 @@ class Authentication:
     def __init__(self, db):
         self._pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         self._db = db
+        self._settings = Settings()
 
     def get_password_hash(self, password):
         return self._pwd_context.hash(password)
@@ -54,13 +54,13 @@ class Authentication:
             expire = datetime.utcnow() + expires
             to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
-            to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
+            to_encode, self._settings.secret_key, algorithm=self.ALGORITHM)
         return encoded_jwt
 
     def get_current_user(self, token):
         try:
             payload = jwt.decode(
-                token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+                token, self._settings.secret_key, algorithms=[self.ALGORITHM])
             username: str = payload.get("sub")
             if username is None:
                 return None
