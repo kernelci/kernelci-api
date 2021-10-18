@@ -48,6 +48,15 @@ use it with other tools: http://localhost:8001/openapi.json
 
 ## Authentication
 
+### Generate SECRET KEY and add it in environment file
+Generate a new key for Authentication using following command:
+```
+$ openssl rand -hex 32
+```
+Store the generated key to .env file and give its path to docker-compose.yaml file.
+We have loaded secret key using FastAPI settings feature in api.auth
+Please find the env.sample file in the base directory to store secret key and copy the file to your .env file.
+
 Some parts of the API require the user to be authenticated, for example to
 submit data to store in the database or access restricted data.  The first
 thing to do is create a user account.  For example, with a user called `bob`
