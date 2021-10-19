@@ -4,7 +4,6 @@
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 
 from bson import ObjectId
-from pymongo import MongoClient
 from .models import Thing, User
 from motor import motor_asyncio
 
@@ -19,9 +18,7 @@ class Database(object):
     }
 
     def __init__(self, host='db', db_name='kernelci'):
-        self._mongo = MongoClient(host=host)
         self._motor = motor_asyncio.AsyncIOMotorClient(host=host)
-        self._db = self._mongo[db_name]
         self._db = self._motor[db_name]
 
     def _get_collection(self, model):
@@ -32,8 +29,6 @@ class Database(object):
         col = self._get_collection(model)
         objs = []
         data = col.find()
-        # data_list = await data.to_list(length=None)
-        # print(data_list, "DATA LIST LIST LIST")
         async for obj in data:
             objs.append(model(**obj))
         return objs
