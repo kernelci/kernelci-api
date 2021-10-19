@@ -161,3 +161,55 @@ example, another Thing was created in the meantime):
 $ curl http://localhost:8001/things
 {"things":[{"_id":"615f3313b231dd5cccf9c996","name":"answer","value":42},{"_id":"615f33abb231dd5cccf9c997","name":"spanner","value":18}]}
 ```
+
+## Pub/Sub and CloudEvent
+
+The API provides a publisher / subscriber interface so clients can listen to
+events and publish them too.  All the events are formatted using
+[CloudEvents](https://cloudevents.io).
+
+The [`client.py`](api/client.py) script provides a reference implentation for
+publishing and listening to events.
+
+For example, in a first terminal from within the `kernelci-api/docker`
+directory:
+
+```
+$ docker-compose exec api /bin/sh -c '\
+TOKEN=<insert token here> \
+/usr/bin/env python3 /home/kernelci/api/client.py \
+listen abc'
+Listening for events on channel abc.
+Press Ctrl-C to stop.
+```
+
+Then in a second terminal:
+
+```
+$ docker-compose exec api /bin/sh -c '\
+TOKEN=<insert token here> \
+/usr/bin/env python3 /home/kernelci/api/client.py \
+publish abc "Hello KernelCI"'
+```
+
+You should see the message appear in the first terminal (and stopping after
+pressing Ctrl-C):
+
+```
+Message: Hello KernelCI
+^CStopping.
+```
+
+Meanwhile, something like this should be seen in the API logs:
+
+```
+$ docker-compose logs api | tail -4
+kernelci-api | INFO:     127.0.0.1:35752 - "POST /subscribe/abc HTTP/1.1" 200 OK
+kernelci-api | INFO:     127.0.0.1:35810 - "POST /publish/abc HTTP/1.1" 200 OK
+kernelci-api | INFO:     127.0.0.1:35754 - "GET /listen/abc HTTP/1.1" 200 OK
+kernelci-api | INFO:     127.0.0.1:36744 - "POST /unsubscribe/abc HTTP/1.1" 200 OK
+```
+
+> **Note** The client doesn't necessarily need to be run within the `api`
+Docker container, but it's a convenient way of trying things out as it already
+has all the Python dependencies installed (essentially, `cloudevents`).
