@@ -31,8 +31,10 @@ class Database(object):
     async def find_all(self, model):
         col = self._get_collection(model)
         objs = []
-        data = await col.find()
-        for obj in data:
+        data = col.find()
+        # data_list = await data.to_list(length=None)
+        # print(data_list, "DATA LIST LIST LIST")
+        async for obj in data:
             objs.append(model(**obj))
         return objs
 
