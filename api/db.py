@@ -7,9 +7,6 @@ from bson import ObjectId
 from .models import Thing, User
 from motor import motor_asyncio
 
-# ToDo: use motor
-# https://motor.readthedocs.io/en/stable/
-
 
 class Database(object):
     COLLECTIONS = {
