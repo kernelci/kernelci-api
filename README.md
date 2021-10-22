@@ -62,6 +62,14 @@ submit data to store in the database or access restricted data.  The first
 thing to do is create a user account.  For example, with a user called `bob`
 and a password `hello`:
 
+### Set ALGORITHM and ACCESS_TOKEN_EXPIRE_MINUTES in environment file
+
+We need to specify algorithm for JWT token encoding and decoding. ALGORITHM variable needs to be passed in the parameter for that.
+ALGORITHM is set default to HS256.
+We have used ACCESS_TOKEN_EXPIRE_MINUTES variable to set expiry time on generated jwt access token.	
+ACCESS_TOKEN_EXPIRE_MINUTES is set default to None.
+If user wants to change any of the above variable, It should be added to .env file. Please refer env.sample to add variable to .env file.
+
 ### Get a password hash
 
 The passwords are not stored in clear in the database, instead a hash of them

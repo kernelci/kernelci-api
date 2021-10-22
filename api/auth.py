@@ -22,14 +22,12 @@ class TokenData(BaseModel):
 
 class Settings(BaseSettings):
     secret_key: str
+    algorithm: str = "HS256"
+    # Set to None so tokens don't expire
+    access_token_expire_minutes: float = None
 
 
 class Authentication:
-
-    ALGORITHM = "HS256"
-
-    # Set to None so tokens don't expire
-    ACCESS_TOKEN_EXPIRE_MINUTES = None  # 30
 
     def __init__(self, db):
         self._pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -49,18 +47,25 @@ class Authentication:
 
     def create_access_token(self, data: dict):
         to_encode = data.copy()
-        if self.ACCESS_TOKEN_EXPIRE_MINUTES:
-            expires_delta = timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+        if self._settings.access_token_expire_minutes:
+            expires_delta = timedelta(
+                    minutes=self._settings.access_token_expire_minutes
+                    )
             expire = datetime.utcnow() + expires
             to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(
-            to_encode, self._settings.secret_key, algorithm=self.ALGORITHM)
+            to_encode,
+            self._settings.secret_key, algorithm=self._settings.algorithm
+            )
         return encoded_jwt
 
     async def get_current_user(self, token):
         try:
             payload = jwt.decode(
-                token, self._settings.secret_key, algorithms=[self.ALGORITHM])
+                    token,
+                    self._settings.secret_key,
+                    algorithms=[self._settings.algorithm]
+                    )
             username: str = payload.get("sub")
             if username is None:
                 return None
