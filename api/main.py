@@ -19,7 +19,7 @@ pubsub = PubSub()
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = auth.get_current_user(token)
+    user = await auth.get_current_user(token)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -43,7 +43,7 @@ async def root():
 @app.post('/token', response_model=Token)
 async def login_for_access_token(
         form_data: OAuth2PasswordRequestForm = Depends()):
-    user = auth.authenticate_user(form_data.username, form_data.password)
+    user = await auth.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -68,18 +68,18 @@ def get_password_hash(password):
 # Things
 
 @app.get('/thing/{thing_id}')
-def thing(thing_id: str):
-    return {'thing': db.find_by_id(Thing, thing_id)}
+async def thing(thing_id: str):
+    return {'thing': await db.find_by_id(Thing, thing_id)}
 
 
 @app.get('/things')
-def things():
-    return {'things': db.find_all(Thing)}
+async def things():
+    return {'things': await db.find_all(Thing)}
 
 
 @app.post('/thing')
-def create_thing(thing: Thing, token: str = Depends(get_current_user)):
-    return {'thing': db.create(thing)}
+async def create_thing(thing: Thing, token: str = Depends(get_current_user)):
+    return {'thing': await db.create(thing)}
 
 
 # -----------------------------------------------------------------------------
