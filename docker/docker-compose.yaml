@@ -28,3 +28,11 @@ services:
     image: 'redis:6.2'
     volumes:
       - './redis/data:/data'
+
+  storage:
+    container_name: 'kernelci-storage'
+    image: 'nginx:1.21.3'
+    volumes:
+      - './storage/data:/usr/share/nginx/html'
+    ports:
+      - 8002:80
