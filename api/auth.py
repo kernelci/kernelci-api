@@ -37,8 +37,8 @@ class Authentication:
     def get_password_hash(self, password):
         return self._pwd_context.hash(password)
 
-    def authenticate_user(self, username: str, password: str):
-        user = self._db.find_one(User, username=username)
+    async def authenticate_user(self, username: str, password: str):
+        user = await self._db.find_one(User, username=username)
         if not user:
             return False
         if not self._pwd_context.verify(password, user.hashed_password):
