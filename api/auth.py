@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2021 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
-import asyncio
+
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -37,8 +37,8 @@ class Authentication:
     def get_password_hash(self, password):
         return self._pwd_context.hash(password)
 
-    async def authenticate_user(self, username: str, password: str):
-        user = await self._db.find_one(User, username=username)
+    def authenticate_user(self, username: str, password: str):
+        user = self._db.find_one(User, username=username)
         if not user:
             return False
         if not self._pwd_context.verify(password, user.hashed_password):
@@ -59,7 +59,7 @@ class Authentication:
             )
         return encoded_jwt
 
-    async def get_current_user(self, token):
+    def get_current_user(self, token):
         try:
             payload = jwt.decode(
                     token,
@@ -73,4 +73,4 @@ class Authentication:
         except JWTError:
             return None
 
-        return await self._db.find_one(User, username=token_data.username)
+        return self._db.find_one(User, username=token_data.username)
