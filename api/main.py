@@ -19,7 +19,7 @@ pubsub = PubSub()
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    user = auth.get_current_user(token)
+    user = await auth.get_current_user(token)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -29,8 +29,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     return user
 
 
-async def get_current_active_user(user: User):
-    user = await get_current_user
+async def get_user(user: User = Depends(get_current_user)):
     if not user.active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user
