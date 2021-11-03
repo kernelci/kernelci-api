@@ -48,3 +48,17 @@ class User(ModelId):
 class Thing(ModelId):
     name: str
     value: int
+
+
+class Revision(BaseModel):
+    tree: str
+    branch: str
+    commit: str
+
+
+class Node(ModelId):
+    kind: str = 'node'
+    name: str
+    revision: Revision
+    parent: Optional[PyObjectId]
+    status: Optional[bool] = None

@@ -5,7 +5,7 @@
 
 from bson import ObjectId
 from pymongo import MongoClient
-from .models import Thing, User
+from .models import Node, Thing, User
 from motor import motor_asyncio
 
 
@@ -13,6 +13,7 @@ class Database(object):
     COLLECTIONS = {
         Thing: 'thing',
         User: 'user',
+        Node: 'node',
     }
 
     def __init__(self, host='db', db_name='kernelci'):
