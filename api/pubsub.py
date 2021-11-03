@@ -5,6 +5,12 @@
 
 import aioredis
 import asyncio
+from cloudevents.http import CloudEvent, to_json
+from pydantic import BaseSettings
+
+
+class Settings(BaseSettings):
+    cloud_events_source: str = "https://api.kernelci.org/"
 
 
 class PubSub:
@@ -13,6 +19,7 @@ class PubSub:
         self._redis = aioredis.from_url(f'redis://{host}/{db}')
         self._subscriptions = dict()
         self._lock = asyncio.Lock()
+        self._settings = Settings()
 
     async def subscribe(self, user, channel):
         async with self._lock:
@@ -48,5 +55,14 @@ class PubSub:
             if msg is not None:
                 return msg
 
-    async def publish(self, user, channel, message):
+    async def publish(self, channel, message):
         await self._redis.publish(channel, message)
+
+    async def publish_cloudevent(self, channel, data, attributes=None):
+        if attributes is None:
+            attributes = {
+                "type": "api.kernelci.org",
+                "source": self._settings.cloud_events_source,
+            }
+        event = CloudEvent(attributes=attributes, data=data)
+        await self.publish(channel, to_json(event))

@@ -3,7 +3,6 @@
 # Copyright (C) 2021 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 
-from cloudevents.http import CloudEvent, to_json
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .auth import Authentication, Token
@@ -120,5 +119,4 @@ async def listen(channel: str, user: User = Depends(get_user)):
 async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
     attributes = dict(raw)
     data = attributes.pop('data')
-    event = CloudEvent(attributes=attributes, data=data)
-    await pubsub.publish(user, channel, to_json(event))
+    await pubsub.publish_cloudevent(channel, attributes, data)
