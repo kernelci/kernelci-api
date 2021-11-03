@@ -24,6 +24,12 @@ async def pubsub_startup():
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
+    if token == 'None':
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     user = await auth.get_current_user(token)
     if user is None:
         raise HTTPException(
