@@ -3,7 +3,7 @@
 # Copyright (C) 2021 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 
-FROM python:3.8
+FROM python:3.10
 MAINTAINER "KernelCI TSC" <kernelci-tsc@groups.io>
 
 # Upgrade pip3 - never mind the warning about running this as root
