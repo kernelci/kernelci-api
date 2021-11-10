@@ -14,7 +14,13 @@ app = FastAPI()
 db = Database()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 auth = Authentication(db)
-pubsub = PubSub()
+pubsub = None
+
+
+@app.on_event('startup')
+async def pubsub_startup():
+    global pubsub
+    pubsub = await PubSub.create()
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -86,27 +92,22 @@ async def create_thing(thing: Thing, token: str = Depends(get_current_user)):
 
 @app.post('/subscribe/{channel}')
 async def subscribe(channel: str, user: User = Depends(get_user)):
-    res = await pubsub.subscribe(user, channel)
+    return await pubsub.subscribe(channel)
+
+
+@app.post('/unsubscribe/{sub_id}')
+async def unsubscribe(sub_id: int, user: User = Depends(get_user)):
+    res = await pubsub.unsubscribe(sub_id)
     if res is False:
         raise HTTPException(
             status_code=status.HTTP_204_NO_CONTENT,
-            detail=f"Already subscribed to channel: {channel}"
+            detail=f"Already unsubscribed: {sub_id}"
         )
 
 
-@app.post('/unsubscribe/{channel}')
-async def unsubscribe(channel: str, user: User = Depends(get_user)):
-    res = await pubsub.unsubscribe(user, channel)
-    if res is False:
-        raise HTTPException(
-            status_code=status.HTTP_204_NO_CONTENT,
-            detail=f"Already unsubscribed from channel: {channel}"
-        )
-
-
-@app.get('/listen/{channel}')
-async def listen(channel: str, user: User = Depends(get_user)):
-    msg = await pubsub.listen(user, channel)
+@app.get('/listen/{sub_id}')
+async def listen(sub_id: int, user: User = Depends(get_user)):
+    msg = await pubsub.listen(sub_id)
     if msg is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
