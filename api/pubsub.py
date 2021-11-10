@@ -14,6 +14,13 @@ class Settings(BaseSettings):
 
 
 class PubSub:
+    ID_KEY = 'kernelci-api-pubsub-id'
+
+    @classmethod
+    async def create(self, *args, **kwargs):
+        pubsub = PubSub(*args, **kwargs)
+        await pubsub._init_sub_id()
+        return pubsub
 
     def __init__(self, host='redis', db=1):
         self._redis = aioredis.from_url(f'redis://{host}/{db}')
@@ -21,30 +28,29 @@ class PubSub:
         self._lock = asyncio.Lock()
         self._settings = Settings()
 
-    async def subscribe(self, user, channel):
-        async with self._lock:
-            key = (user.id, channel)
-            if key not in self._subscriptions:
-                sub = self._redis.pubsub()
-                self._subscriptions[key] = sub
-                await sub.subscribe(channel)
-                return True
-            return False
+    async def _init_sub_id(self):
+        await self._redis.setnx(self.ID_KEY, 0)
 
-    async def unsubscribe(self, user, channel):
+    async def subscribe(self, channel):
+        sub_id = await self._redis.incr(self.ID_KEY)
         async with self._lock:
-            key = (user.id, channel)
-            sub = self._subscriptions.get(key)
+            sub = self._redis.pubsub()
+            self._subscriptions[sub_id] = sub
+            await sub.subscribe(channel)
+            return sub_id
+
+    async def unsubscribe(self, sub_id):
+        async with self._lock:
+            sub = self._subscriptions.get(sub_id)
             if sub:
-                self._subscriptions.pop(key)
-                sub.unsubscribe(channel)
+                self._subscriptions.pop(sub_id)
+                sub.unsubscribe()
                 return True
             return False
 
-    async def listen(self, user, channel):
+    async def listen(self, sub_id):
         async with self._lock:
-            key = (user.id, channel)
-            sub = self._subscriptions.get(key)
+            sub = self._subscriptions.get(sub_id)
             if not sub:
                 return None
 
