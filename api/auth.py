@@ -59,13 +59,13 @@ class Authentication:
             )
         return encoded_jwt
 
-    def get_current_user(self, token):
+    async def get_current_user(self, token):
         try:
             payload = jwt.decode(
-                    token,
-                    self._settings.secret_key,
-                    algorithms=[self._settings.algorithm]
-                    )
+                token,
+                self._settings.secret_key,
+                algorithms=[self._settings.algorithm]
+            )
             username: str = payload.get("sub")
             if username is None:
                 return None
@@ -73,4 +73,4 @@ class Authentication:
         except JWTError:
             return None
 
-        return self._db.find_one(User, username=token_data.username)
+        return await self._db.find_one(User, username=token_data.username)
