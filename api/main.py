@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .auth import Authentication, Token
 from .db import Database
 from .models import Thing, User
-from .pubsub import PubSub
+from .pubsub import PubSub, Subscription
 
 app = FastAPI()
 db = Database()
@@ -90,7 +90,7 @@ async def create_thing(thing: Thing, token: str = Depends(get_current_user)):
 # -----------------------------------------------------------------------------
 # Pub/Sub
 
-@app.post('/subscribe/{channel}')
+@app.post('/subscribe/{channel}', response_model=Subscription)
 async def subscribe(channel: str, user: User = Depends(get_user)):
     return await pubsub.subscribe(channel)
 
