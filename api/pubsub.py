@@ -6,11 +6,16 @@
 import aioredis
 import asyncio
 from cloudevents.http import CloudEvent, to_json
-from pydantic import BaseSettings
+from pydantic import BaseModel, BaseSettings
 
 
 class Settings(BaseSettings):
     cloud_events_source: str = "https://api.kernelci.org/"
+
+
+class Subscription(BaseModel):
+    id: int
+    channel: str
 
 
 class PubSub:
@@ -37,7 +42,7 @@ class PubSub:
             sub = self._redis.pubsub()
             self._subscriptions[sub_id] = sub
             await sub.subscribe(channel)
-            return sub_id
+            return Subscription(id=sub_id, channel=channel)
 
     async def unsubscribe(self, sub_id):
         async with self._lock:
