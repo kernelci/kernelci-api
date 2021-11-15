@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .auth import Authentication, Token
 from .db import Database
-from .models import Thing, User
+from .models import Node, Thing, User
 from .pubsub import PubSub, Subscription
 
 app = FastAPI()
@@ -91,6 +91,32 @@ async def things():
 @app.post('/thing')
 async def create_thing(thing: Thing, token: str = Depends(get_current_user)):
     return {'thing': await db.create(thing)}
+
+
+# -----------------------------------------------------------------------------
+# Nodes
+
+@app.get('/node/{node_id}', response_model=Node)
+async def get_node(node_id: str):
+    return await db.find_by_id(Node, node_id)
+
+
+@app.post('/node', response_model=Node)
+async def post_node(node: Node, token: str = Depends(get_user)):
+    try:
+        if node.id is None:
+            obj = await db.create(node)
+            op = 'created'
+        else:
+            obj = await db.update(node)
+            op = 'updated'
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    await pubsub.publish_cloudevent('node', {'op': op, 'id': str(obj.id)})
+    return obj
 
 
 # -----------------------------------------------------------------------------
