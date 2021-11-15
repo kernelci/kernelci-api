@@ -50,3 +50,14 @@ class Database(object):
         res = await col.insert_one(obj.dict(by_alias=True))
         obj.id = res.inserted_id
         return obj
+
+    async def update(self, obj):
+        if obj.id is None:
+            raise ValueError("Cannot update object with no id")
+        col = self._get_collection(obj.__class__)
+        res = await col.replace_one(
+            {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
+        )
+        if res.matched_count == 0:
+            raise ValueError(f"No object found with id: {obj.id}")
+        return obj
