@@ -42,9 +42,10 @@ class Database(object):
         return model(**obj) if obj else None
 
     async def create(self, obj):
+        if obj.id is not None:
+            raise ValueError(f"Object cannot be created with id: {obj.id}")
+        delattr(obj, 'id')
         col = self._get_collection(obj.__class__)
-        if hasattr(obj, 'id'):
-            delattr(obj, 'id')
         res = await col.insert_one(obj.dict(by_alias=True))
         obj.id = res.inserted_id
         return obj
