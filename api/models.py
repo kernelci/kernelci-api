@@ -52,8 +52,10 @@ class Thing(ModelId):
 
 class Revision(BaseModel):
     tree: str
+    url: str
     branch: str
     commit: str
+    describe: str
 
 
 class Node(ModelId):
