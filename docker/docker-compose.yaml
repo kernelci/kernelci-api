@@ -21,7 +21,7 @@ services:
     container_name: 'kernelci-db'
     image: 'mongo:5.0'
     volumes:
-      - './db/data:/data/db'
+      - mongodata:/data/db
 
   redis:
     container_name: 'kernelci-redis'
@@ -36,3 +36,6 @@ services:
       - './storage/data:/usr/share/nginx/html'
     ports:
       - 8002:80
+
+volumes:
+  mongodata:
