@@ -152,4 +152,4 @@ async def listen(sub_id: int, user: User = Depends(get_user)):
 async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
     attributes = dict(raw)
     data = attributes.pop('data')
-    await pubsub.publish_cloudevent(channel, attributes, data)
+    await pubsub.publish_cloudevent(channel, data, attributes)
