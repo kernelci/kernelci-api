@@ -70,6 +70,11 @@ class PubSub:
         await self._redis.publish(channel, message)
 
     async def publish_cloudevent(self, channel, data, attributes=None):
+        """
+        CloudEvent contructor needs to have below params:
+            attributes : dict with type and source keys
+            data : dict with message key
+        """
         if attributes is None:
             attributes = {
                 "type": "api.kernelci.org",
