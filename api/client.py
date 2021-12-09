@@ -38,9 +38,13 @@ def listen(args):
     print("Press Ctrl-C to stop.")
 
     try:
+        # Fetch subscription ID from /subscribe endpoint response
+        subscription_id = str(res.json()['id'])
+        # Pass subscription ID to /listen endpoint URL
+        listen_path = '/'.join(['listen', subscription_id])
+        url = urllib.parse.urljoin(args.url, listen_path)
+
         while True:
-            path = '/'.join(['listen', args.channel])
-            url = urllib.parse.urljoin(args.url, path)
             res = requests.get(url, headers=headers)
             res.raise_for_status()
             json_data = res.json().get('data')
@@ -51,8 +55,9 @@ def listen(args):
     except KeyboardInterrupt as e:
         print(f"Stopping.")
     finally:
-        path = '/'.join(['unsubscribe', args.channel])
-        url = urllib.parse.urljoin(args.url, path)
+        # Pass subscription ID to /unsubscribe endpoint URL
+        unsubscribe_path = '/'.join(['unsubscribe', subscription_id])
+        url = urllib.parse.urljoin(args.url, unsubscribe_path)
         res = requests.post(url, headers=headers)
         res.raise_for_status()
 
