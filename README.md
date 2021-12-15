@@ -225,3 +225,23 @@ kernelci-api | INFO:     127.0.0.1:36744 - "POST /unsubscribe/abc HTTP/1.1" 200 
 > **Note** The client doesn't necessarily need to be run within the `api`
 Docker container, but it's a convenient way of trying things out as it already
 has all the Python dependencies installed (essentially, `cloudevents`).
+
+## API Testing
+
+Please follow below instructions to test API endpoints.
+
+Run installPackages.sh script from kernelci-api/docker/api directory to install all the required packages from requirements.txt and requirements-dev.txt:
+```
+./installPackages.sh
+```
+
+We have created .env file using env.sample in kernelci-api directory from 'Generate SECRET KEY and add it in environment file' section. Export .env file with SECRET_KEY environment variable in it:
+```
+export $(cat .env)
+```
+
+Run below command from kernelci-api/api directory:
+```
+pytest
+```
+This will start running test cases from kernelci-api/api/test_api.py and display results.
