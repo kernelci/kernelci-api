@@ -230,9 +230,9 @@ has all the Python dependencies installed (essentially, `cloudevents`).
 
 Please follow below instructions to test API endpoints.
 
-Run installPackages.sh script from kernelci-api/docker/api directory to install all the required packages from requirements.txt and requirements-dev.txt:
+Run installPackagesDev.sh script from kernelci-api/docker/api directory to install all the required packages from requirements.txt and requirements-dev.txt:
 ```
-./installPackages.sh
+./installPackagesDev.sh
 ```
 
 We have created .env file using env.sample in kernelci-api directory from 'Generate SECRET KEY and add it in environment file' section. Export .env file with SECRET_KEY environment variable in it:
