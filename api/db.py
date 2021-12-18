@@ -42,6 +42,11 @@ class Database(object):
         obj = await col.find_one({'_id': ObjectId(obj_id)})
         return model(**obj) if obj else None
 
+    async def find_by_attributes(self, model, attributes):
+        col = self._get_collection(model)
+        data = await col.find(attributes).to_list(None)
+        return list(model(**obj) for obj in data)
+
     async def create(self, obj):
         if obj.id is not None:
             raise ValueError(f"Object cannot be created with id: {obj.id}")
