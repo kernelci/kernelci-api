@@ -43,6 +43,10 @@ jobs:
         run: |
           pycodestyle api/*.py
 
+      - name: Run pylint
+        run: |
+          pylint -d R0903 api.models
+
       - name: Export environment variables
         run: |
           echo "SECRET_KEY=$(openssl rand -hex 32)" >> $GITHUB_ENV
