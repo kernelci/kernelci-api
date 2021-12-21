@@ -3,12 +3,13 @@
 # Copyright (C) 2021 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .auth import Authentication, Token
 from .db import Database
 from .models import Node, Thing, User
 from .pubsub import PubSub, Subscription
+from typing import List
 
 app = FastAPI()
 db = Database()
@@ -99,6 +100,11 @@ async def create_thing(thing: Thing, token: str = Depends(get_current_user)):
 @app.get('/node/{node_id}', response_model=Node)
 async def get_node(node_id: str):
     return await db.find_by_id(Node, node_id)
+
+
+@app.get('/nodes', response_model=List[Node])
+async def get_nodes(request: Request):
+    return await db.find_by_attributes(Node, dict(request.query_params))
 
 
 @app.post('/node', response_model=Node)
