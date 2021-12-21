@@ -37,5 +37,15 @@ services:
     ports:
       - 8002:80
 
+  ssh:
+    container_name: 'kernelci-ssh'
+    build:
+      context: ssh
+    volumes:
+      - './storage/data:/home/kernelci/data'
+      - './ssh/user-data:/home/kernelci/.ssh'
+    ports:
+      - '8022:22'
+
 volumes:
   mongodata:
