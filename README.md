@@ -135,43 +135,56 @@ require authentication such as `/me` will work like with the example above when
 running `curl` by hand.
 
 
-## Things
+## Nodes
 
-As a proof-of-concept, an object model called `Thing` is defined in this API.
+As a proof-of-concept, an object model called `Node` is defined in this API.
 It's possible to create new objects and retrieve them via the API.
 
-### Creating a Thing
+### Creating a Node
 
 This requires an authentication token, as explained in the previous section:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/thing' \
+  'http://localhost:8001/node' \
   -H 'accept: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1SEdkp5M1S1AgYvX8VdB20' \
   -H 'Content-Type: application/json' \
   -d '{
-  "name": "answer",
-  "value": 42
+  "name":"checkout",
+  "revision":{"tree":"mainline",
+  "url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+  "branch":"master",
+  "commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+  "describe":"v5.16-rc4-31-g2a987e65025e"}
 }'
-{"thing":{"name":"answer","value":42,"_id":"615f3313b231dd5cccf9c996"}}
+{"_id":"61bda8f2eb1a63d2b7152418","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":null}
 ```
 
-### Getting Things back
+### Getting Nodes back
 
-Reading Things doesn't require authentication, so plain URLs can be used:
+Reading Node doesn't require authentication, so plain URLs can be used. 
 
-```
-$ curl http://localhost:8001/thing/615f3313b231dd5cccf9c996
-{"thing":{"_id":"615f3313b231dd5cccf9c996","name":"answer","value":42}}
-```
-
-To get all the things as a list, use the `/things` API endpoint (in this
-example, another Thing was created in the meantime):
+To get node by ID, use `/node` endpoint with node ID as a path parameter:
 
 ```
-$ curl http://localhost:8001/things
-{"things":[{"_id":"615f3313b231dd5cccf9c996","name":"answer","value":42},{"_id":"615f33abb231dd5cccf9c997","name":"spanner","value":18}]}
+$ curl http://localhost:8001/node/61bda8f2eb1a63d2b7152418
+{"_id":"61bda8f2eb1a63d2b7152418","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":null}
+```
+
+To get all the nodes as a list, use the `/nodes` API endpoint:
+
+```
+$ curl http://localhost:8001/nodes
+{"nodes":[{"_id":"61b052199bca2a448fe49673","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":true},{"_id":"61b052199bca2a448fe49674","kind":"node","name":"check-describe","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":"61b052199bca2a448fe49673","status":null}]}
+```
+
+To get nodes by providing attributes, use `/nodes` endpoint with query parameters. All the attributes except node ID can be passed to this endpoint.
+In case of ID, please use `/node` endpoint with node ID as described above.
+
+```
+$ curl 'http://localhost:8001/nodes?name=checkout&revision.tree=mainline'
+{"_id":"61b052199bca2a448fe49673","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":true}
 ```
 
 ## Pub/Sub and CloudEvent
