@@ -36,8 +36,7 @@ jobs:
         working-directory: docker/api
         run: |
           python -m pip install --upgrade pip
-          chmod +x installPackagesDev.sh
-          ./installPackagesDev.sh
+          pip install -r requirements-dev.txt
 
       - name: Run pycodestyle
         run: |
