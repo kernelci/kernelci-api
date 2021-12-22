@@ -143,7 +143,7 @@ async def listen(sub_id: int, user: User = Depends(get_user)):
     if msg is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Not subscribed to channel: {channel}"
+            detail=f"Not subscribed to channel with id: {sub_id}"
         )
     return msg
 
