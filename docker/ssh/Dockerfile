@@ -20,5 +20,8 @@ RUN chown kernelci: /home/kernelci
 # SSH server will run on PORT 22
 EXPOSE 22
 
+# Copy sshd_config file
+COPY sshd_config /etc/ssh/
+
 # Run SSH server in detached mode
 CMD ["/usr/sbin/sshd","-D"]
