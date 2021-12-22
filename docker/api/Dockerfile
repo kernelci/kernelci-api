@@ -18,7 +18,8 @@ ENV PATH=$PATH:/home/kernelci/.local/bin
 WORKDIR /home/kernelci
 
 # Install requirements
-COPY requirements.txt /home/kernelci/
-RUN pip install --requirement requirements.txt
+COPY requirements*.txt /home/kernelci/
+ARG REQUIREMENTS=requirements.txt
+RUN pip install --requirement ${REQUIREMENTS}
 
 CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--reload"]

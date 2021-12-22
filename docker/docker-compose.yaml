@@ -10,6 +10,8 @@ services:
     container_name: 'kernelci-api'
     build:
       context: api
+      args:
+        - REQUIREMENTS=${REQUIREMENTS:-requirements.txt}
     volumes:
       - '../api:/home/kernelci/api'
     ports:
