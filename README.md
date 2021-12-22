@@ -19,7 +19,7 @@ The FastAPI server and Mongo DB can all be started at the same time using
 the `db` hostname.
 
 ```
-$ docker-compose -f docker/docker-compose.yaml up --build
+$ docker-compose up --build
 [...]
 kernelci-api | INFO:     Application startup complete.
 ```
@@ -34,7 +34,7 @@ $ curl http://localhost:8001/
 Note that the FastAPI server is running on port 8000 inside the container, but
 it's exposed to the host via port 8001 to avoid conflicts with other services.
 This can be adjusted for each setup in
-[`docker-compose.yaml`](docker/docker-compose.yaml).
+[`docker-compose.yaml`](docker-compose.yaml).
 
 The container log should show:
 ```
@@ -53,13 +53,16 @@ use it with other tools: http://localhost:8001/openapi.json
 ## Authentication
 
 ### Generate SECRET KEY and add it in environment file
+
 Generate a new key for Authentication using following command:
 ```
 $ openssl rand -hex 32
 ```
-Store the generated key to .env file and give its path to docker-compose.yaml file.
-We have loaded secret key using FastAPI settings feature in api.auth
-Please find the env.sample file in the base directory to store secret key and copy the file to your .env file.
+
+Store the generated key to `.env` file and give its path to
+`docker-compose.yaml` file.  We have loaded secret key using FastAPI settings
+feature in `api.auth`. Please find the env.sample file in the base directory to
+store secret key and copy the file to your `.env` file.
 
 Some parts of the API require the user to be authenticated, for example to
 submit data to store in the database or access restricted data.  The first
@@ -87,14 +90,12 @@ $ curl http://localhost:8001/hash/hello
 
 ### Add the user in Mongo DB
 
-The command below will run in the Mongo DB container via docker-compose.  Make
-sure to escape special characters in the password hash generated in the
+The command below will run in the Mongo DB container via `docker-compose`.
+Make sure to escape special characters in the password hash generated in the
 previous step.  In particular, `$` characters need to be escaped with `\$`:
 
 ```
-$ docker-compose \
-  -f docker/docker-compose.yaml exec db \
-  /bin/mongo kernelci --eval \
+$ docker-compose exec db /bin/mongo kernelci --eval \
   "db.user.insert({username: 'bob', hashed_password: '\$2b\$12\$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.', active: true})"
 MongoDB shell version v5.0.3
 connecting to: mongodb://127.0.0.1:27017/kernelci?compressors=disabled&gssapiServiceName=mongodb
@@ -163,7 +164,7 @@ $ curl -X 'POST' \
 
 ### Getting Nodes back
 
-Reading Node doesn't require authentication, so plain URLs can be used. 
+Reading Node doesn't require authentication, so plain URLs can be used.
 
 To get node by ID, use `/node` endpoint with node ID as a path parameter:
 
@@ -196,8 +197,7 @@ events and publish them too.  All the events are formatted using
 The [`client.py`](api/client.py) script provides a reference implentation for
 publishing and listening to events.
 
-For example, in a first terminal from within the `kernelci-api/docker`
-directory:
+For example, in a first terminal:
 
 ```
 $ docker-compose exec api /bin/sh -c '\
