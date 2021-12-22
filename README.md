@@ -70,7 +70,7 @@ and a password `hello`:
 
 We need to specify algorithm for JWT token encoding and decoding. ALGORITHM variable needs to be passed in the parameter for that.
 ALGORITHM is set default to HS256.
-We have used ACCESS_TOKEN_EXPIRE_MINUTES variable to set expiry time on generated jwt access token.	
+We have used ACCESS_TOKEN_EXPIRE_MINUTES variable to set expiry time on generated jwt access token.
 ACCESS_TOKEN_EXPIRE_MINUTES is set default to None.
 If user wants to change any of the above variable, It should be added to .env file. Please refer env.sample to add variable to .env file.
 
@@ -230,9 +230,9 @@ has all the Python dependencies installed (essentially, `cloudevents`).
 
 Please follow below instructions to test API endpoints.
 
-Run installPackagesDev.sh script from kernelci-api/docker/api directory to install all the required packages from requirements.txt and requirements-dev.txt:
+Install Python requirements with additional packages for testing:
 ```
-./installPackagesDev.sh
+pip install -r docker/api/requirements-dev.txt
 ```
 
 We have created .env file using env.sample in kernelci-api directory from 'Generate SECRET KEY and add it in environment file' section. Export .env file with SECRET_KEY environment variable in it:
