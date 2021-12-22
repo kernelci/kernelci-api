@@ -9,43 +9,43 @@ services:
   api:
     container_name: 'kernelci-api'
     build:
-      context: api
+      context: 'docker/api'
       args:
         - REQUIREMENTS=${REQUIREMENTS:-requirements.txt}
     volumes:
-      - '../api:/home/kernelci/api'
+      - './api:/home/kernelci/api'
     ports:
       - '8001:8000'
     env_file:
-      - ../.env
+      - '.env'
 
   db:
     container_name: 'kernelci-db'
     image: 'mongo:5.0'
     volumes:
-      - mongodata:/data/db
+      - 'mongodata:/data/db'
 
   redis:
     container_name: 'kernelci-redis'
     image: 'redis:6.2'
     volumes:
-      - './redis/data:/data'
+      - './docker/redis/data:/data'
 
   storage:
     container_name: 'kernelci-storage'
     image: 'nginx:1.21.3'
     volumes:
-      - './storage/data:/usr/share/nginx/html'
+      - './docker/storage/data:/usr/share/nginx/html'
     ports:
       - 8002:80
 
   ssh:
     container_name: 'kernelci-ssh'
     build:
-      context: ssh
+      context: 'docker/ssh'
     volumes:
-      - './storage/data:/home/kernelci/data'
-      - './ssh/user-data:/home/kernelci/.ssh'
+      - './docker/storage/data:/home/kernelci/data'
+      - './docker/ssh/user-data:/home/kernelci/.ssh'
     ports:
       - '8022:22'
 
