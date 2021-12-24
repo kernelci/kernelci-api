@@ -245,3 +245,22 @@ Run below command from kernelci-api/api directory:
 pytest
 ```
 This will start running test cases from kernelci-api/api/test_api.py and display results.
+
+## Generate SSH key and copy to SSH directory
+
+Use below command to generate SSH key. It will store private key to `/home/username/.ssh/id_rsa_kernelci-api` file and public key to `/home/username/.ssh/id_rsa_kernelci-api.pub` file.
+
+```
+$ ssh-keygen -f ~/.ssh/id_rsa_kernelci-api
+```
+
+Use below command to copy the public key to ssh/user-data directory.
+```
+$ cat ~/.ssh/id_rsa_kernelci-api.pub >> docker/ssh/user-data/authorized_keys
+```
+
+SSH docker container will have /home/kernelci/.ssh/authorized_keys file.
+Now, the user will able to SSH to container using private key.
+```
+$ ssh -i ~/.ssh/id_rsa_kernelci-api -p 8022 kernelci@localhost
+```
