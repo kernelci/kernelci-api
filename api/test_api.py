@@ -96,3 +96,33 @@ def test_me_endpoint(mock_get_current_user):
     assert response.status_code == 200
     assert ('_id' and 'username' and 'hashed_password' and
             'active') in response.json()
+
+
+def test_token_endpoint_incorrect_password(mock_db_find_one):
+    """
+    Test Case : Test KernelCI API token endpoint for negative path
+    Incorrect password should be passed to the endpoint
+
+    Expected Result :
+        HTTP Response Code 401 Unauthorized
+        JSON with 'detail' key
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_db_find_one.return_value = user
+    client = TestClient(app)
+
+    # Pass incorrect password
+    response = client.post(
+        "/token",
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded"
+        },
+        data={'username': 'bob', 'password': 'hi'}
+    )
+    print("response json", response.json())
+    assert response.status_code == 401
+    assert response.json() == {'detail': 'Incorrect username or password'}
