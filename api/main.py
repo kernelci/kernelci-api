@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .auth import Authentication, Token
 from .db import Database
-from .models import Node, Thing, User
+from .models import Node, User
 from .pubsub import PubSub, Subscription
 from typing import List
 
@@ -74,24 +74,6 @@ async def read_users_me(current_user: User = Depends(get_user)):
 @app.get('/hash/{password}')
 def get_password_hash(password):
     return auth.get_password_hash(password)
-
-
-# -----------------------------------------------------------------------------
-# Things
-
-@app.get('/thing/{thing_id}')
-async def thing(thing_id: str):
-    return {'thing': await db.find_by_id(Thing, thing_id)}
-
-
-@app.get('/things')
-async def things():
-    return {'things': await db.find_all(Thing)}
-
-
-@app.post('/thing')
-async def create_thing(thing: Thing, token: str = Depends(get_current_user)):
-    return {'thing': await db.create(thing)}
 
 
 # -----------------------------------------------------------------------------
