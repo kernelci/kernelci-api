@@ -5,13 +5,12 @@
 
 from bson import ObjectId
 from pymongo import MongoClient
-from .models import Node, Thing, User
+from .models import Node, User
 from motor import motor_asyncio
 
 
 class Database(object):
     COLLECTIONS = {
-        Thing: 'thing',
         User: 'user',
         Node: 'node',
     }
