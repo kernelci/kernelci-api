@@ -59,12 +59,6 @@ class User(ModelId):
     active: bool
 
 
-class Thing(ModelId):
-    """Thing object model for early experiments with Fast API and Mongo DB"""
-    name: str
-    value: int
-
-
 class Revision(BaseModel):
     """Linux kernel Git revision model"""
     tree: str
