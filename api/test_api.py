@@ -5,10 +5,11 @@
 
 import pytest
 from .main import app
-from .models import User
+from .models import User, Node, Revision
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock
 from .pubsub import Subscription
+import json
 
 
 @pytest.fixture
@@ -256,3 +257,64 @@ def mock_publish_cloudevent(mocker):
     mocker.patch('api.pubsub.PubSub.publish_cloudevent',
                  side_effect=async_mock)
     return async_mock
+
+
+def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
+                              mock_db_create, mock_publish_cloudevent):
+    """
+    Test Case : Test KernelCI API /node endpoint
+    Expected Result :
+        HTTP Response Code 200 OK
+        JSON with created Node object attributes
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_get_current_user.return_value = user
+
+    revision_obj = Revision(
+                tree="mainline",
+                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
+                    "torvalds/linux.git",
+                branch="master",
+                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                describe="v5.16-rc4-31-g2a987e65025e"
+    )
+    node_obj = Node(
+            _id="61bda8f2eb1a63d2b7152418",
+            kind="node",
+            name="checkout",
+            revision=revision_obj,
+            parent=None,
+            status=None
+        )
+    mock_db_create.return_value = node_obj
+
+    with TestClient(app) as client:
+        request_dict = {
+            "name": "checkout",
+            "revision": {
+                "tree": "mainline",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                        "torvalds/linux.git",
+                "branch": "master",
+                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                "describe": "v5.16-rc4-31-g2a987e65025e"
+                }
+            }
+        response = client.post(
+            "/node",
+            headers={
+                "Accept": "application/json",
+                "Authorization": "Bearer "
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                "eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S"
+                "Edkp5M1S1AgYvX8VdB20"
+            },
+            data=json.dumps(request_dict)
+            )
+        print("response.json()", response.json())
+        assert response.status_code == 200
+        assert ('_id' and 'kind' and 'name' and
+                'revision' and 'parent' and 'status') in response.json()
