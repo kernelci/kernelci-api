@@ -472,3 +472,39 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
         assert response.status_code == 200
         assert ('_id' and 'kind' and 'name' and
                 'revision' and 'parent' and 'status') in response.json()
+
+
+def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
+                                                mock_db_find_by_id,
+                                                mock_init_sub_id):
+    """
+    Test Case : Test KernelCI API GET /node/{node_id} endpoint
+    for negative path
+    Expected Result :
+        HTTP Response Code 200 OK
+        Response JSON None
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_get_current_user.return_value = user
+
+    mock_db_find_by_id.return_value = None
+
+    with TestClient(app) as client:
+        request_dict = {
+            "name": "checkout",
+            "revision": {
+                "tree": "mainline",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                        "torvalds/linux.git",
+                "branch": "master",
+                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                "describe": "v5.16-rc4-31-g2a987e65025e"
+                }
+            }
+        response = client.get("/node/61bda8f2eb1a63d2b7152419")
+        print("response.json()", response.json())
+        assert response.status_code == 200
+        assert response.json() is None
