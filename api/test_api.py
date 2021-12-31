@@ -240,3 +240,11 @@ def test_unsubscribe_endpoint_empty_response(mock_get_current_user,
         print("response.json()", response.json())
         assert response.status_code == 204
         assert 'detail' in response.json()
+
+
+@pytest.fixture()
+def mock_db_create(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('api.db.Database.create',
+                 side_effect=async_mock)
+    return async_mock
