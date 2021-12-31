@@ -248,3 +248,11 @@ def mock_db_create(mocker):
     mocker.patch('api.db.Database.create',
                  side_effect=async_mock)
     return async_mock
+
+
+@pytest.fixture()
+def mock_publish_cloudevent(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('api.pubsub.PubSub.publish_cloudevent',
+                 side_effect=async_mock)
+    return async_mock
