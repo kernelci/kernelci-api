@@ -318,3 +318,11 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
         assert response.status_code == 200
         assert ('_id' and 'kind' and 'name' and
                 'revision' and 'parent' and 'status') in response.json()
+
+
+@pytest.fixture()
+def mock_db_find_by_attributes(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('api.db.Database.find_by_attributes',
+                 side_effect=async_mock)
+    return async_mock
