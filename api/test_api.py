@@ -423,3 +423,11 @@ def test_get_node_by_attributes_endpoint_node_not_found(
         print("response.json()", response.json())
         assert response.status_code == 200
         assert len(response.json()) == 0
+
+
+@pytest.fixture()
+def mock_db_find_by_id(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('api.db.Database.find_by_id',
+                 side_effect=async_mock)
+    return async_mock
