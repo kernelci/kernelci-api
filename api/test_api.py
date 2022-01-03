@@ -390,3 +390,36 @@ def test_get_node_by_attributes_endpoint(mock_get_current_user,
         print("response.json()", response.json())
         assert response.status_code == 200
         assert len(response.json()) > 0
+
+
+def test_get_node_by_attributes_endpoint_node_not_found(
+        mock_get_current_user,
+        mock_db_find_by_attributes,
+        mock_init_sub_id):
+    """
+    Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
+    endpoint for the node not found
+    Expected Result :
+        HTTP Response Code 200 OK
+        Empty list
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_get_current_user.return_value = user
+
+    mock_db_find_by_attributes.return_value = []
+
+    params = {
+        "name": "checkout",
+        "revision.tree": "baseline"
+    }
+    with TestClient(app) as client:
+        response = client.get(
+            "/nodes",
+            params=params
+            )
+        print("response.json()", response.json())
+        assert response.status_code == 200
+        assert len(response.json()) == 0
