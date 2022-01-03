@@ -326,3 +326,67 @@ def mock_db_find_by_attributes(mocker):
     mocker.patch('api.db.Database.find_by_attributes',
                  side_effect=async_mock)
     return async_mock
+
+
+def test_get_node_by_attributes_endpoint(mock_get_current_user,
+                                         mock_db_find_by_attributes,
+                                         mock_init_sub_id):
+    """
+    Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
+    endpoint for the positive path
+    Expected Result :
+        HTTP Response Code 200 OK
+        List with matching Node objects
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_get_current_user.return_value = user
+
+    revision_obj_1 = Revision(
+                tree="mainline",
+                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
+                    "torvalds/linux.git",
+                branch="master",
+                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                describe="v5.16-rc4-31-g2a987e65025e"
+                )
+    node_obj_1 = Node(
+            _id="61bda8f2eb1a63d2b7152418",
+            kind="node",
+            name="checkout",
+            revision=revision_obj_1,
+            parent=None,
+            status=None
+        )
+    revision_obj_2 = Revision(
+                tree="mainline",
+                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
+                    "torvalds/linux.git",
+                branch="master",
+                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb45",
+                describe="v5.16-rc4-31-g2a987e65025e"
+                )
+    node_obj_2 = Node(
+            _id="61bda8f2eb1a63d2b7152414",
+            kind="node",
+            name="checkout",
+            revision=revision_obj_2,
+            parent=None,
+            status=None
+        )
+    mock_db_find_by_attributes.return_value = [node_obj_1, node_obj_2]
+
+    params = {
+        "name": "checkout",
+        "revision.tree": "mainline"
+    }
+    with TestClient(app) as client:
+        response = client.get(
+            "/nodes",
+            params=params,
+            )
+        print("response.json()", response.json())
+        assert response.status_code == 200
+        assert len(response.json()) > 0
