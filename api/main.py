@@ -10,6 +10,7 @@ from .db import Database
 from .models import Node, User
 from .pubsub import PubSub, Subscription
 from typing import List
+from bson import ObjectId
 
 app = FastAPI()
 db = Database()
@@ -98,6 +99,21 @@ async def post_node(node: Node, token: str = Depends(get_user)):
         else:
             obj = await db.update(node)
             op = 'updated'
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    await pubsub.publish_cloudevent('node', {'op': op, 'id': str(obj.id)})
+    return obj
+
+
+@app.put('/node/{node_id}', response_model=Node)
+async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
+    try:
+        node.id = ObjectId(node_id)
+        obj = await db.update(node)
+        op = 'updated'
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
