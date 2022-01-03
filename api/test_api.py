@@ -581,3 +581,28 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
         print("response.json()", response.json())
         assert response.status_code == 200
         assert len(response.json()) > 0
+
+
+def test_get_all_nodes_empty_response(mock_get_current_user,
+                                      mock_db_find_by_attributes,
+                                      mock_init_sub_id):
+    """
+    Test Case : Test KernelCI API GET /nodes endpoint for the
+    negative path
+    Expected Result :
+        HTTP Response Code 200 OK
+        Empty list as no Node object is added.
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_get_current_user.return_value = user
+
+    mock_db_find_by_attributes.return_value = []
+
+    with TestClient(app) as client:
+        response = client.get("/nodes")
+        print("response.json()", response.json())
+        assert response.status_code == 200
+        assert len(response.json()) == 0
