@@ -93,12 +93,8 @@ async def get_nodes(request: Request):
 @app.post('/node', response_model=Node)
 async def post_node(node: Node, token: str = Depends(get_user)):
     try:
-        if node.id is None:
-            obj = await db.create(node)
-            op = 'created'
-        else:
-            obj = await db.update(node)
-            op = 'updated'
+        obj = await db.create(node)
+        op = 'created'
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
