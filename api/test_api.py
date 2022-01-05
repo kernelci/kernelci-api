@@ -126,3 +126,11 @@ def test_token_endpoint_incorrect_password(mock_db_find_one):
     print("response json", response.json())
     assert response.status_code == 401
     assert response.json() == {'detail': 'Incorrect username or password'}
+
+
+@pytest.fixture()
+def mock_init_sub_id(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('api.pubsub.PubSub._init_sub_id',
+                 side_effect=async_mock)
+    return async_mock
