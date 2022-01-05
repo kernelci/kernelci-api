@@ -134,3 +134,11 @@ def mock_init_sub_id(mocker):
     mocker.patch('api.pubsub.PubSub._init_sub_id',
                  side_effect=async_mock)
     return async_mock
+
+
+@pytest.fixture()
+def mock_subscribe(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('api.pubsub.PubSub.subscribe',
+                 side_effect=async_mock)
+    return async_mock
