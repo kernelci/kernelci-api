@@ -107,3 +107,9 @@ class Node(DatabaseModel):
 
     def update(self):
         self.updated = datetime.utcnow()
+
+    @classmethod
+    def modify_parent(cls, query_param_dict):
+        """Modify query parameter dictionary for parent"""
+        query_param_dict['parent'] = ObjectId(query_param_dict['parent'])
+        return query_param_dict
