@@ -87,7 +87,10 @@ async def get_node(node_id: str):
 
 @app.get('/nodes', response_model=List[Node])
 async def get_nodes(request: Request):
-    return await db.find_by_attributes(Node, dict(request.query_params))
+    query_param_dict = dict(request.query_params)
+    if 'parent' in query_param_dict:
+        query_param_dict = Node.modify_parent(query_param_dict)
+    return await db.find_by_attributes(Node, query_param_dict)
 
 
 @app.get('/get_root_node/{node_id}', response_model=Node)
