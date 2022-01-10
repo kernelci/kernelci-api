@@ -606,3 +606,49 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
         print("response.json()", response.json())
         assert response.status_code == 200
         assert len(response.json()) == 0
+
+
+@pytest.fixture()
+def mock_init_sub_id(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('api.pubsub.PubSub._init_sub_id',
+                 side_effect=async_mock)
+    return async_mock
+
+
+@pytest.fixture()
+def mock_listen(mocker):
+    async_mock = AsyncMock()
+    mocker.patch('api.pubsub.PubSub.listen',
+                 side_effect=async_mock)
+    return async_mock
+
+
+def test_listen_endpoint(mock_get_current_user,
+                         mock_init_sub_id,
+                         mock_listen):
+    """
+    Test Case : Test KernelCI API GET /listen endpoint for the
+    positive path
+    Expected Result :
+        HTTP Response Code 200 OK
+        Listen for events on a channel.
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_get_current_user.return_value = user
+    mock_listen.return_value = 'Listening for events on channel 1'
+    with TestClient(app) as client:
+        response = client.get(
+            "/listen/1",
+            headers={
+                "Accept": "application/json",
+                "Authorization": "Bearer "
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                "eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S"
+                "Edkp5M1S1AgYvX8VdB20"
+            },
+        )
+        assert response.status_code == 200
