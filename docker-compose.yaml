@@ -15,7 +15,7 @@ services:
     volumes:
       - './api:/home/kernelci/api'
     ports:
-      - '8001:8000'
+      - '${API_HOST_PORT:-8001}:8000'
     env_file:
       - '.env'
 
@@ -37,7 +37,7 @@ services:
     volumes:
       - './docker/storage/data:/usr/share/nginx/html'
     ports:
-      - 8002:80
+      - ${STORAGE_HOST_PORT:-8002}:80
 
   ssh:
     container_name: 'kernelci-ssh'
@@ -47,7 +47,7 @@ services:
       - './docker/storage/data:/home/kernelci/data'
       - './docker/ssh/user-data:/home/kernelci/.ssh'
     ports:
-      - '8022:22'
+      - '${SSH_HOST_PORT:-8022}:22'
 
 volumes:
   mongodata:
