@@ -652,3 +652,29 @@ def test_listen_endpoint(mock_get_current_user,
             },
         )
         assert response.status_code == 200
+
+
+def test_listen_endpoint_not_found(mock_get_current_user,
+                                   mock_init_sub_id,
+                                   mock_listen):
+    """
+    Test Case : Test KernelCI API GET /listen endpoint for the
+    negative path
+    Expected Result :
+        HTTP Response Code 404 Not Found
+        Channel not available or not subscribed to channel with an id
+    """
+    mock_listen.return_value = None
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/listen/1",
+            headers={
+                "Accept": "application/json",
+                "Authorization": "Bearer "
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                "eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S"
+                "Edkp5M1S1AgYvX8VdB20"
+            },
+        )
+        assert response.status_code == 404
