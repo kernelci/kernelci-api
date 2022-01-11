@@ -54,4 +54,4 @@ jobs:
 
       - name: Run pytest
         run: |
-          pytest -v api/
+          pytest -v api/ test/
