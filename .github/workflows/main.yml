@@ -46,6 +46,7 @@ jobs:
       - name: Run pylint
         run: |
           pylint api.auth
+          pylint api.db
           pylint -d R0903 api.models
 
       - name: Export environment variables
