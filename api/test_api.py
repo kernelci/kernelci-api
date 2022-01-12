@@ -96,8 +96,8 @@ def test_me_endpoint(mock_get_current_user):
         },
     )
     assert response.status_code == 200
-    assert ('_id' and 'username' and 'hashed_password' and
-            'active') in response.json()
+    assert ('_id', 'username', 'hashed_password', 'active') == tuple(
+                                                        response.json().keys())
 
 
 def test_token_endpoint_incorrect_password(mock_db_find_one):
