@@ -184,7 +184,7 @@ def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
         )
         print("response.json()", response.json())
         assert response.status_code == 200
-        assert ('id' and 'channel') in response.json()
+        assert ('id', 'channel') == tuple(response.json().keys())
 
 
 def test_unsubscribe_endpoint(mock_get_current_user,
