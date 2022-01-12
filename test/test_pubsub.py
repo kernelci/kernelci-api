@@ -65,3 +65,19 @@ def mock_pubsub_subscriptions(mocker):
     subscriptions_mock = dict({1: pubsub._redis.pubsub()})
     mocker.patch.object(pubsub, '_subscriptions', subscriptions_mock)
     return pubsub
+
+
+@pytest.mark.asyncio
+async def test_unsubscribe_sub_id_exists(mock_pubsub_subscriptions):
+    """
+    Test Case: Unsubscribe with a PubSub.unsubscribe() method when
+    subscription ID exists in subscriptions dictionary.
+
+    Expected Result:
+        PubSub._subscriptions dict should be empty.
+        Return value should be True.
+    """
+    # In case of subscription id exists
+    result = await mock_pubsub_subscriptions.unsubscribe(sub_id=1)
+    assert len(mock_pubsub_subscriptions._subscriptions) == 0
+    assert result is True
