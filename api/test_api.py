@@ -316,8 +316,8 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
             )
         print("response.json()", response.json())
         assert response.status_code == 200
-        assert ('_id' and 'kind' and 'name' and
-                'revision' and 'parent' and 'status') in response.json()
+        assert ('_id', 'kind', 'name', 'revision', 'parent',
+                'status') == tuple(response.json().keys())
 
 
 @pytest.fixture()
