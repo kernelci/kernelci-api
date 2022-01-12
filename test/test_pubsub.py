@@ -56,3 +56,12 @@ async def test_subscribe_multiple_channels(mock_pubsub):
     assert len(mock_pubsub._subscriptions) == 3
     assert (1, 2, 3) == tuple(mock_pubsub._subscriptions.keys())
 
+
+@pytest.fixture()
+def mock_pubsub_subscriptions(mocker):
+    pubsub = PubSub()
+    redis_mock = fakeredis.aioredis.FakeRedis()
+    mocker.patch.object(pubsub, '_redis', redis_mock)
+    subscriptions_mock = dict({1: pubsub._redis.pubsub()})
+    mocker.patch.object(pubsub, '_subscriptions', subscriptions_mock)
+    return pubsub
