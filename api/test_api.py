@@ -60,7 +60,7 @@ def test_token_endpoint(mock_db_find_one):
     )
     print("json", response.json())
     assert response.status_code == 200
-    assert 'access_token' and 'token_type' in response.json()
+    assert ('access_token', 'token_type') == tuple(response.json().keys())
 
 
 @pytest.fixture()
