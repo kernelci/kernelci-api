@@ -678,3 +678,29 @@ def test_listen_endpoint_not_found(mock_get_current_user,
             },
         )
         assert response.status_code == 404
+
+
+def test_listen_endpoint_without_token(mock_get_current_user,
+                                       mock_init_sub_id,
+                                       mock_listen):
+    """
+    Test Case : Test KernelCI API GET /listen endpoint for the
+    negative path
+    Expected Result :
+        HTTP Response Code 401 Unauthorized
+        The request requires user authentication by token in header
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_get_current_user.return_value = user
+    mock_listen.return_value = 'Listening for events on channel 1'
+    with TestClient(app) as client:
+        response = client.get(
+            "/listen/1",
+            headers={
+                "Accept": "application/json"
+            },
+        )
+        assert response.status_code == 401
