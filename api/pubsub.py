@@ -49,7 +49,7 @@ class PubSub:
             sub = self._subscriptions.get(sub_id)
             if sub:
                 self._subscriptions.pop(sub_id)
-                sub.unsubscribe()
+                await sub.unsubscribe()
                 return True
             return False
 
