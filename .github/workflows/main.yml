@@ -48,6 +48,7 @@ jobs:
           pylint api.auth
           pylint api.db
           pylint -d R0903 api.models
+          pylint api.pubsub
 
       - name: Export environment variables
         run: |
