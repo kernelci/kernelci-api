@@ -65,7 +65,7 @@ class Revision(BaseModel):
     url: str
     branch: str
     commit: str
-    describe: str
+    describe: Optional[str] = None
 
 
 class Node(ModelId):
