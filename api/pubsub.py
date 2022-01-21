@@ -11,6 +11,8 @@ from pydantic import BaseModel, BaseSettings
 
 class Settings(BaseSettings):
     cloud_events_source: str = "https://api.kernelci.org/"
+    redis_host: str = "redis"
+    redis_db_number: int = 1
 
 
 class Subscription(BaseModel):
@@ -27,11 +29,15 @@ class PubSub:
         await pubsub._init_sub_id()
         return pubsub
 
-    def __init__(self, host='redis', db=1):
+    def __init__(self, host=None, db=None):
+        self._settings = Settings()
+        if host is None:
+            host = self._settings.redis_host
+        if db is None:
+            db = self._settings.redis_db_number
         self._redis = aioredis.from_url(f'redis://{host}/{db}')
         self._subscriptions = dict()
         self._lock = asyncio.Lock()
-        self._settings = Settings()
 
     async def _init_sub_id(self):
         await self._redis.setnx(self.ID_KEY, 0)
