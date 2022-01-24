@@ -116,8 +116,8 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
             )
         print("response.json()", response.json())
         assert response.status_code == 200
-        assert ('_id', 'kind', 'name', 'revision', 'parent',
-                'status') == tuple(response.json().keys())
+        assert ('_id', 'kind', 'name', 'revision', 'parent', 'status',
+                'created', 'updated') == tuple(response.json().keys())
 
 
 def test_get_node_by_attributes_endpoint(mock_get_current_user,
@@ -254,8 +254,8 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
         response = client.get("/node/61bda8f2eb1a63d2b7152418")
         print("response.json()", response.json())
         assert response.status_code == 200
-        assert ('_id', 'kind', 'name', 'revision',
-                'parent', 'status') == tuple(response.json().keys())
+        assert ('_id', 'kind', 'name', 'revision', 'parent', 'status',
+                'created', 'updated') == tuple(response.json().keys())
 
 
 def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
