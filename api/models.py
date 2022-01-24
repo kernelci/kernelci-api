@@ -77,3 +77,8 @@ class Node(ModelId):
     status: Optional[bool] = None
     created: Optional[datetime] = Field(default_factory=datetime.utcnow)
     updated: Optional[datetime] = Field(default_factory=datetime.utcnow)
+
+    @classmethod
+    def set_created(cls, obj, value):
+        """Set the value of 'created' Node attribute"""
+        setattr(obj, 'created', value)
