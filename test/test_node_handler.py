@@ -390,3 +390,54 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
         print("response.json()", response.json())
         assert response.status_code == 200
         assert len(response.json()) == 0
+
+
+@pytest.fixture()
+def mock_db_create_value_error(mocker):
+    mocker.patch('api.db.Database.create',
+                 side_effect=ValueError(f'Object cannot be created with id: '
+                                        '61bda8f2eb1a63d2b7152418'))
+
+
+def test_create_node_with_id(mock_get_current_user, mock_init_sub_id,
+                             mock_db_create_value_error):
+    """
+    Test Case : Test KernelCI API /node endpoint
+    Expected Result :
+        HTTP Response Code 400 Bad Request
+        Response json with 'detail' key and exception error message as value
+    """
+    user = User(username='bob',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True)
+    mock_get_current_user.return_value = user
+
+    with TestClient(app) as client:
+        request_dict = {
+            "id": "61bda8f2eb1a63d2b7152418",
+            "name": "checkout",
+            "revision": {
+                "tree": "mainline",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                        "torvalds/linux.git",
+                "branch": "master",
+                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                "describe": "v5.16-rc4-31-g2a987e65025e"
+                }
+            }
+        response = client.post(
+            "/node",
+            headers={
+                "Accept": "application/json",
+                "Authorization": "Bearer "
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+                "eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S"
+                "Edkp5M1S1AgYvX8VdB20"
+            },
+            data=json.dumps(request_dict)
+            )
+        assert response.json() == {'detail': ''.join(
+                                    ['Object cannot be created with id: ',
+                                     '61bda8f2eb1a63d2b7152418'])}
+        assert response.status_code == 400
