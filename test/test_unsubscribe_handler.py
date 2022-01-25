@@ -46,7 +46,6 @@ def test_unsubscribe_endpoint(mock_get_current_user,
                                 'xCZGmM8jWXUXJZ4K',
                 active=True)
     mock_get_current_user.return_value = user
-    mock_unsubscribe.return_value = True
 
     with TestClient(app) as client:
         response = client.post(
@@ -66,7 +65,7 @@ def test_unsubscribe_endpoint_empty_response(mock_get_current_user,
     """
     Test Case : Test KernelCI API /unsubscribe endpoint negative path
     Expected Result :
-        HTTP Response Code 204 HTTP_204_NO_CONTENT
+        HTTP Response Code 404 Not Found
         JSON with 'detail' key
     """
     user = User(username='bob',
@@ -86,5 +85,5 @@ def test_unsubscribe_endpoint_empty_response(mock_get_current_user,
             },
         )
         print("response.json()", response.json())
-        assert response.status_code == 204
+        assert response.status_code == 404
         assert 'detail' in response.json()
