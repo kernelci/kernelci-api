@@ -74,26 +74,27 @@ class PubSub:
         """Unsubscribe from a Pub/Sub channel
 
         Unsubscribe from a channel using the provided subscription id as found
-        in a Subscription object.
+        in a Subscription object.  Raise a ValueError if the id is not a valid
+        one.
         """
         async with self._lock:
             sub = self._subscriptions.get(sub_id)
-            if sub:
-                self._subscriptions.pop(sub_id)
-                await sub.unsubscribe()
-                return True
-            return False
+            if sub is None:
+                raise ValueError(f"Invalid subscription id: {sub_id}")
+            self._subscriptions.pop(sub_id)
+            await sub.unsubscribe()
 
     async def listen(self, sub_id):
         """Listen for Pub/Sub messages
 
         Listen on a given subscription id asynchronously and return a message
         when received.  Messages about subscribing to the channel are silenced.
+        Raise a ValueError if the id is not a valid one.
         """
         async with self._lock:
             sub = self._subscriptions.get(sub_id)
-            if not sub:
-                return None
+            if sub is None:
+                raise ValueError(f"Invalid subscription id: {sub_id}")
 
         while True:
             msg = await sub.get_message(

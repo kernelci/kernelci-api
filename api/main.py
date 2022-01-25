@@ -129,23 +129,24 @@ async def subscribe(channel: str, user: User = Depends(get_user)):
 
 @app.post('/unsubscribe/{sub_id}')
 async def unsubscribe(sub_id: int, user: User = Depends(get_user)):
-    res = await pubsub.unsubscribe(sub_id)
-    if res is False:
+    try:
+        await pubsub.unsubscribe(sub_id)
+    except ValueError as error:
         raise HTTPException(
-            status_code=status.HTTP_204_NO_CONTENT,
-            detail=f"Already unsubscribed: {sub_id}"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error)
         )
 
 
 @app.get('/listen/{sub_id}')
 async def listen(sub_id: int, user: User = Depends(get_user)):
-    msg = await pubsub.listen(sub_id)
-    if msg is None:
+    try:
+        return await pubsub.listen(sub_id)
+    except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Not subscribed to channel with id: {sub_id}"
+            detail=str(error)
         )
-    return msg
 
 
 @app.post('/publish/{channel}')
