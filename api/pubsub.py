@@ -10,6 +10,7 @@ import asyncio
 import aioredis
 from cloudevents.http import CloudEvent, to_json
 from pydantic import BaseModel, BaseSettings
+from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -23,6 +24,7 @@ class Subscription(BaseModel):
     """Pub/Sub subscription object model"""
     id: int
     channel: str
+    filter: Optional[dict] = None
 
 
 class PubSub:
@@ -52,11 +54,12 @@ class PubSub:
         self._redis = aioredis.from_url(f'redis://{host}/{db_number}')
         self._subscriptions = {}
         self._lock = asyncio.Lock()
+        self._filters = {}
 
     async def _init_sub_id(self):
         await self._redis.setnx(self.ID_KEY, 0)
 
-    async def subscribe(self, channel):
+    async def subscribe(self, channel, filter=None):
         """Subscribe to a Pub/Sub channel
 
         Subscribe to a given channel and return a Subscription object
@@ -67,8 +70,9 @@ class PubSub:
         async with self._lock:
             sub = self._redis.pubsub()
             self._subscriptions[sub_id] = sub
+            self._filters[sub_id] = filter
             await sub.subscribe(channel)
-            return Subscription(id=sub_id, channel=channel)
+            return Subscription(id=sub_id, channel=channel, filter=filter)
 
     async def unsubscribe(self, sub_id):
         """Unsubscribe from a Pub/Sub channel
@@ -82,6 +86,7 @@ class PubSub:
             if sub is None:
                 raise ValueError(f"Invalid subscription id: {sub_id}")
             self._subscriptions.pop(sub_id)
+            self._filters.pop(sub_id)
             await sub.unsubscribe()
 
     async def listen(self, sub_id):
