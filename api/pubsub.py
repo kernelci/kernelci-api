@@ -6,11 +6,11 @@
 """Pub/Sub implementation"""
 
 import asyncio
+from typing import Optional
 
 import aioredis
-from cloudevents.http import CloudEvent, to_json
+from cloudevents.http import CloudEvent, to_json, from_json
 from pydantic import BaseModel, BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -89,6 +89,34 @@ class PubSub:
             self._filters.pop(sub_id)
             await sub.unsubscribe()
 
+    def pubsub_event_filter(self, sub_id, msg):
+        """Filter Pub/Sub events
+
+        Filter received Pub/Sub event using provided dictionary.
+        Return True if the event matches with the filter, otherwise False.
+        """
+        event_filter_status = True
+        filters = self._filters.get(sub_id)
+        if not filters:
+            return event_filter_status
+        msg_data = from_json(msg['data']).data
+        for key, value in filters.items():
+            if key not in msg_data.keys():
+                continue
+
+            if key == 'revision':
+                msg_revision_dict = get_revision_dict(msg_data)
+                for revision_key, revision_value in value.items():
+                    if revision_key not in msg_revision_dict:
+                        continue
+                    if revision_value != msg_revision_dict[revision_key]:
+                        event_filter_status = False
+                        break
+            elif value != msg_data[key]:
+                event_filter_status = False
+                break
+        return event_filter_status
+
     async def listen(self, sub_id):
         """Listen for Pub/Sub messages
 
@@ -106,6 +134,9 @@ class PubSub:
                 ignore_subscribe_messages=True, timeout=1.0
             )
             if msg is not None:
+                event_filter_status = self.pubsub_event_filter(sub_id, msg)
+                if event_filter_status is False:
+                    continue
                 return msg
 
     async def publish(self, channel, message):
@@ -131,3 +162,12 @@ class PubSub:
             }
         event = CloudEvent(attributes=attributes, data=data)
         await self.publish(channel, to_json(event))
+
+
+def get_revision_dict(msg_data):
+    """Get dictionary from revision information of node event"""
+    msg_revision_dict = {}
+    for item in msg_data['revision'].split(" "):
+        item = item.split("=")
+        msg_revision_dict[item[0]] = item[1]
+    return msg_revision_dict
