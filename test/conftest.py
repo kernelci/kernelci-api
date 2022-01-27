@@ -134,6 +134,8 @@ def mock_pubsub_subscriptions(mocker):
     mocker.patch.object(pubsub, '_redis', redis_mock)
     subscriptions_mock = dict({1: pubsub._redis.pubsub()})
     mocker.patch.object(pubsub, '_subscriptions', subscriptions_mock)
+    filters_mock = dict({1: None})
+    mocker.patch.object(pubsub, '_filters', filters_mock)
     return pubsub
 
 

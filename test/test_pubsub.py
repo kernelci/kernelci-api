@@ -58,11 +58,12 @@ async def test_unsubscribe_sub_id_exists(mock_pubsub_subscriptions):
     subscription ID exists in subscriptions dictionary.
 
     Expected Result:
-        PubSub._subscriptions dict should be empty.
+        PubSub._subscriptions and PubSub._filters dict should be empty.
     """
     # In case of subscription id exists
     await mock_pubsub_subscriptions.unsubscribe(sub_id=1)
     assert len(mock_pubsub_subscriptions._subscriptions) == 0
+    assert len(mock_pubsub_subscriptions._filters) == 0
 
 
 @pytest.mark.asyncio
@@ -72,11 +73,13 @@ async def test_unsubscribe_sub_id_not_exists(mock_pubsub_subscriptions):
     subscription ID does not exist in subscriptions dictionary.
 
     Expected Result:
-        PubSub._subscriptions dict should have one entry. This entry's
-        key should be equal 1.
+        PubSub._subscriptions and PubSub._filters dict should have one entry.
+        These entry's key should be equal 1.
     """
     # In case of subscription id does not exist
     with pytest.raises(ValueError):
         await mock_pubsub_subscriptions.unsubscribe(sub_id=2)
     assert len(mock_pubsub_subscriptions._subscriptions) == 1
     assert 1 in mock_pubsub_subscriptions._subscriptions
+    assert len(mock_pubsub_subscriptions._filters) == 1
+    assert 1 in mock_pubsub_subscriptions._filters
