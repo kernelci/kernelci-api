@@ -100,7 +100,11 @@ async def post_node(node: Node, token: str = Depends(get_user)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    await pubsub.publish_cloudevent('node', {'op': op, 'id': str(obj.id)})
+    await pubsub.publish_cloudevent('node', {
+                                    'op': op, 'id': str(obj.id),
+                                    'name': str(obj.name),
+                                    'revision': str(obj.revision)}
+                                    )
     return obj
 
 
@@ -115,7 +119,11 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    await pubsub.publish_cloudevent('node', {'op': op, 'id': str(obj.id)})
+    await pubsub.publish_cloudevent('node', {
+                                    'op': op, 'id': str(obj.id),
+                                    'name': str(obj.name),
+                                    'revision': str(obj.revision)}
+                                    )
     return obj
 
 
