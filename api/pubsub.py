@@ -24,7 +24,7 @@ class Subscription(BaseModel):
     """Pub/Sub subscription object model"""
     id: int
     channel: str
-    filter: Optional[dict] = None
+    filters: Optional[dict] = None
 
 
 class PubSub:
@@ -59,7 +59,7 @@ class PubSub:
     async def _init_sub_id(self):
         await self._redis.setnx(self.ID_KEY, 0)
 
-    async def subscribe(self, channel, filter=None):
+    async def subscribe(self, channel, filters=None):
         """Subscribe to a Pub/Sub channel
 
         Subscribe to a given channel and return a Subscription object
@@ -70,9 +70,9 @@ class PubSub:
         async with self._lock:
             sub = self._redis.pubsub()
             self._subscriptions[sub_id] = sub
-            self._filters[sub_id] = filter
+            self._filters[sub_id] = filters
             await sub.subscribe(channel)
-            return Subscription(id=sub_id, channel=channel, filter=filter)
+            return Subscription(id=sub_id, channel=channel, filters=filters)
 
     async def unsubscribe(self, sub_id):
         """Unsubscribe from a Pub/Sub channel

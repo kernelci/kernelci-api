@@ -9,7 +9,7 @@ from .auth import Authentication, Token
 from .db import Database
 from .models import Node, User
 from .pubsub import PubSub, Subscription
-from typing import List
+from typing import List, Optional
 from bson import ObjectId
 
 app = FastAPI()
@@ -123,8 +123,9 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
 # Pub/Sub
 
 @app.post('/subscribe/{channel}', response_model=Subscription)
-async def subscribe(channel: str, user: User = Depends(get_user)):
-    return await pubsub.subscribe(channel)
+async def subscribe(channel: str, filters: Optional[dict] = None,
+                    user: User = Depends(get_user)):
+    return await pubsub.subscribe(channel, filters)
 
 
 @app.post('/unsubscribe/{sub_id}')
