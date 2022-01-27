@@ -21,9 +21,9 @@ def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
     Test Case : Test KernelCI API /subscribe endpoint
     Expected Result :
         HTTP Response Code 200 OK
-        JSON with 'id' and 'channel' keys
+        JSON with 'id', 'channel', and 'filters' keys
     """
-    subscribe = Subscription(id=1, channel='abc')
+    subscribe = Subscription(id=1, channel='abc', filters=None)
     mock_subscribe.return_value = subscribe
 
     with TestClient(app) as client:
@@ -36,4 +36,4 @@ def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
         )
         print("response.json()", response.json())
         assert response.status_code == 200
-        assert ('id', 'channel') == tuple(response.json().keys())
+        assert ('id', 'channel', 'filters') == tuple(response.json().keys())
