@@ -17,15 +17,18 @@ async def test_subscribe_single_channel(mock_pubsub):
 
     Expected Result:
         Subscription-like object is returned from PubSub.subscribe() method
-        with channel set to 'CHANNEL' and id set to 1.
-        PubSub._subscriptions dict should have one entry. This entry's
-        key should be equal 1.
+        with channel set to 'CHANNEL', id set to 1, and filters set to None.
+        PubSub._subscriptions and PubSub._filters dict should have one entry.
+        This entry's key should be equal 1.
     """
     result = await mock_pubsub.subscribe('CHANNEL')
     assert result.channel == 'CHANNEL'
     assert result.id == 1
+    assert result.filters is None
     assert len(mock_pubsub._subscriptions) == 1
     assert 1 in mock_pubsub._subscriptions
+    assert len(mock_pubsub._filters) == 1
+    assert 1 in mock_pubsub._filters
 
 
 @pytest.mark.asyncio
@@ -39,16 +42,19 @@ async def test_subscribe_multiple_channels(mock_pubsub):
         PubSub.subscribe() method
         Subsequent calls should have channel names: 'CHANNEL1', 'CHANNEL2',
         'CHANNEL3' and should have ids 1, 2, 3 respectively.
-        PubSub._subscriptions dict should have 2 entries. This entries'
-        keys should be 1, 2, and 3.
+        PubSub._subscriptions and PubSub._filters dict should have 3 entries.
+        This entries' keys should be 1, 2, and 3.
     """
     channels = ((1, 'CHANNEL1'), (2, 'CHANNEL2'), (3, 'CHANNEL3'))
     for expected_id, expected_channel in channels:
         result = await mock_pubsub.subscribe(expected_channel)
         assert result.channel == expected_channel
         assert result.id == expected_id
+        assert result.filters is None
     assert len(mock_pubsub._subscriptions) == 3
+    assert len(mock_pubsub._filters) == 3
     assert (1, 2, 3) == tuple(mock_pubsub._subscriptions.keys())
+    assert (1, 2, 3) == tuple(mock_pubsub._filters.keys())
 
 
 @pytest.mark.asyncio
