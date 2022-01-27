@@ -2,6 +2,7 @@ import argparse
 import os
 import requests
 import urllib.parse
+import json
 
 from cloudevents.http import CloudEvent, to_structured, from_json
 
@@ -31,7 +32,10 @@ def listen(args):
     }
     path = '/'.join(['subscribe', args.channel])
     url = urllib.parse.urljoin(args.url, path)
-    res = requests.post(url, headers=headers)
+    res = requests.post(url, headers=headers,
+                        data=json.dumps({"name": "checkout",
+                                        "revision": {"tree": "'mainline'",
+                                                     "branch": "'master'"}}))
     res.raise_for_status()
 
     print(f"Listening for events on channel {args.channel}.")
