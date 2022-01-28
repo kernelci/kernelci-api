@@ -5,7 +5,7 @@
 
 """KernelCI API model definitions"""
 
-from typing import Optional
+from typing import Optional, Dict
 
 from bson import ObjectId
 from pydantic import BaseModel, Field
@@ -75,3 +75,4 @@ class Node(ModelId):
     revision: Revision
     parent: Optional[PyObjectId]
     status: Optional[bool] = None
+    artifacts: Optional[Dict]
