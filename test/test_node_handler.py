@@ -293,17 +293,6 @@ def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
     mock_db_find_by_id.return_value = None
 
     with TestClient(app) as client:
-        request_dict = {
-            "name": "checkout",
-            "revision": {
-                "tree": "mainline",
-                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
-                        "torvalds/linux.git",
-                "branch": "master",
-                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-                "describe": "v5.16-rc4-31-g2a987e65025e"
-                }
-            }
         response = client.get("/node/61bda8f2eb1a63d2b7152419")
         print("response.json()", response.json())
         assert response.status_code == 200
