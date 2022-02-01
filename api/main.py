@@ -108,7 +108,7 @@ async def post_node(node: Node, token: str = Depends(get_user)):
 async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
     try:
         node.id = ObjectId(node_id)
-        obj = await db.update(node)
+        obj = await db.update(Node, node)
         op = 'updated'
     except ValueError as e:
         raise HTTPException(

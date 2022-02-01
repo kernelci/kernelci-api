@@ -82,7 +82,7 @@ class Database:
         obj.id = res.inserted_id
         return obj
 
-    async def update(self, obj):
+    async def update(self, model, obj):
         """Update an existing document from a model object
 
         For a given object instance from .models, update the document in the
@@ -94,7 +94,7 @@ class Database:
             raise ValueError("Cannot update object with no id")
         col = self._get_collection(obj.__class__)
         db_obj = await col.find_one({'_id': ObjectId(obj.id)})
-        if db_obj:
+        if db_obj and model == Node:
             Node.set_created(obj, db_obj.get('created'))
         res = await col.replace_one(
             {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
