@@ -75,6 +75,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
             'parent',
             'revision',
             'status',
+            'created',
         }
 
 
@@ -203,6 +204,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
             'parent',
             'revision',
             'status',
+            'created',
         }
 
 
