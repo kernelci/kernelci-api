@@ -5,8 +5,8 @@
 
 """KernelCI API model definitions"""
 
+from datetime import datetime
 from typing import Optional, Dict
-
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
@@ -76,3 +76,4 @@ class Node(ModelId):
     parent: Optional[PyObjectId]
     status: Optional[bool] = None
     artifacts: Optional[Dict]
+    created: Optional[datetime] = Field(default_factory=datetime.utcnow)
