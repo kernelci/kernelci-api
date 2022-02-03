@@ -2,11 +2,16 @@
 #
 # Copyright (C) 2022 Collabora Limited
 # Author: Michal Galka <michal.galka@collabora.com>
+# Author: Alexandra Pereira <alexandra.pereira@collabora.com>
 
 # pylint: disable=protected-access
 
 """Unit test functions for KernelCI API Pub/Sub"""
 
+from unittest import result
+from api.pubsub import PubSub
+import fakeredis.aioredis
+import json
 import pytest
 
 
@@ -80,3 +85,37 @@ async def test_unsubscribe_sub_id_not_exists(mock_pubsub_subscriptions):
         await mock_pubsub_subscriptions.unsubscribe(sub_id=2)
     assert len(mock_pubsub_subscriptions._subscriptions) == 1
     assert 1 in mock_pubsub_subscriptions._subscriptions
+
+
+@pytest.fixture()
+def mock_pubsub_publish(mocker):
+    pubsub = PubSub()
+    redis_mock = fakeredis.aioredis.FakeRedis()
+    mocker.patch.object(pubsub, '_redis', redis_mock)
+    mocker.patch.object(pubsub._redis, 'execute_command')
+    return pubsub
+
+
+@pytest.mark.asyncio
+async def test_pubsub_publish_couldevent(mock_pubsub_publish):
+    """
+    Test Case: Validate and check the json built by the cloud event
+    published in the channel by the redis publisher.
+
+    Expected Results:
+        Validate that a json is sent to the channel and assert the json values from
+        data and attributes parameters in Pubsub.publish_cloudevent(). There's no
+        return value, but a json to be published in a channel.
+    """
+
+    data = 'validate json'
+    attributes = { "specversion": "1.0",  "id": "6878b661-96dc-4e93-8c92-26eb9ff8db64", "source": "https://api.kernelci.org/", "type": "api.kernelci.org", "time": "2022-01-31T21:29:29.675593+00:00"}
+
+    await mock_pubsub_publish.publish_cloudevent('CHANNEL1', data, attributes)
+
+    expected_json = str.encode('{"specversion": "1.0", "id": "6878b661-96dc-4e93-8c92-26eb9ff8db64", "source": "https://api.kernelci.org/", "type": "api.kernelci.org", "time": "2022-01-31T21:29:29.675593+00:00", "data": "validate json"}')
+
+    json_arg = mock_pubsub_publish._redis.execute_command.call_args.args[2]
+
+    json.loads(json_arg)
+    assert json_arg == expected_json
