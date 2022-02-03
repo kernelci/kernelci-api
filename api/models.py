@@ -87,3 +87,4 @@ class Node(ModelId):
     status: Optional[StatusValues] = StatusValues.PENDING
     artifacts: Optional[Dict]
     created: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    updated: Optional[datetime] = Field(default_factory=datetime.utcnow)
