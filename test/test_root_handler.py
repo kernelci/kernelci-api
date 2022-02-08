@@ -3,14 +3,7 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 
-import pytest
-from api.main import app
-from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def client():
-    return TestClient(app)
+"""Unit test function for KernelCI API root handler"""
 
 
 def test_root_endpoint(client):

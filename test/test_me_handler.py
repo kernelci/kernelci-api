@@ -3,19 +3,12 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 
-import pytest
+"""Unit test function for KernelCI API me handler"""
+
+from fastapi.testclient import TestClient
+
 from api.main import app
 from api.models import User
-from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
-
-
-@pytest.fixture()
-def mock_get_current_user(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.auth.Authentication.get_current_user',
-                 side_effect=async_mock)
-    return async_mock
 
 
 def test_me_endpoint(mock_get_current_user):

@@ -3,60 +3,16 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 
-import pytest
-from api.main import app
-from api.models import User, Node, Revision
-from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
+# pylint: disable=unused-argument
+
+"""Unit test functions for KernelCI API node handler"""
+
 import json
 
+from fastapi.testclient import TestClient
 
-@pytest.fixture()
-def mock_get_current_user(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.auth.Authentication.get_current_user',
-                 side_effect=async_mock)
-    return async_mock
-
-
-@pytest.fixture()
-def mock_init_sub_id(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub._init_sub_id',
-                 side_effect=async_mock)
-    return async_mock
-
-
-@pytest.fixture()
-def mock_db_create(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.db.Database.create',
-                 side_effect=async_mock)
-    return async_mock
-
-
-@pytest.fixture()
-def mock_publish_cloudevent(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub.publish_cloudevent',
-                 side_effect=async_mock)
-    return async_mock
-
-
-@pytest.fixture()
-def mock_db_find_by_attributes(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.db.Database.find_by_attributes',
-                 side_effect=async_mock)
-    return async_mock
-
-
-@pytest.fixture()
-def mock_db_find_by_id(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.db.Database.find_by_id',
-                 side_effect=async_mock)
-    return async_mock
+from api.main import app
+from api.models import User, Node, Revision
 
 
 def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
