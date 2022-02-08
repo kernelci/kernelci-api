@@ -3,19 +3,12 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 
-import pytest
+"""Unit test function for KernelCI API token handler"""
+
+from fastapi.testclient import TestClient
+
 from api.main import app
 from api.models import User
-from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
-
-
-@pytest.fixture()
-def mock_db_find_one(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.db.Database.find_one',
-                 side_effect=async_mock)
-    return async_mock
 
 
 def test_token_endpoint(mock_db_find_one):

@@ -3,17 +3,11 @@
 # Copyright (C) 2022 Collabora Limited
 # Author: Michal Galka <michal.galka@collabora.com>
 
-from api.pubsub import PubSub
-import fakeredis.aioredis
+# pylint: disable=protected-access
+
+"""Unit test functions for KernelCI API Pub/Sub"""
+
 import pytest
-
-
-@pytest.fixture()
-def mock_pubsub(mocker):
-    pubsub = PubSub()
-    redis_mock = fakeredis.aioredis.FakeRedis()
-    mocker.patch.object(pubsub, '_redis', redis_mock)
-    return pubsub
 
 
 @pytest.mark.asyncio
@@ -27,9 +21,9 @@ async def test_subscribe_single_channel(mock_pubsub):
         PubSub._subscriptions dict should have one entry. This entry's
         key should be equal 1.
     """
-    r = await mock_pubsub.subscribe('CHANNEL')
-    assert r.channel == 'CHANNEL'
-    assert r.id == 1
+    result = await mock_pubsub.subscribe('CHANNEL')
+    assert result.channel == 'CHANNEL'
+    assert result.id == 1
     assert len(mock_pubsub._subscriptions) == 1
     assert 1 in mock_pubsub._subscriptions
 
@@ -50,21 +44,11 @@ async def test_subscribe_multiple_channels(mock_pubsub):
     """
     channels = ((1, 'CHANNEL1'), (2, 'CHANNEL2'), (3, 'CHANNEL3'))
     for expected_id, expected_channel in channels:
-        r = await mock_pubsub.subscribe(expected_channel)
-        assert r.channel == expected_channel
-        assert r.id == expected_id
+        result = await mock_pubsub.subscribe(expected_channel)
+        assert result.channel == expected_channel
+        assert result.id == expected_id
     assert len(mock_pubsub._subscriptions) == 3
     assert (1, 2, 3) == tuple(mock_pubsub._subscriptions.keys())
-
-
-@pytest.fixture()
-def mock_pubsub_subscriptions(mocker):
-    pubsub = PubSub()
-    redis_mock = fakeredis.aioredis.FakeRedis()
-    mocker.patch.object(pubsub, '_redis', redis_mock)
-    subscriptions_mock = dict({1: pubsub._redis.pubsub()})
-    mocker.patch.object(pubsub, '_subscriptions', subscriptions_mock)
-    return pubsub
 
 
 @pytest.mark.asyncio

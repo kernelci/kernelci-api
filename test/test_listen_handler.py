@@ -6,35 +6,14 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 
-import pytest
+# pylint: disable=unused-argument
+
+"""Unit test functions for KernelCI API listen handler"""
+
+from fastapi.testclient import TestClient
+
 from api.main import app
 from api.models import User
-from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock
-
-
-@pytest.fixture()
-def mock_get_current_user(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.auth.Authentication.get_current_user',
-                 side_effect=async_mock)
-    return async_mock
-
-
-@pytest.fixture()
-def mock_init_sub_id(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub._init_sub_id',
-                 side_effect=async_mock)
-    return async_mock
-
-
-@pytest.fixture()
-def mock_listen(mocker):
-    async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub.listen',
-                 side_effect=async_mock)
-    return async_mock
 
 
 def test_listen_endpoint(mock_get_current_user,
