@@ -137,6 +137,19 @@ def mock_pubsub_subscriptions(mocker):
     return pubsub
 
 
+@pytest.fixture()
+def mock_pubsub_publish(mocker):
+    """
+    Mocks execution of publish_cloudevent
+    from PubSub class.
+    """
+    pubsub = PubSub()
+    redis_mock = fakeredis.aioredis.FakeRedis()
+    mocker.patch.object(pubsub, '_redis', redis_mock)
+    mocker.patch.object(pubsub._redis, 'execute_command')
+    return pubsub
+
+
 @pytest.fixture
 def mock_subscribe(mocker):
     """Mocks async call to subscribe method of PubSub"""
