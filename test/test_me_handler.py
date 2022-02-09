@@ -7,6 +7,8 @@
 
 """Unit test function for KernelCI API me handler"""
 
+from test.conftest import BEARER_TOKEN
+
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -25,10 +27,7 @@ def test_me_endpoint(mock_get_current_user):
         "/me",
         headers={
             "Accept": "application/json",
-            "Authorization": "Bearer "
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-            "eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S"
-            "Edkp5M1S1AgYvX8VdB20"
+            "Authorization": BEARER_TOKEN
         },
     )
     assert response.status_code == 200

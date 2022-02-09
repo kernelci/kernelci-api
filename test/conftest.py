@@ -16,6 +16,11 @@ from api.main import app
 from api.models import User
 from api.pubsub import PubSub
 
+BEARER_TOKEN = "Bearer \
+            eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9. \
+            eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S \
+            Edkp5M1S1AgYvX8VdB20"
+
 
 @pytest.fixture
 def client():

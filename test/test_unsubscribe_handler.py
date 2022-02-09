@@ -7,6 +7,8 @@
 
 """Unit test functions for KernelCI API unsubscribe handler"""
 
+from test.conftest import BEARER_TOKEN
+
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -23,10 +25,7 @@ def test_unsubscribe_endpoint(mock_get_current_user,
         response = client.post(
             "/unsubscribe/1",
             headers={
-                "Authorization": "Bearer "
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                "eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S"
-                "Edkp5M1S1AgYvX8VdB20"
+                "Authorization": BEARER_TOKEN
             },
         )
         assert response.status_code == 200
@@ -44,10 +43,7 @@ def test_unsubscribe_endpoint_empty_response(mock_get_current_user,
         response = client.post(
             "/unsubscribe/1",
             headers={
-                "Authorization": "Bearer "
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                "eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S"
-                "Edkp5M1S1AgYvX8VdB20"
+                "Authorization": BEARER_TOKEN
             },
         )
         print("response.json()", response.json())
