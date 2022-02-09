@@ -9,6 +9,8 @@
 
 import json
 
+from test.conftest import BEARER_TOKEN
+
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -57,10 +59,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
             "/node",
             headers={
                 "Accept": "application/json",
-                "Authorization": "Bearer "
-                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-                "eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S"
-                "Edkp5M1S1AgYvX8VdB20"
+                "Authorization": BEARER_TOKEN
             },
             data=json.dumps(request_dict)
             )
