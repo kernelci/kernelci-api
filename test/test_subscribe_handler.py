@@ -10,7 +10,6 @@
 from fastapi.testclient import TestClient
 
 from api.main import app
-from api.models import User
 from api.pubsub import Subscription
 
 
@@ -22,12 +21,6 @@ def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
         HTTP Response Code 200 OK
         JSON with 'id' and 'channel' keys
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     subscribe = Subscription(id=1, channel='abc')
     mock_subscribe.return_value = subscribe
 

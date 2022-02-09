@@ -10,7 +10,6 @@
 from fastapi.testclient import TestClient
 
 from api.main import app
-from api.models import User
 
 
 def test_unsubscribe_endpoint(mock_get_current_user,
@@ -20,12 +19,6 @@ def test_unsubscribe_endpoint(mock_get_current_user,
     Expected Result :
         HTTP Response Code 200 OK
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     with TestClient(app) as client:
         response = client.post(
             "/unsubscribe/1",
@@ -47,12 +40,6 @@ def test_unsubscribe_endpoint_empty_response(mock_get_current_user,
         HTTP Response Code 404 Not Found
         JSON with 'detail' key
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     with TestClient(app) as client:
         response = client.post(
             "/unsubscribe/1",

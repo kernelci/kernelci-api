@@ -12,7 +12,7 @@ import json
 from fastapi.testclient import TestClient
 
 from api.main import app
-from api.models import User, Node, Revision
+from api.models import Node, Revision
 
 
 def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
@@ -23,12 +23,6 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
         HTTP Response Code 200 OK
         JSON with created Node object attributes
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     revision_obj = Revision(
                 tree="mainline",
                 url="https://git.kernel.org/pub/scm/linux/kernel/git/"
@@ -94,12 +88,6 @@ def test_get_node_by_attributes_endpoint(mock_get_current_user,
         HTTP Response Code 200 OK
         List with matching Node objects
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     revision_obj_1 = Revision(
                 tree="mainline",
                 url="https://git.kernel.org/pub/scm/linux/kernel/git/"
@@ -159,12 +147,6 @@ def test_get_node_by_attributes_endpoint_node_not_found(
         HTTP Response Code 200 OK
         Empty list
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     mock_db_find_by_attributes.return_value = []
 
     params = {
@@ -190,12 +172,6 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
         HTTP Response Code 200 OK
         JSON with Node object attributes
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     revision_obj = Revision(
                 tree="mainline",
                 url="https://git.kernel.org/pub/scm/linux/kernel/git/"
@@ -240,12 +216,6 @@ def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
         HTTP Response Code 200 OK
         Response JSON None
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     mock_db_find_by_id.return_value = None
 
     with TestClient(app) as client:
@@ -264,12 +234,6 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
         HTTP Response Code 200 OK
         List of all the node objects.
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     revision_obj_1 = Revision(
                 tree="mainline",
                 url="https://git.kernel.org/pub/scm/linux/kernel/git/"
@@ -338,12 +302,6 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
         HTTP Response Code 200 OK
         Empty list as no Node object is added.
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     mock_db_find_by_attributes.return_value = []
 
     with TestClient(app) as client:

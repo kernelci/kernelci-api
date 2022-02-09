@@ -13,7 +13,6 @@
 from fastapi.testclient import TestClient
 
 from api.main import app
-from api.models import User
 
 
 def test_listen_endpoint(mock_get_current_user,
@@ -26,11 +25,6 @@ def test_listen_endpoint(mock_get_current_user,
         HTTP Response Code 200 OK
         Listen for events on a channel.
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
     mock_listen.return_value = 'Listening for events on channel 1'
 
     with TestClient(app) as client:
@@ -56,12 +50,6 @@ def test_listen_endpoint_not_found(mock_get_current_user,
         JSON with 'detail' key
         No existing pub/sub subscription with provided id
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     with TestClient(app) as client:
         response = client.get(
             "/listen/1",
@@ -85,12 +73,6 @@ def test_listen_endpoint_without_token(mock_get_current_user,
         HTTP Response Code 401 Unauthorized
         The request requires user authentication by token in header
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
-    mock_get_current_user.return_value = user
-
     with TestClient(app) as client:
         response = client.get(
             "/listen/1",
