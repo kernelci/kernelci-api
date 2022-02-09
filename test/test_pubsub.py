@@ -8,9 +8,6 @@
 
 """Unit test functions for KernelCI API Pub/Sub"""
 
-from unittest import result
-from api.pubsub import PubSub
-import fakeredis.aioredis
 import json
 import pytest
 
@@ -87,15 +84,6 @@ async def test_unsubscribe_sub_id_not_exists(mock_pubsub_subscriptions):
     assert 1 in mock_pubsub_subscriptions._subscriptions
 
 
-@pytest.fixture()
-def mock_pubsub_publish(mocker):
-    pubsub = PubSub()
-    redis_mock = fakeredis.aioredis.FakeRedis()
-    mocker.patch.object(pubsub, '_redis', redis_mock)
-    mocker.patch.object(pubsub._redis, 'execute_command')
-    return pubsub
-
-
 @pytest.mark.asyncio
 async def test_pubsub_publish_couldevent(mock_pubsub_publish):
     """
@@ -109,11 +97,16 @@ async def test_pubsub_publish_couldevent(mock_pubsub_publish):
     """
 
     data = 'validate json'
-    attributes = { "specversion": "1.0",  "id": "6878b661-96dc-4e93-8c92-26eb9ff8db64", "source": "https://api.kernelci.org/", "type": "api.kernelci.org", "time": "2022-01-31T21:29:29.675593+00:00"}
+    attributes = { "specversion": "1.0",  "id": "6878b661-96dc-4e93-8c92-26eb9ff8db64",
+    "source": "https://api.kernelci.org/", "type": "api.kernelci.org",
+    "time": "2022-01-31T21:29:29.675593+00:00"}
 
     await mock_pubsub_publish.publish_cloudevent('CHANNEL1', data, attributes)
 
-    expected_json = str.encode('{"specversion": "1.0", "id": "6878b661-96dc-4e93-8c92-26eb9ff8db64", "source": "https://api.kernelci.org/", "type": "api.kernelci.org", "time": "2022-01-31T21:29:29.675593+00:00", "data": "validate json"}')
+    expected_json = str.encode('{"specversion": "1.0", '\
+    '"id": "6878b661-96dc-4e93-8c92-26eb9ff8db64", "source": "https://api.kernelci.org/", '\
+    '"type": "api.kernelci.org", "time": "2022-01-31T21:29:29.675593+00:00", '\
+    '"data": "validate json"}')
 
     json_arg = mock_pubsub_publish._redis.execute_command.call_args.args[2]
 
