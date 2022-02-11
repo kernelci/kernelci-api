@@ -299,3 +299,38 @@ Now, the user will able to SSH to container using private key.
 ```
 $ ssh -i ~/.ssh/id_rsa_kernelci-api -p 8022 kernelci@localhost
 ```
+
+### SSH login on WSL using authorization keys
+
+In case of running setup on WSL (Windows Subsystem for Linux),
+we need to have certain file permissions to be able to login to kernelci-ssh container using SSH authorization keys.
+
+Use below commands to check permissions for `user-data` directory and `authorized_keys` file in `kernelci-api` directory.
+```
+$ ls -lrt kernelci-api/docker/ssh/
+total 5
+-rwxrwxrwx 1 user user  652 Dec 29 11:31 Dockerfile
+-rwxrwxrwx 1 user user 3289 Feb  9 16:25 sshd_config
+drwxrwxrwx 1 user user  512 Feb 11 14:32 user-data
+```
+
+```
+$ ls -lrt kernelci-api/docker/ssh/user-data/
+total 1
+-rwxrwxrwx 1 user user   0 Feb 10 15:59 authorized_keys.sample
+-rwxrwxrwx 1 user user 574 Feb 11 14:35 authorized_keys
+```
+
+We need `user-data` directory permission to be 700(drwxr-xr-x) and `authorized_keys` file permission to be 644(-rw-r--r--). The reason being is, SSH key authorization will not work if the public key file has all the permissions enabled i.e. set to 777(rwxrwxrwx).
+
+If we don't have these permission already set then we need to change them using below commands.
+
+```
+$ chmod 700 kernelci-api/docker/ssh/user-data
+$ chmod 644 kernelci-api/docker/ssh/user-data/authorized_keys
+```
+
+If running `chmod` command doesn't affect the permissions, we need to add below line to /etc/wsl.conf file and restart the `wsl` service to change them successfully:
+```
+options = "metadata"
+```
