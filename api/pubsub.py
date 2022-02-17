@@ -66,8 +66,13 @@ class PubSub:
         sub_id = await self._redis.incr(self.ID_KEY)
         async with self._lock:
             sub = self._redis.pubsub()
-            self._subscriptions[sub_id] = sub
-            await sub.subscribe(channel)
+            sub_channel = f'{channel}:{sub_id}'
+            self._subscriptions[sub_id] = {
+                'sub': sub,
+                'channel': channel,
+                'sub_channel': sub_channel,
+            }
+            await sub.subscribe(sub_channel)
             return Subscription(id=sub_id, channel=channel)
 
     async def unsubscribe(self, sub_id):
@@ -78,9 +83,10 @@ class PubSub:
         one.
         """
         async with self._lock:
-            sub = self._subscriptions.get(sub_id)
-            if sub is None:
+            sub_data = self._subscriptions.get(sub_id)
+            if sub_data is None:
                 raise ValueError(f"Invalid subscription id: {sub_id}")
+            sub = sub_data['sub']
             self._subscriptions.pop(sub_id)
             await sub.unsubscribe()
 
@@ -92,9 +98,10 @@ class PubSub:
         Raise a ValueError if the id is not a valid one.
         """
         async with self._lock:
-            sub = self._subscriptions.get(sub_id)
-            if sub is None:
+            sub_data = self._subscriptions.get(sub_id)
+            if sub_data is None:
                 raise ValueError(f"Invalid subscription id: {sub_id}")
+            sub = sub_data['sub']
 
         while True:
             msg = await sub.get_message(
@@ -108,7 +115,9 @@ class PubSub:
 
         Publish an arbitrary message asynchronously on a Pub/Sub channel.
         """
-        await self._redis.publish(channel, message)
+        for sub_data in self._subscriptions.values():
+            if channel == sub_data['channel']:
+                await self._redis.publish(sub_data['sub_channel'], message)
 
     async def publish_cloudevent(self, channel, data, attributes=None):
         """Publish a CloudEvent on a Pub/Sub channel
