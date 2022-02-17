@@ -3,3 +3,5 @@ __pycache__
 .env
 docker/db/data
 docker/redis/data
+docker/ssh/user-data
+docker/storage/data
