@@ -100,4 +100,4 @@ class Database:
         )
         if res.matched_count == 0:
             raise ValueError(f"No object found with id: {obj.id}")
-        return obj
+        return obj.__class__(**await col.find_one({'_id': ObjectId(obj.id)}))
