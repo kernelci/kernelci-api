@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2021 Collabora Limited
+# Copyright (C) 2021, 2022 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 """KernelCI API model definitions"""
 
@@ -71,6 +72,12 @@ class Password(BaseModel):
 # Database models
 #
 
+class DatabaseModel(ModelId):
+    """Database model"""
+    def update(self):
+        """Method to update model"""
+
+
 class User(ModelId):
     """API user model"""
     username: str
@@ -87,7 +94,7 @@ class Revision(BaseModel):
     describe: Optional[str] = None
 
 
-class Node(ModelId):
+class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
     kind: str = 'node'
     name: str
@@ -97,3 +104,6 @@ class Node(ModelId):
     artifacts: Optional[Dict]
     created: Optional[datetime] = Field(default_factory=datetime.utcnow)
     updated: Optional[datetime] = Field(default_factory=datetime.utcnow)
+
+    def update(self):
+        self.updated = datetime.utcnow()
