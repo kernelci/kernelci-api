@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2021 Collabora Limited
+# Copyright (C) 2021, 2022 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 """Database abstraction"""
 
@@ -93,6 +94,7 @@ class Database:
         if obj.id is None:
             raise ValueError("Cannot update object with no id")
         col = self._get_collection(obj.__class__)
+        obj.update()
         res = await col.replace_one(
             {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
         )
