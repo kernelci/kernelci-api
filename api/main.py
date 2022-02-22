@@ -10,7 +10,7 @@ from .db import Database
 from .models import Node, User
 from .pubsub import PubSub, Subscription
 from typing import List
-from bson import ObjectId
+from bson import ObjectId, errors
 
 app = FastAPI()
 db = Database()
@@ -88,6 +88,25 @@ async def get_node(node_id: str):
 @app.get('/nodes', response_model=List[Node])
 async def get_nodes(request: Request):
     return await db.find_by_attributes(Node, dict(request.query_params))
+
+
+@app.get('/get_root_node/{node_id}', response_model=Node)
+async def get_root_node(node_id: str):
+    while node_id:
+        try:
+            node = await db.find_by_id(Node, node_id)
+        except errors.InvalidId as error:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(error)
+            )
+        if node is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Node not found with id: {}".format(node_id)
+            )
+        node_id = node.parent
+    return node
 
 
 @app.post('/node', response_model=Node)
