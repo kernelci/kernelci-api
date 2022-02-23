@@ -21,19 +21,19 @@ services:
       - '.env'
 
   db:
-    container_name: 'kernelci-db'
+    container_name: 'kernelci-api-db'
     image: 'mongo:5.0'
     volumes:
       - 'mongodata:/data/db'
 
   redis:
-    container_name: 'kernelci-redis'
+    container_name: 'kernelci-api-redis'
     image: 'redis:6.2'
     volumes:
       - './docker/redis/data:/data'
 
   storage:
-    container_name: 'kernelci-storage'
+    container_name: 'kernelci-api-storage'
     image: 'nginx:1.21.3'
     volumes:
       - './docker/storage/data:/usr/share/nginx/html'
@@ -41,7 +41,7 @@ services:
       - ${STORAGE_HOST_PORT:-8002}:80
 
   ssh:
-    container_name: 'kernelci-ssh'
+    container_name: 'kernelci-api-ssh'
     build:
       context: 'docker/ssh'
     volumes:
