@@ -7,6 +7,7 @@
 
 from datetime import datetime
 from typing import Optional, Dict
+import enum
 from bson import ObjectId
 from pydantic import BaseModel, Field
 
@@ -30,6 +31,14 @@ class PyObjectId(ObjectId):
         return ObjectId(value)
 
 
+class StatusValues(enum.Enum):
+    """Enumeration to declare values to be used for Node.status"""
+
+    PENDING = "pending"
+    PASS = "pass"
+    FAIL = "fail"
+
+
 class ModelId(BaseModel):
     """Pydantic model including a .id attribute for the Mongo DB _id
 
@@ -43,6 +52,7 @@ class ModelId(BaseModel):
     class Config:
         """Configuration attributes for ModelId"""
         arbitrary_types_allowed = True
+        use_enum_values = True
         json_encoders = {
             ObjectId: str,
         }
@@ -74,6 +84,6 @@ class Node(ModelId):
     name: str
     revision: Revision
     parent: Optional[PyObjectId]
-    status: Optional[bool] = None
+    status: Optional[StatusValues] = StatusValues.PENDING
     artifacts: Optional[Dict]
     created: Optional[datetime] = Field(default_factory=datetime.utcnow)
