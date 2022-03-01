@@ -357,3 +357,21 @@ def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
             'revision',
             'status',
         }
+
+
+def test_get_root_node_endpoint_node_not_found(mock_db_find_by_id,
+                                               mock_init_sub_id):
+    """
+    Test Case : Test KernelCI API GET /get_root_node/{node_id} endpoint
+    when node matching with the provided id does not exist.
+    Expected Result :
+        HTTP Response Code 400 Bad Request
+        JSON with 'detail' key
+    """
+    mock_db_find_by_id.return_value = None
+
+    with TestClient(app) as client:
+        response = client.get("/get_root_node/61bda8f2eb1a63d2b7152419")
+        print("response.json()", response.json())
+        assert response.status_code == 400
+        assert 'detail' in response.json()
