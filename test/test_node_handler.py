@@ -10,6 +10,7 @@
 import json
 
 from test.conftest import BEARER_TOKEN
+from bson import errors
 
 from fastapi.testclient import TestClient
 
@@ -372,6 +373,24 @@ def test_get_root_node_endpoint_node_not_found(mock_db_find_by_id,
 
     with TestClient(app) as client:
         response = client.get("/get_root_node/61bda8f2eb1a63d2b7152419")
+        print("response.json()", response.json())
+        assert response.status_code == 400
+        assert 'detail' in response.json()
+
+
+def test_get_root_node_endpoint_invalid_node_id(mock_db_find_by_id,
+                                                mock_init_sub_id):
+    """
+    Test Case : Test KernelCI API GET /get_root_node/{node_id} endpoint
+    for the case when provided node id is invalid.
+    Expected Result :
+        HTTP Response Code 400 Bad Request
+        JSON with 'detail' key
+    """
+    mock_db_find_by_id.side_effect = errors.InvalidId
+
+    with TestClient(app) as client:
+        response = client.get("/get_root_node/61bda8f2eb1a63d2b71524")
         print("response.json()", response.json())
         assert response.status_code == 400
         assert 'detail' in response.json()
