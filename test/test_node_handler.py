@@ -40,7 +40,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
             name="checkout",
             revision=revision_obj,
             parent=None,
-            status=None
+            status="pending"
         )
     mock_db_create.return_value = node_obj
 
@@ -102,7 +102,7 @@ def test_get_node_by_attributes_endpoint(mock_get_current_user,
             name="checkout",
             revision=revision_obj_1,
             parent=None,
-            status=None
+            status="pending"
         )
     revision_obj_2 = Revision(
                 tree="mainline",
@@ -118,7 +118,7 @@ def test_get_node_by_attributes_endpoint(mock_get_current_user,
             name="checkout",
             revision=revision_obj_2,
             parent=None,
-            status=None
+            status="pending"
         )
     mock_db_find_by_attributes.return_value = [node_obj_1, node_obj_2]
 
@@ -186,7 +186,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
             name="checkout",
             revision=revision_obj,
             parent=None,
-            status=None
+            status="pending"
         )
     mock_db_find_by_id.return_value = node_obj
 
@@ -248,7 +248,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
             name="checkout",
             revision=revision_obj_1,
             parent=None,
-            status=None
+            status="pending"
         )
     revision_obj_2 = Revision(
                 tree="mainline",
@@ -264,7 +264,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
             name="test_node",
             revision=revision_obj_2,
             parent=None,
-            status=None
+            status="pending"
         )
     revision_obj_3 = Revision(
                 tree="baseline",
@@ -280,7 +280,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
             name="test",
             revision=revision_obj_3,
             parent=None,
-            status=None
+            status="pending"
         )
     mock_db_find_by_attributes.return_value = [node_obj_1, node_obj_2,
                                                node_obj_3]
