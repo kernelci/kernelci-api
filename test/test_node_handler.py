@@ -308,3 +308,52 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
         print("response.json()", response.json())
         assert response.status_code == 200
         assert len(response.json()) == 0
+
+
+def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
+    """
+    Test Case : Test KernelCI API GET /get_root_node/{node_id} endpoint
+    Expected Result :
+        HTTP Response Code 200 OK
+        JSON with root node object attributes
+    """
+    revision_obj = Revision(
+                tree="mainline",
+                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
+                    "torvalds/linux.git",
+                branch="master",
+                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                describe="v5.16-rc4-31-g2a987e65025e"
+    )
+    node_obj = Node(
+            _id="61bda8f2eb1a63d2b7152418",
+            kind="node",
+            name="checkout",
+            revision=revision_obj,
+            parent="61bda8f2eb1a63d2b7152410",
+            status=None
+        )
+    root_node_obj = Node(
+            _id="61bda8f2eb1a63d2b7152410",
+            kind="node",
+            name="root",
+            revision=revision_obj,
+            parent=None,
+            status=None
+        )
+    mock_db_find_by_id.side_effect = [node_obj, root_node_obj]
+
+    with TestClient(app) as client:
+        response = client.get("/get_root_node/61bda8f2eb1a63d2b7152418")
+        print("response.json()", response.json())
+        assert response.status_code == 200
+        assert response.json().keys() == {
+            '_id',
+            'artifacts',
+            'created',
+            'kind',
+            'name',
+            'parent',
+            'revision',
+            'status',
+        }
