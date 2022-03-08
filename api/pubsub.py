@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     cloud_events_source: str = "https://api.kernelci.org/"
     redis_host: str = "redis"
     redis_db_number: int = 1
-    keep_alive_period: int = 45
+    keep_alive_period: int = 0
 
 
 class Subscription(BaseModel):
@@ -60,6 +60,8 @@ class PubSub:
         await self._redis.setnx(self.ID_KEY, 0)
 
     def _start_keep_alive_timer(self):
+        if not self._settings.keep_alive_period:
+            return
         if not self._keep_alive_timer or self._keep_alive_timer.done():
             loop = asyncio.get_running_loop()
             self._keep_alive_timer = asyncio.run_coroutine_threadsafe(
