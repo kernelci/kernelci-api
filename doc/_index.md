@@ -1,5 +1,5 @@
 ---
-title: "API"
+title: "API & Pipeline"
 date: 2022-03-04
 draft: true
 description: "KernelCI API and Modular Pipeline"
