@@ -123,3 +123,127 @@ $ curl -X 'GET' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4'
 {"_id":"615f30020eb7c3c6616e5ac3","username":"bob","hashed_password":"$2b$12$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.","active":true}
 ```
+
+## Setting up a Pipeline instance
+
+The pipeline can perform a minimal set of tests using solely the API and its
+associated storage.  More advanced use-cases would involve other runtime
+environments such as Kubernetes LAVA, KCIDB credentials to send data etc.  On
+this page, we'll focus on the simple case with just a `docker-compose` API
+instance as described in the previous section and one instance for the
+pipeline.
+
+### API token
+
+The previous section about setting up the API explains how to generate a token.
+It can be made available to the pipeline clients by storing it in the `.env`
+file which provides environment variables for the Docker containers:
+
+```
+echo "API_TOKEN=<your token>" >> .env
+```
+
+### docker-compose
+
+Then the pipeline can simply be started with docker-compose:
+
+```
+docker-compose up --build
+```
+
+It should show some logs like this:
+```
+$ docker-compose up
+Recreating kernelci-pipeline-tarball     ... done
+Recreating kernelci-pipeline-trigger     ... done
+Recreating kernelci-pipeline-runner      ... done
+Recreating kernelci-pipeline-notifier    ... done
+Recreating kernelci-pipeline-test_report ... done
+Recreating kernelci-pipeline-kcidb       ... done
+Attaching to kernelci-pipeline-tarball, kernelci-pipeline-test_report, kernelci-pipeline-kcidb, kernelci-pipeline-runner, kernelci-pipeline-notifier, kernelci-pipeline-trigger
+kernelci-pipeline-tarball | Listening for new checkout events
+kernelci-pipeline-tarball | Press Ctrl-C to stop.
+kernelci-pipeline-test_report | Listening for test completion events
+kernelci-pipeline-test_report | Press Ctrl-C to stop.
+kernelci-pipeline-notifier | Listening for events...
+kernelci-pipeline-notifier | Press Ctrl-C to stop.
+kernelci-pipeline-runner | Listening for completed checkout events
+kernelci-pipeline-runner | Press Ctrl-C to stop.
+kernelci-pipeline-trigger | Sending revision node to API: 551acdc3c3d2b6bc97f11e31dcf960bc36343bfc
+kernelci-pipeline-trigger | Node id: 6233a47a4d5e52296f57e3b0
+kernelci-pipeline-notifier | Time                        Commit        Status    Name
+kernelci-pipeline-notifier | 2022-03-17 21:13:30.673172  551acdc3c3d2  Pending   checkout
+kernelci-pipeline-tarball | Updating repo for mainline
+```
+
+### Expected results
+
+The `tarball` step can take a while, especially the first time as it sets up a
+full Linux kernel repository and checks out the source code.  If things work
+correctly, there should be a test report printed in the logs eventually:
+
+```
+kernelci-pipeline-test_report | mainline/master v5.17-rc8-45-g551acdc3c3d2: 1 runs, 0 failures
+kernelci-pipeline-test_report |
+kernelci-pipeline-test_report | test            | result
+kernelci-pipeline-test_report | ----------------+-------
+kernelci-pipeline-test_report | check-describe  | pass
+kernelci-pipeline-test_report |
+kernelci-pipeline-test_report |   Tree:     mainline
+kernelci-pipeline-test_report |   Branch:   master
+kernelci-pipeline-test_report |   Describe: v5.17-rc8-45-g551acdc3c3d2
+kernelci-pipeline-test_report |   URL:      https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+kernelci-pipeline-test_report |   SHA1:     551acdc3c3d2b6bc97f11e31dcf960bc36343bfc
+```
+
+You may also check the logs from the `notifier` which prints all the events
+sent by the API (run this in a separate shell if `docker-compose` is running in
+the foreground):
+
+```
+$ docker-compose logs notifier
+Attaching to kernelci-pipeline-notifier
+kernelci-pipeline-notifier | Listening for events...
+kernelci-pipeline-notifier | Press Ctrl-C to stop.
+kernelci-pipeline-notifier | Time                        Commit        Status    Name
+kernelci-pipeline-notifier | 2022-03-17 21:13:30.673172  551acdc3c3d2  Pending   checkout
+kernelci-pipeline-notifier | 2022-03-17 21:14:30.837013  551acdc3c3d2  Pass      checkout
+kernelci-pipeline-notifier | 2022-03-17 21:14:30.912592  551acdc3c3d2  Pending   check-describe
+kernelci-pipeline-notifier | 2022-03-17 21:14:54.952120  551acdc3c3d2  Pass      check-describe
+```
+
+Meanwhile, the API logs should also show all the API calls (here's just the
+first few lines):
+
+```
+kernelci-api | INFO:     172.24.0.1:38268 - "POST /subscribe/node HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38290 - "POST /subscribe/node HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38300 - "POST /subscribe/node HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38310 - "POST /subscribe/node HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38322 - "GET /nodes?revision.commit=551acdc3c3d2b6bc97f11e31dcf960bc36343bfc HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38326 - "POST /node HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38316 - "GET /listen/920 HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38306 - "GET /listen/919 HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38296 - "GET /listen/918 HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38278 - "GET /listen/917 HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38334 - "GET /node/6233a47a4d5e52296f57e3b0 HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38340 - "GET /node/6233a47a4d5e52296f57e3b0 HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.24.0.1:38336 - "GET /node/6233a47a4d5e52296f57e3b0 HTTP/1.1" 200 OK
+```
+
+## What next?
+
+The `check-describe` test is a very basic hack to quickly exercise the
+pipeline.  It will compare the string produced by `git describe` and the kernel
+revision information from the top of the `Makefile` in the source tree.  This
+is run locally as a Python script, directly in the Docker container where
+`runner.py` is running.  It's not practical to run all tests like this, they
+would typically need to be scheduled in a different runtime environment such as
+Kubernetes or LAVA.  Having the ability to run some tests locally mostly helps
+with developing things quickly and in a self-contained way.
+
+There are a number of parameters used in `docker-compose.yaml` files which can
+be adjusted for various reasons, typically when deploying a public instance.
+Also, some extra services can be used such as Kubernetes, LAVA, KCIDB, Atlas,
+Cloud storage etc.  All this will need to be detailed in full in the
+documentation as things progress.
