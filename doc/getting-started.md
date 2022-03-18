@@ -1,10 +1,12 @@
 ---
 title: "Getting Started"
-date: 2022-03-10
-draft: true
+date: 2022-03-18
 description: "Setting up a local instance"
 weight: 1
 ---
+
+This guide should provide all the basic information to set up a local
+development system with an API instance and a minimal pipeline.
 
 A [docker-compose](https://docs.docker.com/compose/) environment is provided
 for both the new API and the pipeline.  On Debian systems, the main
@@ -19,19 +21,24 @@ clients are then handled using Docker images.
 
 ## Setting up an API instance
 
-The first step is to bring up the `docker-compose` environment file.  It
+This section covers how to set up a local API instance using the default
+self-contained configuration.  It doesn't rely on any external services.
+
+### Create the environment file
+
+The first step is to populate the `docker-compose` environment file.  It
 contains some settings specific to the local instance.
 
-### Authenticaion secret key
-
-The API authentication requires a secret key used with encryption algorithms.
-To generate one for your local instance:
+The API authentication mechanism requires a secret key used internally with
+encryption algorithms.  To generate one for your local instance:
 
 ```
 $ echo SECRET_KEY=$(openssl rand -hex 32) >> .env
 ```
 
-### Start `docker-compose`
+This `SECRET_KEY` environment variable is currently the only required one.
+
+### Start docker-compose
 
 To build the Docker images and start `docker-compose`:
 
@@ -133,7 +140,7 @@ this page, we'll focus on the simple case with just a `docker-compose` API
 instance as described in the previous section and one instance for the
 pipeline.
 
-### API token
+### Configure the API token
 
 The previous section about setting up the API explains how to generate a token.
 It can be made available to the pipeline clients by storing it in the `.env`
@@ -143,7 +150,7 @@ file which provides environment variables for the Docker containers:
 echo "API_TOKEN=<your token>" >> .env
 ```
 
-### docker-compose
+### Start docker-compose
 
 Then the pipeline can simply be started with docker-compose:
 
@@ -176,7 +183,7 @@ kernelci-pipeline-notifier | 2022-03-17 21:13:30.673172  551acdc3c3d2  Pending  
 kernelci-pipeline-tarball | Updating repo for mainline
 ```
 
-### Expected results
+### Check the results
 
 The `tarball` step can take a while, especially the first time as it sets up a
 full Linux kernel repository and checks out the source code.  If things work
