@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .auth import Authentication, Token
 from .db import Database
-from .models import Node, User
+from .models import Node, User, Password
 from .pubsub import PubSub, Subscription
 from typing import List
 from bson import ObjectId, errors
@@ -72,9 +72,9 @@ async def read_users_me(current_user: User = Depends(get_user)):
     return current_user
 
 
-@app.get('/hash/{password}')
-def get_password_hash(password):
-    return auth.get_password_hash(password)
+@app.post('/hash')
+def get_password_hash(password: Password):
+    return auth.get_password_hash(password.password)
 
 
 # -----------------------------------------------------------------------------
