@@ -58,6 +58,15 @@ class ModelId(BaseModel):
         }
 
 
+class Password(BaseModel):
+    """Basic model to be able to send plaintext passwords
+
+    This model is required to be able to send a plaintext password in a POST
+    method in order to retrieve a hash.
+    """
+    password: str
+
+
 # -----------------------------------------------------------------------------
 # Database models
 #
