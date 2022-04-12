@@ -71,16 +71,24 @@ kernelci-api | INFO:     172.20.0.1:49228 - "GET / HTTP/1.1" 200 OK
 
 Some parts of the API don't require any authentication, like in the example
 above with the root `/` endpoint and most `GET` requests to retrieve data.
-However, sending data with `POST` and `PUT` requests will require a user token.
-This will be required to run a full pipeline or to subscribe to the pub/sub
-interface.  At the moment, there is no web UI for creating new user accounts or
-obtaining API tokens so it needs to be done manually.
+However, sending data with `POST` and `PUT` requests can typically only be done
+by authenticated users.  This will be required to run a full pipeline or to
+subscribe to the pub/sub interface.  At the moment, there is no web UI for
+creating new user accounts or obtaining API tokens so it needs to be done
+manually.
 
-First, get an encrypted hash for the password you want to use using the `/hash`
-API endpoint.  For example, if the password is `hello`:
+First, get an encrypted hash for your password with the `/hash` API endpoint.
+This uses a `POST` method to avoid putting the plaintext password in the URL
+which could be leaked in server logs, but it doesn't require authentication
+since it's needed to create an initial user account.  For example, if the
+password is `hello`:
 
 ```
-$ curl http://localhost:8001/hash/hello
+curl \
+  -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"password": "hello"}' \
+  http://localhost:8001/hash
 "$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.xCZGmM8jWXUXJZ4K"
 ```
 
