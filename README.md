@@ -35,11 +35,11 @@ Please find the [env.sample](https://github.com/kernelci/kernelci-api/blob/main/
 
 ### Set ALGORITHM and ACCESS_TOKEN_EXPIRE_MINUTES in environment file
 
-We need to specify algorithm for JWT token encoding and decoding. ALGORITHM variable needs to be passed in the parameter for that.
+We need to specify an algorithm for JWT token encoding and decoding. ALGORITHM variable needs to be passed in the parameter for that.
 ALGORITHM is set default to HS256.
 We have used ACCESS_TOKEN_EXPIRE_MINUTES variable to set expiry time on generated jwt access token.
 ACCESS_TOKEN_EXPIRE_MINUTES is set default to None.
-If user wants to change any of the above variable, It should be added to .env file. Please refer env.sample to add variable to .env file.
+If a user wants to change any of the above variables, they should be added to the .env file. Please refer env.sample to add variables to the .env file.
 
 ### Create a user account
 
@@ -147,8 +147,7 @@ The API provides a publisher / subscriber interface so clients can listen to
 events and publish them too.  All the events are formatted using
 [CloudEvents](https://cloudevents.io).
 
-The [`client.py`](api/client.py) script provides a reference implentation for
-publishing and listening to events.
+The [`client.py`](api/client.py) script provides a reference implementation for publishing and listening to events.
 
 For example, in a first terminal:
 
@@ -194,7 +193,7 @@ has all the Python dependencies installed (essentially, `cloudevents`).
 
 ## API Testing
 
-Please follow below instructions to test API endpoints.
+Please follow the below instructions to test API endpoints.
 
 Install Python requirements with additional packages for testing:
 ```
@@ -206,7 +205,7 @@ We have created .env file using env.sample in kernelci-api directory from 'Gener
 export $(cat .env)
 ```
 
-Run below command from kernelci-api/api directory:
+Run the below command from kernelci-api/api directory:
 ```
 pytest
 ```
@@ -214,19 +213,19 @@ This will start running test cases from kernelci-api/api/test_api.py and display
 
 ## Generate SSH key and copy to SSH directory
 
-Use below command to generate SSH key. It will store private key to `/home/username/.ssh/id_rsa_kernelci-api` file and public key to `/home/username/.ssh/id_rsa_kernelci-api.pub` file.
+Use the below command to generate SSH key. It will store private key to `/home/username/.ssh/id_rsa_kernelci-api` file and public key to `/home/username/.ssh/id_rsa_kernelci-api.pub` file.
 
 ```
 $ ssh-keygen -f ~/.ssh/id_rsa_kernelci-api
 ```
 
-Use below command to copy the public key to ssh/user-data directory.
+Use the below command to copy the public key to ssh/user-data directory.
 ```
 $ cat ~/.ssh/id_rsa_kernelci-api.pub >> docker/ssh/user-data/authorized_keys
 ```
 
 SSH docker container will have /home/kernelci/.ssh/authorized_keys file.
-Now, the user will able to SSH to container using private key.
+Now, the user will be able to SSH to container using private key.
 ```
 $ ssh -i ~/.ssh/id_rsa_kernelci-api -p 8022 kernelci@localhost
 ```
@@ -236,7 +235,7 @@ $ ssh -i ~/.ssh/id_rsa_kernelci-api -p 8022 kernelci@localhost
 In case of running setup on WSL (Windows Subsystem for Linux),
 we need to have certain file permissions to be able to login to kernelci-ssh container using SSH authorization keys.
 
-Use below commands to check permissions for `user-data` directory and `authorized_keys` file in `kernelci-api` directory.
+Use the below commands to check permissions for `user-data` directory and `authorized_keys` file in `kernelci-api` directory.
 ```
 $ ls -lrt kernelci-api/docker/ssh/
 total 5
@@ -254,14 +253,14 @@ total 1
 
 We need `user-data` directory permission to be 700(drwxr-xr-x) and `authorized_keys` file permission to be 644(-rw-r--r--). The reason being is, SSH key authorization will not work if the public key file has all the permissions enabled i.e. set to 777(rwxrwxrwx).
 
-If we don't have these permission already set then we need to change them using below commands.
+If we don't have these permissions already set then we need to change them using the below commands.
 
 ```
 $ chmod 700 kernelci-api/docker/ssh/user-data
 $ chmod 644 kernelci-api/docker/ssh/user-data/authorized_keys
 ```
 
-If running `chmod` command doesn't affect the permissions, we need to add below line to /etc/wsl.conf file and restart the `wsl` service to change them successfully:
+If running `chmod` command doesn't affect the permissions, we need to add the below line to /etc/wsl.conf file and restart the `wsl` service to change them successfully:
 ```
 options = "metadata"
 ```
