@@ -2,6 +2,9 @@
 #
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
+#
+# Copyright (C) 2022 Collabora Limited
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 # pylint: disable=unused-argument
 
@@ -332,7 +335,7 @@ def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
             name="checkout",
             revision=revision_obj,
             parent="61bda8f2eb1a63d2b7152410",
-            status=None
+            status="pending"
         )
     root_node_obj = Node(
             _id="61bda8f2eb1a63d2b7152410",
@@ -340,7 +343,7 @@ def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
             name="root",
             revision=revision_obj,
             parent=None,
-            status=None
+            status="pending"
         )
     mock_db_find_by_id.side_effect = [node_obj, root_node_obj]
 
