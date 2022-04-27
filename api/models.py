@@ -109,12 +109,6 @@ class Node(DatabaseModel):
         self.updated = datetime.utcnow()
 
     @classmethod
-    def modify_parent(cls, query_param_dict):
-        """Modify query parameter dictionary for parent"""
-        query_param_dict['parent'] = ObjectId(query_param_dict['parent'])
-        return query_param_dict
-
-    @classmethod
     def validate_params(cls, params: dict):
         """Validate Node parameters"""
         status = params.get('status')
@@ -129,3 +123,18 @@ class Node(DatabaseModel):
             except errors.InvalidId as error:
                 return False, str(error)
         return True, "Validated successfully"
+
+    @classmethod
+    def translate_fields(cls, params: dict):
+        """Translate fields in `params` into objects as applicable
+
+        Translate fields represented by strings in the `params` dictionary into
+        objects that match the model.  For example, database IDs are converted
+        to ObjectId.  Return a new dictionary with the translated values
+        replaced.
+        """
+        translated = params.copy()
+        parent = params.get('parent')
+        if parent:
+            translated['parent'] = ObjectId(parent)
+        return translated
