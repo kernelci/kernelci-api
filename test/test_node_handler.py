@@ -82,9 +82,9 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
         }
 
 
-def test_get_node_by_attributes_endpoint(mock_get_current_user,
-                                         mock_db_find_by_attributes,
-                                         mock_init_sub_id):
+def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
+                                          mock_db_find_by_attributes,
+                                          mock_init_sub_id):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
     endpoint for the positive path
@@ -105,7 +105,7 @@ def test_get_node_by_attributes_endpoint(mock_get_current_user,
             kind="node",
             name="checkout",
             revision=revision_obj_1,
-            parent=None,
+            parent="61bda8f2eb1a63d2b7152410",
             status="pending"
         )
     revision_obj_2 = Revision(
@@ -121,14 +121,17 @@ def test_get_node_by_attributes_endpoint(mock_get_current_user,
             kind="node",
             name="checkout",
             revision=revision_obj_2,
-            parent=None,
+            parent="61bda8f2eb1a63d2b7152410",
             status="pending"
         )
     mock_db_find_by_attributes.return_value = [node_obj_1, node_obj_2]
 
     params = {
         "name": "checkout",
-        "revision.tree": "mainline"
+        "revision.tree": "mainline",
+        "revision.branch": "master",
+        "status": "pending",
+        "parent": "61bda8f2eb1a63d2b7152410",
     }
     with TestClient(app) as client:
         response = client.get(
@@ -140,7 +143,7 @@ def test_get_node_by_attributes_endpoint(mock_get_current_user,
         assert len(response.json()) > 0
 
 
-def test_get_node_by_attributes_endpoint_node_not_found(
+def test_get_nodes_by_attributes_endpoint_node_not_found(
         mock_get_current_user,
         mock_db_find_by_attributes,
         mock_init_sub_id):
