@@ -87,6 +87,12 @@ async def get_node(node_id: str):
 
 @app.get('/nodes', response_model=List[Node])
 async def get_nodes(request: Request):
+    is_valid, msg = Node.validate_params(dict(request.query_params))
+    if not is_valid:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid request parameters: {}".format(msg)
+            )
     query_param_dict = dict(request.query_params)
     if 'parent' in query_param_dict:
         query_param_dict = Node.modify_parent(query_param_dict)
