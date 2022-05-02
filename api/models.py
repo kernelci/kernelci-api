@@ -9,7 +9,7 @@
 from datetime import datetime
 from typing import Optional, Dict
 import enum
-from bson import ObjectId
+from bson import ObjectId, errors
 from pydantic import BaseModel, Field
 
 
@@ -113,3 +113,19 @@ class Node(DatabaseModel):
         """Modify query parameter dictionary for parent"""
         query_param_dict['parent'] = ObjectId(query_param_dict['parent'])
         return query_param_dict
+
+    @classmethod
+    def validate_params(cls, params: dict):
+        """Validate Node parameters"""
+        status = params.get('status')
+        if status and status not in [status.value
+                                     for status in StatusValues]:
+            return False, f"Invalid status value '{status}'"
+
+        parent = params.get('parent')
+        if parent:
+            try:
+                ObjectId(parent)
+            except errors.InvalidId as error:
+                return False, str(error)
+        return True, "Validated successfully"
