@@ -3,29 +3,36 @@
 # Copyright (C) 2021 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 
+# pylint: disable=unused-argument disable=global-statement
+
+"""KernelCI API main module"""
+
+from typing import List
 from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from bson import ObjectId, errors
 from .auth import Authentication, Token
 from .db import Database
 from .models import Node, User, Password
 from .pubsub import PubSub, Subscription
-from typing import List
-from bson import ObjectId, errors
 
 app = FastAPI()
 db = Database()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 auth = Authentication(db)
-pubsub = None
+pubsub = None  # pylint: disable=invalid-name
 
 
 @app.on_event('startup')
 async def pubsub_startup():
-    global pubsub
+    """Startup event handler to create Pub/Sub object"""
+    global pubsub  # pylint: disable=invalid-name
     pubsub = await PubSub.create()
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
+    """Return the user if authenticated successfully based on the provided
+    token"""
     if token == 'None':
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -43,6 +50,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 
 async def get_user(user: User = Depends(get_current_user)):
+    """Return the user if active and authenticated"""
     if not user.active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user
@@ -50,12 +58,14 @@ async def get_user(user: User = Depends(get_current_user)):
 
 @app.get('/')
 async def root():
+    """Root endpoint handler"""
     return {"message": "KernelCI API"}
 
 
 @app.post('/token', response_model=Token)
 async def login_for_access_token(
         form_data: OAuth2PasswordRequestForm = Depends()):
+    """Get a bearer token for an authenticated user"""
     user = await auth.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -69,11 +79,13 @@ async def login_for_access_token(
 
 @app.get('/me', response_model=User)
 async def read_users_me(current_user: User = Depends(get_user)):
+    """Get user information"""
     return current_user
 
 
 @app.post('/hash')
 def get_password_hash(password: Password):
+    """Get a password hash from the provided string password"""
     return auth.get_password_hash(str(password.password))
 
 
@@ -82,17 +94,20 @@ def get_password_hash(password: Password):
 
 @app.get('/node/{node_id}', response_model=Node)
 async def get_node(node_id: str):
+    """Get node information from the provided node id"""
     return await db.find_by_id(Node, node_id)
 
 
 @app.get('/nodes', response_model=List[Node])
 async def get_nodes(request: Request):
+    """Get all the nodes if no request parameters have passed.
+       Get all the matching nodes otherwise."""
     query_params = dict(request.query_params)
     is_valid, msg = Node.validate_params(query_params)
     if not is_valid:
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid request parameters: {}".format(msg)
+                detail=f"Invalid request parameters: {msg}"
             )
     translated_params = Node.translate_fields(query_params)
     return await db.find_by_attributes(Node, translated_params)
@@ -100,6 +115,7 @@ async def get_nodes(request: Request):
 
 @app.get('/get_root_node/{node_id}', response_model=Node)
 async def get_root_node(node_id: str):
+    """Get root node information"""
     while node_id:
         try:
             node = await db.find_by_id(Node, node_id)
@@ -107,11 +123,11 @@ async def get_root_node(node_id: str):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(error)
-            )
+            ) from error
         if node is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Node not found with id: {}".format(node_id)
+                detail=f"Node not found with id: {node_id}"
             )
         node_id = node.parent
     return node
@@ -119,30 +135,34 @@ async def get_root_node(node_id: str):
 
 @app.post('/node', response_model=Node)
 async def post_node(node: Node, token: str = Depends(get_user)):
+    """Create a new node"""
     try:
         obj = await db.create(node)
-        op = 'created'
-    except ValueError as e:
+        operation = 'created'
+    except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    await pubsub.publish_cloudevent('node', {'op': op, 'id': str(obj.id)})
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('node', {'op': operation,
+                                             'id': str(obj.id)})
     return obj
 
 
 @app.put('/node/{node_id}', response_model=Node)
 async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
+    """Update an already added node"""
     try:
         node.id = ObjectId(node_id)
         obj = await db.update(node)
-        op = 'updated'
-    except ValueError as e:
+        operation = 'updated'
+    except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
-    await pubsub.publish_cloudevent('node', {'op': op, 'id': str(obj.id)})
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('node', {'op': operation,
+                                             'id': str(obj.id)})
     return obj
 
 
@@ -151,33 +171,37 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
 
 @app.post('/subscribe/{channel}', response_model=Subscription)
 async def subscribe(channel: str, user: User = Depends(get_user)):
+    """Subscribe handler for Pub/Sub channel"""
     return await pubsub.subscribe(channel)
 
 
 @app.post('/unsubscribe/{sub_id}')
 async def unsubscribe(sub_id: int, user: User = Depends(get_user)):
+    """Unsubscribe handler for Pub/Sub channel"""
     try:
         await pubsub.unsubscribe(sub_id)
     except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error)
-        )
+        ) from error
 
 
 @app.get('/listen/{sub_id}')
 async def listen(sub_id: int, user: User = Depends(get_user)):
+    """Listen messages from a subscribed Pub/Sub channel"""
     try:
         return await pubsub.listen(sub_id)
     except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error)
-        )
+        ) from error
 
 
 @app.post('/publish/{channel}')
 async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
+    """Publish a message on the provided Pub/Sub channel"""
     attributes = dict(raw)
     data = attributes.pop('data')
     await pubsub.publish_cloudevent(channel, data, attributes)
