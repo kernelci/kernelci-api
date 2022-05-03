@@ -50,6 +50,7 @@ jobs:
           pylint -d R0903 api.models
           pylint api.pubsub
           pylint test
+          pylint api.main
 
       - name: Export environment variables
         run: |
