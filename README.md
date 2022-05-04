@@ -58,7 +58,8 @@ Install Python requirements with additional packages for testing:
 pip install -r docker/api/requirements-dev.txt
 ```
 
-We have created .env file using env.sample in kernelci-api directory from 'Generate SECRET KEY and add it in environment file' section. Export .env file with SECRET_KEY environment variable in it:
+We have already created .env file from [Authentication](https://github.com/kernelci/kernelci-api#authentication) section.
+Export the file with SECRET_KEY environment variable in it:
 ```
 export $(cat .env)
 ```
