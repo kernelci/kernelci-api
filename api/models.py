@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Optional, Dict
 import enum
 from bson import ObjectId, errors
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr, HttpUrl
 
 
 class PyObjectId(ObjectId):
@@ -81,29 +81,64 @@ class DatabaseModel(ModelId):
 class User(ModelId):
     """API user model"""
     username: str
-    hashed_password: str
-    active: bool
+    hashed_password: str = Field(description='Hash of the plaintext password')
+    active: bool = Field(
+        default=True,
+        description='To check if user is active or not'
+    )
 
 
 class Revision(BaseModel):
     """Linux kernel Git revision model"""
-    tree: str
-    url: str
-    branch: str
-    commit: str
-    describe: Optional[str] = None
+    tree: str = Field(
+        description='git tree of the revision'
+    )
+    url: HttpUrl = Field(
+        description='git URL of the revision'
+    )
+    branch: str = Field(
+        description='git branch of the revision'
+    )
+    commit: str = Field(
+        description='git commit SHA of the revision'
+    )
+    describe: Optional[str] = Field(
+        default=None,
+        description='git describe of the revision'
+    )
 
 
 class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
-    kind: str = 'node'
-    name: str
-    revision: Revision
-    parent: Optional[PyObjectId]
-    status: Optional[StatusValues] = StatusValues.PENDING
-    artifacts: Optional[Dict]
-    created: Optional[datetime] = Field(default_factory=datetime.utcnow)
-    updated: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    kind: str = Field(
+        default='node',
+        description='Type of the object'
+    )
+    name: str = Field(
+        description='Name of the node object'
+    )
+    revision: Revision = Field(
+        description='Git revision object'
+    )
+    parent: Optional[PyObjectId] = Field(
+        description='Parent commit SHA'
+    )
+    status: Optional[StatusValues] = Field(
+        default=StatusValues.PENDING,
+        description='Status of test result'
+    )
+    artifacts: Optional[Dict] = Field(
+        description='Dictionary with names mapping to node associated \
+URLs (e.g. URL to binaries or logs)'
+    )
+    created: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description='Timestamp of node creation'
+    )
+    updated: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description='Timestamp when node was last updated'
+    )
 
     def update(self):
         self.updated = datetime.utcnow()
