@@ -65,7 +65,9 @@ class Password(BaseModel):
     This model is required to be able to send a plaintext password in a POST
     method in order to retrieve a hash.
     """
-    password: str
+    password: SecretStr = Field(
+        description='The plaintext password'
+    )
 
 
 # -----------------------------------------------------------------------------
