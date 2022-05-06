@@ -9,20 +9,27 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseModel, BaseSettings, Field
 from .db import Database
 from .models import User
 
 
 class Token(BaseModel):
     """Authentication token model"""
-    access_token: str
-    token_type: str
+    access_token: str = Field(
+        description='Authentication access token'
+    )
+    token_type: str = Field(
+        description='Access token type e.g. Bearer'
+    )
 
 
 class TokenData(BaseModel):
     """Authentication token associated data model"""
-    username: Optional[str] = None
+    username: Optional[str] = Field(
+        default=None,
+        description='Username associated with the provided token'
+    )
 
 
 class Settings(BaseSettings):
