@@ -74,7 +74,7 @@ async def read_users_me(current_user: User = Depends(get_user)):
 
 @app.post('/hash')
 def get_password_hash(password: Password):
-    return auth.get_password_hash(password.password)
+    return auth.get_password_hash(str(password.password))
 
 
 # -----------------------------------------------------------------------------
