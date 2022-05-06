@@ -9,7 +9,7 @@ import asyncio
 
 import aioredis
 from cloudevents.http import CloudEvent, to_json
-from pydantic import BaseModel, BaseSettings
+from pydantic import BaseModel, BaseSettings, Field
 
 
 class Settings(BaseSettings):
@@ -22,8 +22,12 @@ class Settings(BaseSettings):
 
 class Subscription(BaseModel):
     """Pub/Sub subscription object model"""
-    id: int
-    channel: str
+    id: int = Field(
+        description='Subscription ID'
+    )
+    channel: str = Field(
+        description='Subscription channel name'
+    )
 
 
 class PubSub:
