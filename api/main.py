@@ -9,7 +9,7 @@
 """KernelCI API main module"""
 
 from typing import List
-from fastapi import Depends, FastAPI, HTTPException, status, Request
+from fastapi import Depends, FastAPI, HTTPException, status, Request, Security
 from fastapi.security import (
     OAuth2PasswordRequestForm,
     SecurityScopes
@@ -67,6 +67,28 @@ async def get_user(user: User = Depends(get_current_user)):
     if not user.active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return user
+
+
+@app.post('/user/{username}', response_model=User)
+async def post_user(
+        username: str, password: Password, is_admin: bool = False,
+        current_user: User = Security(get_user, scopes=["admin"])):
+    """Create new user"""
+    try:
+        hashed_password = auth.get_password_hash(str(password.password))
+        obj = await db.create(User(
+                                username=username,
+                                hashed_password=hashed_password,
+                                is_admin=is_admin))
+        operation = 'created'
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('user', {'op': operation,
+                                             'id': str(obj.id)})
+    return obj
 
 
 @app.get('/')
