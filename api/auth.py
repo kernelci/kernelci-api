@@ -6,6 +6,7 @@
 """User authentication utilities"""
 
 from datetime import datetime, timedelta
+from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, BaseSettings, Field
@@ -38,10 +39,20 @@ class Authentication:
     should be a db.Database object.
     """
 
-    def __init__(self, database: Database):
+    def __init__(self, database: Database, token_url: str, user_scopes: dict):
         self._pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         self._db = database
         self._settings = Settings()
+        self._user_scopes = user_scopes
+        self._oauth2_scheme = OAuth2PasswordBearer(
+                tokenUrl=token_url,
+                scopes=self._user_scopes
+        )
+
+    @property
+    def oauth2_scheme(self):
+        """Get authentication scheme"""
+        return self._oauth2_scheme
 
     def get_password_hash(self, password):
         """Get a password hash for a given clear text password string"""
