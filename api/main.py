@@ -10,7 +10,7 @@
 
 from typing import List
 from fastapi import Depends, FastAPI, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from bson import ObjectId, errors
 from .auth import Authentication, Token
 from .db import Database
@@ -19,8 +19,9 @@ from .pubsub import PubSub, Subscription
 
 app = FastAPI()
 db = Database()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-auth = Authentication(db)
+auth = Authentication(db, token_url='token',
+                      user_scopes={"admin": "Superusers",
+                                    "users": "Regular users"})
 pubsub = None  # pylint: disable=invalid-name
 
 
@@ -31,7 +32,7 @@ async def pubsub_startup():
     pubsub = await PubSub.create()
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(auth.oauth2_scheme)):
     """Return the user if authenticated successfully based on the provided
     token"""
     if token == 'None':
