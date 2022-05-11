@@ -94,10 +94,12 @@ class Authentication:
                 algorithms=[self._settings.algorithm]
             )
             username: str = payload.get("sub")
+            token_scopes = payload.get("scopes", [])
             if username is None:
-                return None
+                return None, None
             token_data = TokenData(username=username)
         except JWTError:
-            return None
+            return None, None
 
-        return await self._db.find_one(User, username=token_data.username)
+        return await self._db.find_one(
+            User, username=token_data.username), token_scopes
