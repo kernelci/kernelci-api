@@ -10,7 +10,11 @@
 
 from typing import List
 from fastapi import Depends, FastAPI, HTTPException, status, Request
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import (
+    OAuth2PasswordBearer,
+    OAuth2PasswordRequestForm,
+    SecurityScopes
+)
 from bson import ObjectId, errors
 from .auth import Authentication, Token
 from .db import Database
@@ -79,7 +83,18 @@ async def login_for_access_token(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = auth.create_access_token(data={"sub": user.username})
+
+    for scope in form_data.scopes:
+        if scope not in user_scopes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid scope: {scope}"
+            )
+
+    access_token = auth.create_access_token(data={
+        "sub": user.username,
+        "scopes": form_data.scopes}
+    )
     return {"access_token": access_token, "token_type": "bearer"}
 
 
