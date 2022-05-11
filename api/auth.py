@@ -6,7 +6,6 @@
 """User authentication utilities"""
 
 from datetime import datetime, timedelta
-from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, BaseSettings, Field
@@ -21,14 +20,6 @@ class Token(BaseModel):
     )
     token_type: str = Field(
         description='Access token type e.g. Bearer'
-    )
-
-
-class TokenData(BaseModel):
-    """Authentication token associated data model"""
-    username: Optional[str] = Field(
-        default=None,
-        description='Username associated with the provided token'
     )
 
 
@@ -96,8 +87,7 @@ class Authentication:
             username: str = payload.get("sub")
             if username is None:
                 return None
-            token_data = TokenData(username=username)
         except JWTError:
             return None
 
-        return await self._db.find_one(User, username=token_data.username)
+        return await self._db.find_one(User, username=username)
