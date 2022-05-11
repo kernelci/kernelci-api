@@ -87,7 +87,7 @@ class Authentication:
             )
         return encoded_jwt
 
-    async def get_current_user(self, token):
+    async def get_current_user(self, token, security_scopes):
         """Decode the given JWT `token` and look up a matching `User`"""
         try:
             payload = jwt.decode(
@@ -96,12 +96,19 @@ class Authentication:
                 algorithms=[self._settings.algorithm]
             )
             username: str = payload.get("sub")
+            token_scopes = payload.get("scopes", [])
             if username is None:
-                return None
-        except JWTError:
-            return None
+                return None, "Could not validate credentials"
 
-        return await self._db.find_one(User, username=username)
+            for scope in security_scopes:
+                if scope not in token_scopes:
+                    return None, "Access denied"
+
+        except JWTError as error:
+            return None, str(error)
+
+        user = await self._db.find_one(User, username=username)
+        return user, None
 
     async def validate_scopes(self, requested_scopes):
         """Check if requested scopes are valid user scopes"""

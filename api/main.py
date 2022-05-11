@@ -12,6 +12,7 @@ from typing import List
 from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import (
     OAuth2PasswordRequestForm,
+    SecurityScopes
 )
 from bson import ObjectId, errors
 from .auth import Authentication, Token
@@ -34,21 +35,29 @@ async def pubsub_startup():
     pubsub = await PubSub.create()
 
 
-async def get_current_user(token: str = Depends(auth.oauth2_scheme)):
+async def get_current_user(
+        security_scopes: SecurityScopes,
+        token: str = Depends(auth.oauth2_scheme)):
     """Return the user if authenticated successfully based on the provided
     token"""
+
+    if security_scopes.scopes:
+        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
+    else:
+        authenticate_value = "Bearer"
+
     if token == 'None':
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={"WWW-Authenticate": authenticate_value},
         )
-    user = await auth.get_current_user(token)
+    user, message = await auth.get_current_user(token, security_scopes.scopes)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail=message,
+            headers={"WWW-Authenticate": authenticate_value},
         )
     return user
 
