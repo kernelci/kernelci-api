@@ -102,3 +102,10 @@ class Authentication:
             return None
 
         return await self._db.find_one(User, username=username)
+
+    async def validate_scopes(self, requested_scopes):
+        """Check if requested scopes are valid user scopes"""
+        for scope in requested_scopes:
+            if scope not in self._user_scopes:
+                return False, scope
+        return True, None
