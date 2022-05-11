@@ -80,10 +80,10 @@ def mock_get_current_user(mocker):
     user = User(username='bob',
                 hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                                 'xCZGmM8jWXUXJZ4K',
-                active=True)
+                active=True, is_admin=False)
     mocker.patch('api.auth.Authentication.get_current_user',
                  side_effect=async_mock)
-    async_mock.return_value = user
+    async_mock.return_value = user, None
     return async_mock
 
 
