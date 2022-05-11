@@ -19,7 +19,12 @@ from .pubsub import PubSub, Subscription
 
 app = FastAPI()
 db = Database()
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+user_scopes = {"admin": "Superusers", "users": "Regular users"}
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="token",
+    scopes=user_scopes
+)
 auth = Authentication(db)
 pubsub = None  # pylint: disable=invalid-name
 
