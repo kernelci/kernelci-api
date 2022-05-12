@@ -31,5 +31,5 @@ def test_me_endpoint(mock_get_current_user):
         },
     )
     assert response.status_code == 200
-    assert ('_id', 'username', 'hashed_password', 'active') == tuple(
-                                                        response.json().keys())
+    assert ('_id', 'username', 'hashed_password', 'active',
+            'is_admin') == tuple(response.json().keys())
