@@ -106,6 +106,13 @@ async def login_for_access_token(
                 detail=f"Invalid scope: {scope}"
             )
 
+    if 'admin' in form_data.scopes:
+        if user.isAdmin is not True:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Not allowed to use admin scope"
+            )
+
     access_token = auth.create_access_token(data={
         "sub": user.username,
         "scopes": form_data.scopes}
