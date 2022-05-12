@@ -88,6 +88,10 @@ class User(ModelId):
         default=True,
         description='To check if user is active or not'
     )
+    is_admin: bool = Field(
+        default=False,
+        description='True if superuser otherwise False'
+    )
 
 
 class Revision(BaseModel):
