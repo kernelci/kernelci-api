@@ -2,6 +2,9 @@
 #
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
+#
+# Copyright (C) 2022 Collabora Limited
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 # pylint: disable=protected-access
 
@@ -17,9 +20,13 @@ from api.models import User
 from api.pubsub import PubSub
 
 BEARER_TOKEN = "Bearer \
-            eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9. \
-            eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1S \
-            Edkp5M1S1AgYvX8VdB20"
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.\
+ci1smeJeuX779PptTkuaG1SEdkp5M1S1AgYvX8VdB20"
+
+ADMIN_BEARER_TOKEN = 'Bearer \
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\
+eyJzdWIiOiJib2IiLCJzY29wZXMiOlsiYWRtaW4iXX0.\
+t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k'
 
 
 @pytest.fixture
@@ -81,6 +88,23 @@ def mock_get_current_user(mocker):
                 hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                                 'xCZGmM8jWXUXJZ4K',
                 active=True, is_admin=False)
+    mocker.patch('api.auth.Authentication.get_current_user',
+                 side_effect=async_mock)
+    async_mock.return_value = user, None
+    return async_mock
+
+
+@pytest.fixture
+def mock_get_current_admin_user(mocker):
+    """
+    Mocks async call to Authentication class method
+    used to get current user
+    """
+    async_mock = AsyncMock()
+    user = User(username='admin',
+                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                                'xCZGmM8jWXUXJZ4K',
+                active=True, is_admin=True)
     mocker.patch('api.auth.Authentication.get_current_user',
                  side_effect=async_mock)
     async_mock.return_value = user, None
