@@ -6,7 +6,7 @@
 
 """KernelCI API model definitions"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Dict
 import enum
 from bson import ObjectId, errors
@@ -187,3 +187,13 @@ completed',
         if parent:
             translated['parent'] = ObjectId(parent)
         return translated
+
+    def set_timeout_status(self):
+        """Set Node status to timeout if maximum wait time is over"""
+        if self.status == "pending":
+            current_time = datetime.utcnow()
+            max_wait_time = self.created + timedelta(hours=self.max_wait_time)
+            if current_time > max_wait_time:
+                self.status = "timeout"
+                return True
+        return False
