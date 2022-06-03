@@ -38,6 +38,7 @@ class StatusValues(enum.Enum):
     PENDING = "pending"
     PASS = "pass"
     FAIL = "fail"
+    TIMEOUT = "timeout"
 
 
 class ModelId(BaseModel):
