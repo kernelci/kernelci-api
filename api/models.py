@@ -146,6 +146,13 @@ URLs (e.g. URL to binaries or logs)'
         default_factory=datetime.utcnow,
         description='Timestamp when node was last updated'
     )
+    max_wait_time: Optional[float] = Field(
+        default=24.0,
+        description='Maximum time in hours to wait for node to get it \
+completed',
+        ge=0.0,
+        le=24.0
+    )
 
     def update(self):
         self.updated = datetime.utcnow()
