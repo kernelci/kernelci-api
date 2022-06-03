@@ -6,6 +6,7 @@
 
 """KernelCI API model definitions"""
 
+import asyncio
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 import enum
@@ -197,3 +198,11 @@ completed',
                 self.status = "timeout"
                 return True
         return False
+
+    @classmethod
+    async def wait_for_node(cls, timeout):
+        """Wait for node to get completed until timeout"""
+        current_time = datetime.utcnow()
+        if timeout > current_time:
+            time_delta = timeout - current_time
+            await asyncio.sleep(time_delta.total_seconds())
