@@ -21,6 +21,25 @@ ACCESS_TOKEN_EXPIRE_MINUTES is set default to None.
 If a user wants to change any of the above variables, they should be added to the .env file.
 
 
+## Users
+
+`User` model objects can be created from a terminal or using `/user` endpoint.
+
+### Create an admin user
+
+The very first admin user needs to be created from terminal.
+To create an admin user from a terminal, provide `is_admin: 1` to the request:
+
+```
+sudo docker-compose exec db /bin/mongo kernelci --eval   "db.user.insert({username: 'admin', hashed_password: '\$2b\$12\$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.', active: true, is_admin: 1})"
+MongoDB shell version v5.0.8
+connecting to: mongodb://127.0.0.1:27017/kernelci?compressors=disabled&gssapiServiceName=mongodb
+Implicit session: session { "id" : UUID("03737b4c-7528-43ae-9cb8-8f345748267f") }
+MongoDB server version: 5.0.8
+WriteResult({ "nInserted" : 1 })
+```
+
+
 ## Nodes
 
 As a proof-of-concept, an object model called `Node` is defined in this API.
