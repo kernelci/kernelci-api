@@ -57,6 +57,32 @@ $ curl -X 'POST' \
 
 > **Note** Only admin users can provide `admin` scope to the `/token` endpoint.
 
+### Create user using endpoint
+
+Now, we can use above created admin user to create regular users and other admin users using `/user` API endpoint.
+We need to provide token (retrieved with scope admin) to the endpoint for the authorization. 
+
+To create a regular user, provide a username to request query parameter and password to request data dictionary.
+
+```
+$ curl -X 'POST' 
+  'http://localhost:8001/user/test' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' \
+  -d '{"password": "test"}'
+{'_id': '615f30020eb7c3c6616e5ac3', 'username': 'test', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'active': True, 'is_admin': False}
+```
+
+To create an admin user, provide a username, and `is_admin` flag to request query parameter and password to request data dictionary.
+
+```
+$ curl -X 'POST' 'http://localhost:8001/user/test_admin?is_admin=1' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"password": "admin"}'
+{'_id': '615f30020eb7c3c6616e5ac6', 'username': 'test_admin', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'active': True, 'is_admin': True}
+```
+
+Another way of creating users is to use `kci_data` from kernelci-core. The instructions are described [here](https://kernelci.org/docs/core/kci_data/#creating-user).
+
 
 ## Nodes
 
