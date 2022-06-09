@@ -39,6 +39,24 @@ MongoDB server version: 5.0.8
 WriteResult({ "nInserted" : 1 })
 ```
 
+### Create an API token with security scopes
+
+We can associate available security scopes with an API token. Currently available scopes are 'admin' (admin user permissions) and 'users' (regular user permissions).
+
+To get a token with desired user scope, provide `scope` to request data dictionary along with the username and password.
+Multiple scopes can be provided with white space separation. For example:
+
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/token' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  s-d 'grant_type=&username=test_admin&password=admin&scope=admin users'
+{'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X2FkbWluIiwic2NvcGVzIjpbImFkbWluIl19.NWShAwOodFl2iCcDh0YB8O4xzfaRlIS4GkzUO8OQhQg', 'token_type': 'bearer'}
+```
+
+> **Note** Only admin users can provide `admin` scope to the `/token` endpoint.
+
 
 ## Nodes
 

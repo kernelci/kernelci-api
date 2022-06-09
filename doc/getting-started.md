@@ -141,6 +141,9 @@ $ curl -X 'GET' \
 {"_id":"615f30020eb7c3c6616e5ac3","username":"bob","hashed_password":"$2b$12$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.","active":true}
 ```
 
+The token for an admin user should be created with admin scope so that other users can be created using kernelci-core command line tools or `/user` endpoint. More details are described [here](https://kernelci.org/docs/api/api-details/#create-an-API-token-with-security-scopes).
+
+
 ## Setting up a Pipeline instance
 
 The pipeline can perform a minimal set of tests using solely the API and its
