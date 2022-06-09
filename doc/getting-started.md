@@ -114,6 +114,8 @@ MongoDB server version: 5.0.3
 WriteResult({ "nInserted" : 1 })
 ```
 
+Even though after creating the above user, we would be able to run API, ideally, an admin user needs to be created first (using terminal), and then additional users can be created with the `/user` endpoint or kernelci-core command line tools (`kci_data`). The instructions are described [here](https://kernelci.org/docs/api/api-details/#users).
+
 ### Create an API token
 
 Then to get an API token, the `/token` API endpoint can be used.  For example,
