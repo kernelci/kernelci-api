@@ -9,7 +9,7 @@
 """KernelCI API main module"""
 
 from datetime import timedelta
-from typing import List
+from typing import List, Union
 from fastapi import Depends, FastAPI, HTTPException, status, Request, Security
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import (
@@ -19,7 +19,7 @@ from fastapi.security import (
 from bson import ObjectId, errors
 from .auth import Authentication, Token
 from .db import Database
-from .models import Node, Regression, User, Password
+from .models import Node, Regression, User, Password, get_model_from_kind
 from .pubsub import PubSub, Subscription
 
 app = FastAPI()
@@ -147,10 +147,22 @@ def get_password_hash(password: Password):
 # -----------------------------------------------------------------------------
 # Nodes
 
-@app.get('/node/{node_id}', response_model=Node)
-async def get_node(node_id: str):
+@app.get('/node/{node_id}', response_model=Union[Regression, Node])
+async def get_node(node_id: str, kind: str = "node"):
     """Get node information from the provided node id"""
-    return await db.find_by_id(Node, node_id)
+    try:
+        model = get_model_from_kind(kind)
+        if model is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid kind: {kind}"
+            )
+        return await db.find_by_id(model, node_id)
+    except errors.InvalidId as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
 
 
 @app.get('/nodes', response_model=List[Node])
