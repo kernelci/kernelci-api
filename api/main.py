@@ -19,7 +19,7 @@ from fastapi.security import (
 from bson import ObjectId, errors
 from .auth import Authentication, Token
 from .db import Database
-from .models import Node, User, Password
+from .models import Node, Regression, User, Password
 from .pubsub import PubSub, Subscription
 
 app = FastAPI()
@@ -308,3 +308,23 @@ async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
     attributes = dict(raw)
     data = attributes.pop('data')
     await pubsub.publish_cloudevent(channel, data, attributes)
+
+
+# -----------------------------------------------------------------------------
+# Regression
+
+@app.post('/regression')
+async def post_regression(regression: Regression,
+                          token: str = Depends(get_user)):
+    """Create a new regression"""
+    try:
+        obj = await db.create(regression)
+        operation = 'created'
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('regression', {'op': operation,
+                                                   'id': str(obj.id)})
+    return obj
