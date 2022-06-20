@@ -147,10 +147,22 @@ def get_password_hash(password: Password):
 # -----------------------------------------------------------------------------
 # Nodes
 
-@app.get('/node/{node_id}', response_model=Node)
-async def get_node(node_id: str):
+@app.get('/node/{node_id}')
+async def get_node(node_id: str, kind: str = "node"):
     """Get node information from the provided node id"""
-    return await db.find_by_id(Node, node_id)
+    try:
+        model = db.get_model_from_kind(kind)
+        if model is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid model type provided: {kind}"
+            )
+        return await db.find_by_id(model, node_id)
+    except errors.InvalidId as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
 
 
 @app.get('/nodes', response_model=List[Node])
