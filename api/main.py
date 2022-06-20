@@ -165,19 +165,26 @@ async def get_node(node_id: str, kind: str = "node"):
         ) from error
 
 
-@app.get('/nodes', response_model=List[Node])
-async def get_nodes(request: Request):
+@app.get('/nodes', response_model=List[Union[Regression, Node]])
+async def get_nodes(request: Request, kind: str = "node"):
     """Get all the nodes if no request parameters have passed.
        Get all the matching nodes otherwise."""
+    model = get_model_from_kind(kind)
+    if model is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid kind: {kind}"
+        )
+
     query_params = dict(request.query_params)
-    is_valid, msg = Node.validate_params(query_params)
+    is_valid, msg = model.validate_params(query_params)
     if not is_valid:
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid request parameters: {msg}"
             )
-    translated_params = Node.translate_fields(query_params)
-    return await db.find_by_attributes(Node, translated_params)
+    translated_params = model.translate_fields(query_params)
+    return await db.find_by_attributes(model, translated_params)
 
 
 @app.get('/get_root_node/{node_id}', response_model=Node)
