@@ -328,3 +328,15 @@ async def post_regression(regression: Regression,
     await pubsub.publish_cloudevent('regression', {'op': operation,
                                                    'id': str(obj.id)})
     return obj
+
+
+@app.get('/regression/{regression_id}', response_model=Regression)
+async def get_regression(regression_id: str):
+    """Get regression information from the provided regression id"""
+    try:
+        return await db.find_by_id(Regression, regression_id)
+    except errors.InvalidId as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
