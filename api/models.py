@@ -8,7 +8,7 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import enum
 from bson import ObjectId, errors
 from pydantic import BaseModel, Field, SecretStr, HttpUrl
@@ -221,3 +221,42 @@ completed',
         if timeout > current_time:
             time_delta = timeout - current_time
             await asyncio.sleep(time_delta.total_seconds())
+
+
+class Regression(Node):
+    """API model for regression tracking"""
+
+    kind: str = Field(
+        default='regression',
+        description='Type of the object',
+        const=True
+    )
+    regression_data: List[Node] = Field(
+        description='Regression details'
+    )
+
+    @classmethod
+    def validate_params(cls, params: dict):
+        """Validate regression parameters"""
+        ret, msg = Node.validate_params(params)
+        if not ret:
+            return ret, msg
+
+        status = params.get('regression_data.status')
+        if status and status not in [status.value
+                                     for status in StatusValues]:
+            return False, f"Invalid status value '{status}'"
+
+        result = params.get('regression_data.result')
+        if result and result not in [result.value
+                                     for result in ResultValues]:
+            return False, f"Invalid result value '{result}'"
+
+        parent = params.get('regression_data.parent')
+        if parent:
+            try:
+                ObjectId(parent)
+            except errors.InvalidId as error:
+                return False, str(error)
+
+        return True, "Validated successfully"
