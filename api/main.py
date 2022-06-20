@@ -340,3 +340,19 @@ async def get_regression(regression_id: str):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
         ) from error
+
+
+@app.get('/regressions', response_model=List[Regression])
+async def get_regressions(request: Request):
+    """Get all the regressions if no request parameters have passed.
+       Get all the matching regressions otherwise."""
+
+    query_params = dict(request.query_params)
+    is_valid, msg = Regression.validate_params(query_params)
+    if not is_valid:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid request parameters: {msg}"
+            )
+    translated_params = Regression.translate_fields(query_params)
+    return await db.find_by_attributes(Regression, translated_params)
