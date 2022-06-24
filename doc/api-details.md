@@ -27,8 +27,8 @@ If a user wants to change any of the above variables, they should be added to th
 
 ### Create an admin user
 
-The very first admin user needs to be created from terminal.
-To create an admin user from a terminal, provide `is_admin: 1` to the request:
+The very first admin user needs to be created from terminal.  To create an
+admin user from a terminal, provide `is_admin: 1` to the request:
 
 ```
 sudo docker-compose exec db /bin/mongo kernelci --eval   "db.user.insert({username: 'admin', hashed_password: '\$2b\$12\$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.', active: true, is_admin: 1})"
@@ -39,12 +39,18 @@ MongoDB server version: 5.0.8
 WriteResult({ "nInserted" : 1 })
 ```
 
+Regular users can also be created this way without the `is_admin` attribute.
+
+
 ### Create an API token with security scopes
 
-We can associate available security scopes with an API token. Currently available scopes are 'admin' (admin user permissions) and 'users' (regular user permissions).
+We can associate available security scopes with an API token. Currently
+available scopes are 'admin' (admin user permissions) and 'users' (regular user
+permissions).
 
-To get a token with desired user scope, provide `scope` to request data dictionary along with the username and password.
-Multiple scopes can be provided with white space separation. For example:
+To get a token with desired user scope, provide `scope` to request data
+dictionary along with the username and password.  Multiple scopes can be
+provided with white space separation. For example:
 
 ```
 $ curl -X 'POST' \
@@ -60,12 +66,12 @@ $ curl -X 'POST' \
 ### Create user using endpoint
 
 Now, we can use above created admin user to create regular users and other admin users using `/user` API endpoint.
-We need to provide token (retrieved with scope admin) to the endpoint for the authorization. 
+We need to provide token (retrieved with scope admin) to the endpoint for the authorization.
 
 To create a regular user, provide a username to request query parameter and password to request data dictionary.
 
 ```
-$ curl -X 'POST' 
+$ curl -X 'POST'
   'http://localhost:8001/user/test' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
