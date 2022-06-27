@@ -8,7 +8,7 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import enum
 from bson import ObjectId, errors
 from pydantic import BaseModel, Field, SecretStr, HttpUrl
@@ -206,3 +206,75 @@ completed',
         if timeout > current_time:
             time_delta = timeout - current_time
             await asyncio.sleep(time_delta.total_seconds())
+
+
+class RegressionData(BaseModel):
+    """Regression object details model"""""
+
+    class Config:
+        """Configuration attributes for RegressionData"""
+        use_enum_values = True
+
+    revision: Revision = Field(
+        description='Git revision of regression object'
+    )
+    status: StatusValues = Field(
+        description='Regression object status'
+    )
+    created: datetime = Field(
+        description='Timestamp of regression object creation'
+    )
+
+
+class Regression(DatabaseModel):
+    """API model for regression tracking"""
+    node_id: PyObjectId = Field(
+        description='ID of the node'
+    )
+    regression_data: List[RegressionData] = Field(
+        description='Regression details'
+    )
+    created: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description='Timestamp of regression creation'
+    )
+    updated: Optional[datetime] = Field(
+        default_factory=datetime.utcnow,
+        description='Timestamp when regression was last updated'
+    )
+
+    def update(self):
+        self.updated = datetime.utcnow()
+
+    @classmethod
+    def validate_params(cls, params: dict):
+        """Validate regression parameters"""
+        status = params.get('regressions.status')
+        if status and status not in [status.value
+                                     for status in StatusValues]:
+            return False, f"Invalid status value '{status}'"
+
+        node_id = params.get('node_id')
+        if node_id:
+            try:
+                ObjectId(node_id)
+            except errors.InvalidId as error:
+                return False, str(error)
+
+        return True, "Validated successfully"
+
+    @classmethod
+    def translate_fields(cls, params: dict):
+        """Translate fields in `params` into objects as applicable
+
+        Translate fields represented by strings in the `params` dictionary into
+        objects that match the model.  For example, node IDs are converted to
+        ObjectId. Return a new dictionary with the translated values replaced.
+        """
+        translated = params.copy()
+
+        node_id = params.get('node_id')
+        if node_id:
+            translated['node_id'] = ObjectId(node_id)
+
+        return translated
