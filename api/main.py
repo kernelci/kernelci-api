@@ -15,6 +15,7 @@ from fastapi.security import (
     SecurityScopes
 )
 from bson import ObjectId, errors
+from pymongo.errors import DuplicateKeyError
 from .auth import Authentication, Token
 from .db import Database
 from .models import Node, Regression, User, Password, get_model_from_kind
@@ -91,6 +92,11 @@ async def post_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
+        ) from error
+    except DuplicateKeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{username} is already taken. Try with different username."
         ) from error
     await pubsub.publish_cloudevent('user', {'op': operation,
                                              'id': str(obj.id)})
