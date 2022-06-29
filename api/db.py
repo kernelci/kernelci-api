@@ -28,10 +28,15 @@ class Database:
     def __init__(self, host='db', db_name='kernelci'):
         self._motor = motor_asyncio.AsyncIOMotorClient(host=host)
         self._db = self._motor[db_name]
+        self._create_index()
 
     def _get_collection(self, model):
         col = self.COLLECTIONS[model]
         return self._db[col]
+
+    def _create_index(self):
+        col = self._get_collection(User)
+        col.create_index("username", unique=True)
 
     async def find_all(self, model):
         """Find all objects of a given model"""
