@@ -86,8 +86,12 @@ class DatabaseModel(ModelId):
     def update(self):
         """Method to update model"""
 
+    @classmethod
+    def create_indexes(cls, collection):
+        """Method to create indexes"""
 
-class User(ModelId):
+
+class User(DatabaseModel):
     """API user model"""
     username: str
     hashed_password: str = Field(description='Hash of the plaintext password')
@@ -99,6 +103,11 @@ class User(ModelId):
         default=False,
         description='True if superuser otherwise False'
     )
+
+    @classmethod
+    def create_indexes(cls, collection):
+        """Create an index to bind unique constraint to username"""
+        collection.create_index("username", unique=True)
 
 
 class KernelVersion(BaseModel):
