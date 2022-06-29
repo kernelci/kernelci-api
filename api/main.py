@@ -35,6 +35,12 @@ async def pubsub_startup():
     pubsub = await PubSub.create()
 
 
+@app.on_event('startup')
+async def create_indexes():
+    """Startup event handler to create database indexes"""
+    await db.create_indexes()
+
+
 async def get_current_user(
         security_scopes: SecurityScopes,
         token: str = Depends(auth.oauth2_scheme)):
