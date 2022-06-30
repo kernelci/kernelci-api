@@ -45,6 +45,15 @@ def mock_db_create(mocker):
 
 
 @pytest.fixture
+def mock_db_create_indexes(mocker):
+    """Mocks async call to Database class method used to create indexes"""
+    async_mock = AsyncMock()
+    mocker.patch('api.db.Database.create_indexes',
+                 side_effect=async_mock)
+    return async_mock
+
+
+@pytest.fixture
 def mock_db_find_by_attributes(mocker):
     """
     Mocks async call to Database class method

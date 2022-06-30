@@ -16,7 +16,7 @@ from api.pubsub import Subscription
 
 
 def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
-                            mock_subscribe):
+                            mock_subscribe, mock_db_create_indexes):
     """
     Test Case : Test KernelCI API /subscribe endpoint
     Expected Result :
