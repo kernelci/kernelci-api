@@ -17,6 +17,7 @@ from fastapi.security import (
     SecurityScopes
 )
 from bson import ObjectId, errors
+from pymongo.errors import DuplicateKeyError
 from .auth import Authentication, Token
 from .db import Database
 from .models import Node, Regression, User, Password
@@ -35,6 +36,12 @@ async def pubsub_startup():
     """Startup event handler to create Pub/Sub object"""
     global pubsub  # pylint: disable=invalid-name
     pubsub = await PubSub.create()
+
+
+@app.on_event('startup')
+async def create_indexes():
+    """Startup event handler to create database indexes"""
+    await db.create_indexes()
 
 
 async def get_current_user(
@@ -87,6 +94,11 @@ async def post_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
+        ) from error
+    except DuplicateKeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{username} is already taken.Try with different username."
         ) from error
     await pubsub.publish_cloudevent('user', {'op': operation,
                                              'id': str(obj.id)})

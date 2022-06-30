@@ -18,7 +18,8 @@ from api.models import User
 
 
 def test_create_regular_user(mock_init_sub_id, mock_get_current_admin_user,
-                             mock_db_create, mock_publish_cloudevent):
+                             mock_db_create, mock_publish_cloudevent,
+                             mock_db_create_indexes):
     """
     Test Case : Test KernelCI API /user endpoint to create regular user
     when requested with admin user's bearer token
@@ -47,7 +48,8 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True)
 
 
 def test_create_admin_user(mock_init_sub_id, mock_get_current_admin_user,
-                           mock_db_create, mock_publish_cloudevent):
+                           mock_db_create, mock_publish_cloudevent,
+                           mock_db_create_indexes):
     """
     Test Case : Test KernelCI API /user endpoint to create admin user
     when requested with admin user's bearer token
@@ -76,7 +78,8 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True)
 
 
 def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
-                                       mock_publish_cloudevent):
+                                       mock_publish_cloudevent,
+                                       mock_db_create_indexes):
     """
     Test Case : Test KernelCI API /user endpoint when requested
     with regular user's bearer token

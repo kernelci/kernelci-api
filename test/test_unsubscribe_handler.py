@@ -15,7 +15,8 @@ from api.main import app
 
 
 def test_unsubscribe_endpoint(mock_get_current_user,
-                              mock_init_sub_id, mock_unsubscribe):
+                              mock_init_sub_id, mock_unsubscribe,
+                              mock_db_create_indexes):
     """
     Test Case : Test KernelCI API /unsubscribe endpoint positive path
     Expected Result :
@@ -32,7 +33,8 @@ def test_unsubscribe_endpoint(mock_get_current_user,
 
 
 def test_unsubscribe_endpoint_empty_response(mock_get_current_user,
-                                             mock_init_sub_id):
+                                             mock_init_sub_id,
+                                             mock_db_create_indexes):
     """
     Test Case : Test KernelCI API /unsubscribe endpoint negative path
     Expected Result :
