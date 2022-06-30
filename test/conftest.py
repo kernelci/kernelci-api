@@ -11,6 +11,7 @@
 """pytest fixtures for KernelCI API"""
 
 from unittest.mock import AsyncMock
+import asyncio
 import fakeredis.aioredis
 from fastapi.testclient import TestClient
 import pytest
@@ -33,6 +34,15 @@ t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k'
 def client():
     """Returns test client instance"""
     return TestClient(app)
+
+
+@pytest.fixture
+def event_loop():
+    """Create an instance of the default event loop for each test case"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    yield loop
+    loop.close()
 
 
 @pytest.fixture
