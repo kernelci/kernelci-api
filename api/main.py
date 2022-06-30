@@ -19,7 +19,7 @@ from fastapi.security import (
 from bson import ObjectId, errors
 from .auth import Authentication, Token
 from .db import Database
-from .models import Node, User, Password
+from .models import Node, Regression, User, Password
 from .pubsub import PubSub, Subscription
 
 app = FastAPI()
@@ -308,3 +308,69 @@ async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
     attributes = dict(raw)
     data = attributes.pop('data')
     await pubsub.publish_cloudevent(channel, data, attributes)
+
+
+# -----------------------------------------------------------------------------
+# Regression
+
+@app.post('/regression')
+async def post_regression(regression: Regression,
+                          token: str = Depends(get_user)):
+    """Create a new regression"""
+    try:
+        obj = await db.create(regression)
+        operation = 'created'
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('regression', {'op': operation,
+                                                   'id': str(obj.id)})
+    return obj
+
+
+@app.get('/regression/{regression_id}', response_model=Regression)
+async def get_regression(regression_id: str):
+    """Get regression information from the provided regression id"""
+    try:
+        return await db.find_by_id(Regression, regression_id)
+    except errors.InvalidId as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+
+
+@app.get('/regressions', response_model=List[Regression])
+async def get_regressions(request: Request):
+    """Get all the regressions if no request parameters have passed.
+       Get all the matching regressions otherwise."""
+
+    query_params = dict(request.query_params)
+    is_valid, msg = Regression.validate_params(query_params)
+    if not is_valid:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid request parameters: {msg}"
+            )
+    translated_params = Regression.translate_fields(query_params)
+    return await db.find_by_attributes(Regression, translated_params)
+
+
+@app.put('/regression/{regression_id}', response_model=Regression)
+async def put_regression(regression_id: str, regression: Regression,
+                         token: str = Depends(get_user)):
+    """Update an already added regression"""
+    try:
+        regression.id = ObjectId(regression_id)
+        obj = await db.update(regression)
+        operation = 'updated'
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('regression', {'op': operation,
+                                                   'id': str(obj.id)})
+    return obj
