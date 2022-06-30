@@ -11,6 +11,7 @@
 """pytest fixtures for KernelCI API"""
 
 from unittest.mock import AsyncMock
+import asyncio
 import fakeredis.aioredis
 from fastapi.testclient import TestClient
 import pytest
@@ -33,6 +34,20 @@ t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k'
 def client():
     """Returns test client instance"""
     return TestClient(app)
+
+
+@pytest.fixture
+def event_loop():
+    """Create an instance of the default event loop for each test case.
+    This is a workaround to prevent the default event loop to be closed by
+    async pubsub tests. It was causing other tests unable to run.
+    The issue has already been reported here:
+    https://github.com/pytest-dev/pytest-asyncio/issues/371
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    yield loop
+    loop.close()
 
 
 @pytest.fixture
