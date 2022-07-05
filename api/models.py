@@ -36,10 +36,16 @@ class PyObjectId(ObjectId):
 class StatusValues(enum.Enum):
     """Enumeration to declare values to be used for Node.status"""
 
+    COMPLETED = "completed"
     PENDING = "pending"
+    TIMEOUT = "timeout"
+
+
+class ResultValues(enum.Enum):
+    """Enumeration to declare values to be used for Node.result"""
+
     PASS = "pass"
     FAIL = "fail"
-    TIMEOUT = "timeout"
 
 
 class ModelId(BaseModel):
@@ -133,7 +139,10 @@ class Node(DatabaseModel):
     )
     status: Optional[StatusValues] = Field(
         default=StatusValues.PENDING,
-        description='Status of test result'
+        description='Status of node'
+    )
+    result: Optional[ResultValues] = Field(
+        description='Result of node'
     )
     artifacts: Optional[Dict] = Field(
         description='Dictionary with names mapping to node associated \
