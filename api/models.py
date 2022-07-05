@@ -175,6 +175,11 @@ completed',
                                      for status in StatusValues]:
             return False, f"Invalid status value '{status}'"
 
+        result = params.get('result')
+        if result and result not in [result.value
+                                     for result in ResultValues]:
+            return False, f"Invalid result value '{result}'"
+
         parent = params.get('parent')
         if parent:
             try:
