@@ -126,11 +126,38 @@ scheduled by the Runner step such as building a kernel, running some test,
 performing some static analysis etc.  Each environment needs to have its own
 API token set up locally to be able to submit the results.
 
-### Email Generator
+### Email Report
 
-The Email Generator step listens for pub/sub events for when tests are complete
-to then generate a summary and send it via email.  The current implementation
-only prints the summary in the logs, and generates one for every test results
-received.  A production solution would send emails to various recipients
-depending on the tests and would wait for an event signalling that a group of
-tests has completed (or timed out).
+The Email Report in its current status listens for events once a build and its revisions'
+tests are completed and renders an email message using a jinja template. In the rendered
+message you can see relevant information about a build or revision. When the message is ready
+the application opens a connection to an STMP server and sends the report to a user or a list of
+recipients that are waiting for the report with the build information after executing tests and
+possible regressions. With the report, it is possible to see the number of tests that have failed or passed,
+as seen in the example below:
+
+```
+testing/master v5.18-rc4-31-g2a987e65025e: 5 runs 3 fails (check-describe)
+
+Tests Summary
+-------------
+
+Build details:
+
+Tree:     testing
+Branch:   master
+Describe: v5.18-rc4-31-g2a987e65025e
+URL:      https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+SHA1:     babf0bb978e3c9fce6c4eba6b744c8754fd43d8e
+
+
+Revision details:
+
+test           | result
+---------------+-------
+check-describe | fail
+check-describe | fail
+check-describe | pass
+check-describe | pass
+check-describe | fail
+```
