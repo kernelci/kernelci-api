@@ -67,21 +67,22 @@ show:
 kernelci-api | INFO:     172.20.0.1:49228 - "GET / HTTP/1.1" 200 OK
 ```
 
-### Create a user account
+### Create an admin user account
 
 Some parts of the API don't require any authentication, like in the example
 above with the root `/` endpoint and most `GET` requests to retrieve data.
 However, sending data with `POST` and `PUT` requests can typically only be done
 by authenticated users.  This will be required to run a full pipeline or to
-subscribe to the pub/sub interface.  At the moment, there is no web UI for
-creating new user accounts or obtaining API tokens so it needs to be done
-manually.
+subscribe to the pub/sub interface.  Then some users have administrator rights,
+which enables them to create new user accounts using the
+[kci_data](/docs/core/kci_data#creating-new-api-user-experimental) command line
+tool.
 
-First, get an encrypted hash for your password with the `/hash` API endpoint.
-This uses a `POST` method to avoid putting the plaintext password in the URL
-which could be leaked in server logs, but it doesn't require authentication
-since it's needed to create an initial user account.  For example, if the
-password is `hello`:
+So let's start by creating the initial admin user account.  First, get an
+encrypted hash for your password with the `/hash` API endpoint.  This uses a
+`POST` method for security reasons.  It doesn't require any authentication and
+it doesn't make any changes to the database.  For example, if the password is
+`hello`:
 
 ```
 curl \
@@ -92,21 +93,19 @@ curl \
 "$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.xCZGmM8jWXUXJZ4K"
 ```
 
-Then create a new user entry in the database.  You will need to provide the
-password hash from the previous command with special characters escaped.  In
-particular, `$` characters need to be escaped with `\$`.  For example, a Mongo
-shell command to create a user entry with the name `bob` and the hash from the
-example above would be:
-
-```
-db.user.insert({username: 'bob', hashed_password: '\$2b\$12\$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.', active: true})
-```
-
-This can be run directly from a terminal via `docker-compose exec`:
+Then create the admin user entry in the database manually via `docker-compose
+exec` to access the database container.  You will need to provide the password
+hash from the previous command with special characters escaped.  In particular,
+`$` characters need to be escaped with `\$`.  For example:
 
 ```
 $ docker-compose exec db /bin/mongo kernelci --eval \
-  "db.user.insert({username: 'bob', hashed_password: '\$2b\$12\$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.', active: true})"
+  "db.user.insert({\
+    username: 'admin', \
+    hashed_password: '\$2b\$12\$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.', \
+    active: true, \
+    is_admin: 1\
+})"
 MongoDB shell version v5.0.3
 connecting to: mongodb://127.0.0.1:27017/kernelci?compressors=disabled&gssapiServiceName=mongodb
 Implicit session: session { "id" : UUID("84a62d1b-4b06-4631-8227-413964826100") }
@@ -114,24 +113,31 @@ MongoDB server version: 5.0.3
 WriteResult({ "nInserted" : 1 })
 ```
 
-Even though after creating the above user, we would be able to run API, ideally, an admin user needs to be created first (using terminal), and then additional users can be created with the `/user` endpoint or kernelci-core command line tools (`kci_data`). The instructions are described [here](https://kernelci.org/docs/api/api-details/#users).
+> **Note** For more details about how to create users via the raw API, see the
+> [API documentation](/docs/api/api-details/#users)
 
-### Create an API token
+### Create an admin API token
 
 Then to get an API token, the `/token` API endpoint can be used.  For example,
-with the same user and password as used previously:
+to create an admin token with the same user name and password as used
+previously:
 
 ```
 $ curl -X 'POST' \
   'http://localhost:8001/token' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=&username=bob&password=hello'
+  -d 'grant_type=&username=admin&password=hello&scope=admin users'
 {"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4","token_type":"bearer"}
 ```
 
-The token can then be used with API entry points that require authentication.
-For example:
+> **Note** This token was created with "admin users" scope so it can be used to
+> create additional user accounts.  For more details about API tokens, see the
+> [API
+> documentation](/docs/api/api-details/#create-an-api-token-with-security-scopes)
+
+The token can now be used with API entry points that require authentication.
+For example, to check it's working:
 
 ```
 $ curl -X 'GET' \
@@ -140,9 +146,6 @@ $ curl -X 'GET' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4'
 {"_id":"615f30020eb7c3c6616e5ac3","username":"bob","hashed_password":"$2b$12$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.","active":true}
 ```
-
-The token for an admin user should be created with admin scope so that other users can be created using kernelci-core command line tools or `/user` endpoint. More details are described [here](https://kernelci.org/docs/api/api-details/#create-an-API-token-with-security-scopes).
-
 
 ## Setting up a Pipeline instance
 
