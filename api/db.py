@@ -68,6 +68,13 @@ class Database:
         data = await col.find(attributes).to_list(None)
         return list(model(**obj) for obj in data)
 
+    def get_model_from_kind(self, kind: str):
+        """Get model from kind parameter"""
+        for key, value in self.COLLECTIONS.items():
+            if value == kind:
+                return key
+        return None
+
     async def create(self, obj):
         """Create a database document from a model object
 
