@@ -347,3 +347,21 @@ async def post_regression(regression: Regression,
     await pubsub.publish_cloudevent('regression', {'op': operation,
                                                    'id': str(obj.id)})
     return obj
+
+
+@app.put('/regression/{regression_id}', response_model=Regression)
+async def put_regression(regression_id: str, regression: Regression,
+                         token: str = Depends(get_user)):
+    """Update an already added regression"""
+    try:
+        regression.id = ObjectId(regression_id)
+        obj = await db.update(regression)
+        operation = 'updated'
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('regression', {'op': operation,
+                                                   'id': str(obj.id)})
+    return obj
