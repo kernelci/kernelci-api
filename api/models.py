@@ -260,3 +260,15 @@ class Regression(Node):
                 return False, str(error)
 
         return True, "Validated successfully"
+
+
+def get_model_from_kind(kind: str):
+    """Get model from kind parameter"""
+    try:
+        models = {
+            "node": Node,
+            "regression": Regression
+        }
+        return models[kind]
+    except KeyError:
+        return None
