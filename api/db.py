@@ -8,7 +8,7 @@
 
 from bson import ObjectId
 from motor import motor_asyncio
-from .models import Node, User
+from .models import Node, User, Regression
 
 
 class Database:
@@ -22,6 +22,7 @@ class Database:
     COLLECTIONS = {
         User: 'user',
         Node: 'node',
+        Regression: 'regression',
     }
 
     def __init__(self, host='db', db_name='kernelci'):
@@ -66,6 +67,13 @@ class Database:
         col = self._get_collection(model)
         data = await col.find(attributes).to_list(None)
         return list(model(**obj) for obj in data)
+
+    def get_model_from_kind(self, kind: str):
+        """Get model from kind parameter"""
+        for key, value in self.COLLECTIONS.items():
+            if value == kind:
+                return key
+        return None
 
     async def create(self, obj):
         """Create a database document from a model object
