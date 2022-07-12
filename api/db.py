@@ -8,7 +8,7 @@
 
 from bson import ObjectId
 from motor import motor_asyncio
-from .models import Node, User
+from .models import Node, User, Regression
 
 
 class Database:
@@ -22,6 +22,7 @@ class Database:
     COLLECTIONS = {
         User: 'user',
         Node: 'node',
+        Regression: 'regression',
     }
 
     def __init__(self, host='db', db_name='kernelci'):

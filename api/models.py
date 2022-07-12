@@ -8,7 +8,7 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import enum
 from bson import ObjectId, errors
 from pydantic import BaseModel, Field, SecretStr, HttpUrl
@@ -31,6 +31,13 @@ class PyObjectId(ObjectId):
         if not ObjectId.is_valid(value):
             raise ValueError('Invalid ObjectId')
         return ObjectId(value)
+
+
+class KindValues(enum.Enum):
+    """Enumeration to declare values to be used for Node.kind"""
+
+    NODE = "node"
+    REGRESSION = "regression"
 
 
 class StatusValues(enum.Enum):
@@ -124,8 +131,8 @@ class Revision(BaseModel):
 
 class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
-    kind: str = Field(
-        default='node',
+    kind: KindValues = Field(
+        default=KindValues.NODE,
         description='Type of the object'
     )
     name: str = Field(
@@ -220,3 +227,55 @@ completed',
         if timeout > current_time:
             time_delta = timeout - current_time
             await asyncio.sleep(time_delta.total_seconds())
+
+
+class RegressionData(BaseModel):
+    """Regression object details model"""""
+
+    class Config:
+        """Configuration attributes for RegressionData"""
+        use_enum_values = True
+
+    revision: Revision = Field(
+        description='Git revision of regression object'
+    )
+    status: StatusValues = Field(
+        description='Regression object status'
+    )
+
+
+class Regression(Node):
+    """API model for regression tracking"""
+
+    regression_data: List[RegressionData] = Field(
+        description='Regression details'
+    )
+
+    def __init__(self, kind=KindValues.REGRESSION, **data):
+        super().__init__(kind=kind, **data)
+
+    @classmethod
+    def validate_params(cls, params: dict):
+        """Validate regression parameters"""
+        ret, msg = Node.validate_params(params)
+        if not ret:
+            return ret, msg
+
+        status = params.get('regression_data.status')
+        if status and status not in [status.value
+                                     for status in StatusValues]:
+            return False, f"Invalid status value '{status}'"
+
+        return True, "Validated successfully"
+
+
+def get_model_from_kind(kind: str):
+    """Get model from kind parameter"""
+    try:
+        models = {
+            "node": Node,
+            "regression": Regression
+        }
+        return models[kind]
+    except KeyError:
+        return None
