@@ -33,6 +33,13 @@ class PyObjectId(ObjectId):
         return ObjectId(value)
 
 
+class KindValues(enum.Enum):
+    """Enumeration to declare values to be used for Node.kind"""
+
+    NODE = "node"
+    REGRESSION = "regression"
+
+
 class StatusValues(enum.Enum):
     """Enumeration to declare values to be used for Node.status"""
 
@@ -124,8 +131,8 @@ class Revision(BaseModel):
 
 class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
-    kind: str = Field(
-        default='node',
+    kind: KindValues = Field(
+        default=KindValues.NODE,
         description='Type of the object'
     )
     name: str = Field(
