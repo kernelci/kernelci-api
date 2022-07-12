@@ -126,7 +126,8 @@ class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
     kind: str = Field(
         default='node',
-        description='Type of the object'
+        description='Type of the object',
+        const=True
     )
     name: str = Field(
         description='Name of the node object'
