@@ -129,6 +129,65 @@ $ curl -X 'GET' \
 {"_id":"615f30020eb7c3c6616e5ac3","username":"bob","hashed_password":"$2b$12$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.","active":true}
 ```
 
+### Setup SSH keys
+
+SSH container in the API can be used to upload files remotely to the storage
+container. Later, those files can be downloaded using HTTP from the Nginx container.
+
+We need to generate SSH keys to use SSH docker container.
+
+Use the below command to generate SSH key. It will store private key to `/home/username/.ssh/id_rsa_kernelci-api` file and public key to `/home/username/.ssh/id_rsa_kernelci-api.pub` file.
+
+```
+$ ssh-keygen -f ~/.ssh/id_rsa_kernelci-api
+```
+
+Use the below command to copy the public key to ssh/user-data directory.
+```
+$ cat ~/.ssh/id_rsa_kernelci-api.pub >> docker/ssh/user-data/authorized_keys
+```
+
+SSH docker container will have /home/kernelci/.ssh/authorized_keys file.
+Now, the user will be able to SSH to container using private key.
+```
+$ ssh -i ~/.ssh/id_rsa_kernelci-api -p 8022 kernelci@localhost
+```
+
+#### SSH setup on WSL
+
+In case of running setup on WSL (Windows Subsystem for Linux),
+we need to have certain file permissions to be able to login to kernelci-ssh container using SSH authorization keys.
+
+Use the below commands to check permissions for `user-data` directory and `authorized_keys` file in `kernelci-api` directory.
+```
+$ ls -lrt kernelci-api/docker/ssh/
+total 5
+-rwxrwxrwx 1 user user  652 Dec 29 11:31 Dockerfile
+-rwxrwxrwx 1 user user 3289 Feb  9 16:25 sshd_config
+drwxrwxrwx 1 user user  512 Feb 11 14:32 user-data
+```
+
+```
+$ ls -lrt kernelci-api/docker/ssh/user-data/
+total 1
+-rwxrwxrwx 1 user user   0 Feb 10 15:59 authorized_keys.sample
+-rwxrwxrwx 1 user user 574 Feb 11 14:35 authorized_keys
+```
+
+We need `user-data` directory permission to be 700(drwxr-xr-x) and `authorized_keys` file permission to be 644(-rw-r--r--). The reason being is, SSH key authorization will not work if the public key file has all the permissions enabled i.e. set to 777(rwxrwxrwx).
+
+If we don't have these permissions already set then we need to change them using the below commands.
+
+```
+$ chmod 700 kernelci-api/docker/ssh/user-data
+$ chmod 644 kernelci-api/docker/ssh/user-data/authorized_keys
+```
+
+If running `chmod` command doesn't affect the permissions, we need to add the below line to /etc/wsl.conf file and restart the `wsl` service to change them successfully:
+```
+options = "metadata"
+```
+
 ## Setting up a Pipeline instance
 
 The pipeline can perform a minimal set of tests using solely the API and its
