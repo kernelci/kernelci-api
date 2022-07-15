@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2022 Collabora Limited
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
+
+"""Command line utility for creating an admin user"""
+
+import argparse
+import subprocess
+import json
+import urllib
+import re
+import requests
+
+
+DEFAULT_URL = 'http://localhost:8001'
+
+
+def get_hashed_password(password, url):
+    """Method to get hashed password"""
+    url = urllib.parse.urljoin(url, '/hash')
+    data = {'password': password}
+    res = requests.post(url, data=json.dumps(data))
+    return res.json()
+
+
+def shell_cmd(cmd, ret_code=False):
+    """Execute shell command"""
+    if ret_code:
+        return False if subprocess.call(cmd, shell=True) else True
+    else:
+        return subprocess.check_output(cmd, shell=True).decode()
+
+
+def create_admin(args):
+    """
+    Create an admin user
+    """
+    password = input("Please enter the password: ")
+    hashed_password = get_hashed_password(password, args.url)
+    ret = shell_cmd(f"docker-compose exec db /bin/mongo kernelci --eval \
+\"db.user.insert({{username: '{args.username}', \
+hashed_password: '{re.escape(hashed_password)}', \
+active: true, is_admin: 1}})\"")
+    print(ret)
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser("KernelCI API Admin")
+    parser.add_argument('username', help="User name")
+    parser.add_argument('--url', default=DEFAULT_URL, help="API host URL")
+    args = parser.parse_args()
+    create_admin(args)
