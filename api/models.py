@@ -8,7 +8,7 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import enum
 from bson import ObjectId, errors
 from pydantic import BaseModel, Field, SecretStr, HttpUrl
@@ -126,7 +126,8 @@ class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
     kind: str = Field(
         default='node',
-        description='Type of the object'
+        description='Type of the object',
+        const=True
     )
     name: str = Field(
         description='Name of the node object'
@@ -220,3 +221,65 @@ completed',
         if timeout > current_time:
             time_delta = timeout - current_time
             await asyncio.sleep(time_delta.total_seconds())
+
+
+class RegressionData(BaseModel):
+    """Regression object details model"""""
+
+    class Config:
+        """Configuration attributes for RegressionData"""
+        use_enum_values = True
+
+    revision: Revision = Field(
+        description='Git revision of regression object'
+    )
+    status: StatusValues = Field(
+        description='Regression object status'
+    )
+    result: ResultValues = Field(
+        description='Regression object result'
+    )
+
+
+class Regression(Node):
+    """API model for regression tracking"""
+
+    kind: str = Field(
+        default='regression',
+        description='Type of the object',
+        const=True
+    )
+    regression_data: List[RegressionData] = Field(
+        description='Regression details'
+    )
+
+    @classmethod
+    def validate_params(cls, params: dict):
+        """Validate regression parameters"""
+        ret, msg = Node.validate_params(params)
+        if not ret:
+            return ret, msg
+
+        status = params.get('regression_data.status')
+        if status and status not in [status.value
+                                     for status in StatusValues]:
+            return False, f"Invalid status value '{status}'"
+
+        result = params.get('regression_data.result')
+        if result and result not in [result.value
+                                     for result in ResultValues]:
+            return False, f"Invalid result value '{result}'"
+
+        return True, "Validated successfully"
+
+
+def get_model_from_kind(kind: str):
+    """Get model from kind parameter"""
+    try:
+        models = {
+            "node": Node,
+            "regression": Regression
+        }
+        return models[kind]
+    except KeyError:
+        return None
