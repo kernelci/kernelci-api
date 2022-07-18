@@ -33,6 +33,12 @@ class Database:
         col = self.COLLECTIONS[model]
         return self._db[col]
 
+    async def create_indexes(self):
+        """Create indexes for models"""
+        for model in self.COLLECTIONS:
+            col = self._get_collection(model)
+            model.create_indexes(col)
+
     async def find_all(self, model):
         """Find all objects of a given model"""
         col = self._get_collection(model)
