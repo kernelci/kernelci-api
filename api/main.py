@@ -286,6 +286,13 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
     """Update an already added node"""
     try:
         node.id = ObjectId(node_id)
+        node_from_id = await get_node(node.id)
+        is_valid, message = node_from_id.validate_node_transition(node.state)
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=message
+            )
         obj = await db.update(node)
         operation = 'updated'
     except ValueError as error:
