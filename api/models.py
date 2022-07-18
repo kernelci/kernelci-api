@@ -239,6 +239,19 @@ completed',
             translated['parent'] = ObjectId(parent)
         return translated
 
+    def validate_node_transition(self, new_state):
+        """Validate Node.state transitions"""
+        state_transition_map = {
+            'running': ['available', 'closing', 'done'],
+            'available': ['closing', 'done'],
+            'closing': ['done'],
+            'done': []
+        }
+        valid_states = state_transition_map[self.state]
+        if new_state not in valid_states:
+            return False, f"Transition not allowed with state: {new_state}"
+        return True, "Transition validated successfully"
+
 
 class Hierarchy(BaseModel):
     """Hierarchy of nodes with child nodes"""
