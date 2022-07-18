@@ -222,6 +222,18 @@ completed',
             time_delta = timeout - current_time
             await asyncio.sleep(time_delta.total_seconds())
 
+    def validate_node_transition(self, new_status, new_result):
+        """Validate Node.status and Node.result transitions"""
+        if (self.status in ("completed", "timeout") and
+                new_status == "pending") or \
+                (self.status == "completed" and new_status == "timeout"):
+            return False, f"Transition not allowed with status: {new_status}"
+
+        if self.result in ("pass", "fail") and new_result is None:
+            return False, f"Transition not allowed with result: {new_result}"
+
+        return True, "Transition validated successfully"
+
 
 class Regression(Node):
     """API model for regression tracking"""
