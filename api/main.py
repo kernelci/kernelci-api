@@ -9,7 +9,7 @@
 """KernelCI API main module"""
 
 from datetime import timedelta
-from typing import List
+from typing import List, Union
 from fastapi import Depends, FastAPI, HTTPException, status, Request, Security
 from fastapi.encoders import jsonable_encoder
 from fastapi.security import (
@@ -19,7 +19,7 @@ from fastapi.security import (
 from bson import ObjectId, errors
 from .auth import Authentication, Token
 from .db import Database
-from .models import Node, User, Password
+from .models import Node, Regression, User, Password, get_model_from_kind
 from .pubsub import PubSub, Subscription
 
 app = FastAPI()
@@ -147,25 +147,44 @@ def get_password_hash(password: Password):
 # -----------------------------------------------------------------------------
 # Nodes
 
-@app.get('/node/{node_id}', response_model=Node)
-async def get_node(node_id: str):
+@app.get('/node/{node_id}', response_model=Union[Regression, Node])
+async def get_node(node_id: str, kind: str = "node"):
     """Get node information from the provided node id"""
-    return await db.find_by_id(Node, node_id)
+    try:
+        model = get_model_from_kind(kind)
+        if model is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid kind: {kind}"
+            )
+        return await db.find_by_id(model, node_id)
+    except errors.InvalidId as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
 
 
-@app.get('/nodes', response_model=List[Node])
-async def get_nodes(request: Request):
+@app.get('/nodes', response_model=List[Union[Regression, Node]])
+async def get_nodes(request: Request, kind: str = "node"):
     """Get all the nodes if no request parameters have passed.
        Get all the matching nodes otherwise."""
+    model = get_model_from_kind(kind)
+    if model is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid kind: {kind}"
+        )
+
     query_params = dict(request.query_params)
-    is_valid, msg = Node.validate_params(query_params)
+    is_valid, msg = model.validate_params(query_params)
     if not is_valid:
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid request parameters: {msg}"
             )
-    translated_params = Node.translate_fields(query_params)
-    return await db.find_by_attributes(Node, translated_params)
+    translated_params = model.translate_fields(query_params)
+    return await db.find_by_attributes(model, translated_params)
 
 
 @app.get('/get_root_node/{node_id}', response_model=Node)
@@ -308,3 +327,41 @@ async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
     attributes = dict(raw)
     data = attributes.pop('data')
     await pubsub.publish_cloudevent(channel, data, attributes)
+
+
+# -----------------------------------------------------------------------------
+# Regression
+
+@app.post('/regression')
+async def post_regression(regression: Regression,
+                          token: str = Depends(get_user)):
+    """Create a new regression"""
+    try:
+        obj = await db.create(regression)
+        operation = 'created'
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('regression', {'op': operation,
+                                                   'id': str(obj.id)})
+    return obj
+
+
+@app.put('/regression/{regression_id}', response_model=Regression)
+async def put_regression(regression_id: str, regression: Regression,
+                         token: str = Depends(get_user)):
+    """Update an already added regression"""
+    try:
+        regression.id = ObjectId(regression_id)
+        obj = await db.update(regression)
+        operation = 'updated'
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('regression', {'op': operation,
+                                                   'id': str(obj.id)})
+    return obj
