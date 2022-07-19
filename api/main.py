@@ -8,7 +8,6 @@
 
 """KernelCI API main module"""
 
-from datetime import timedelta
 from typing import List, Union
 from fastapi import Depends, FastAPI, HTTPException, status, Request, Security
 from fastapi.encoders import jsonable_encoder
@@ -208,42 +207,38 @@ async def get_root_node(node_id: str):
 
 
 @app.get('/trigger_completed_event/{node_id}')
-async def trigger_completed_event(node_id: str, wait_time_hours: int = 0,
-                                  wait_time_minutes: int = 0,
-                                  wait_time_seconds: int = 0):
-    """Trigger an event when all child nodes are completed of
-       a given node"""
-    try:
-        nodes = await db.find_by_attributes(Node,
-                                            {"parent": ObjectId(node_id)})
+async def trigger_completed_event(node_id: str):
+    """Set parent node status to completed when all child
+       nodes are completed and trigger an event"""
 
+    try:
+        node = await db.find_by_id(Node, ObjectId(node_id))
+        if node is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Node not found with id: {node_id}"
+            )
     except errors.InvalidId as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
         ) from error
 
-    if not nodes:
+    node.status = "completed"
+
+    try:
+        await db.update(node)
+    except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"No child node found of a given node id:{node_id}"
-        )
-
-    for node in nodes:
-        if node.status == 'pending':
-            timeout = node.created + timedelta(hours=wait_time_hours,
-                                               minutes=wait_time_minutes,
-                                               seconds=wait_time_seconds)
-            await Node.wait_for_node(timeout)
-
-            if node.status == 'pending':
-                return {"message": "Nodes are not completed yet"}
-
+            detail=str(error)
+        ) from error
+    nodes = await db.find_by_attributes(Node, {"parent": ObjectId(node_id)})
     operation = 'completed'
     await pubsub.publish_cloudevent('node', {'op': operation,
                                              'id': str(node_id),
                                     'nodes': jsonable_encoder(nodes)})
-    return {"message": "'Event triggered"}
+    return {"message": "Completed event triggered"}
 
 
 @app.post('/node', response_model=Node)
