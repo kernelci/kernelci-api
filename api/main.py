@@ -236,16 +236,7 @@ async def trigger_completed_event(node_id: str, wait_time_hours: int = 0,
                                                seconds=wait_time_seconds)
             await Node.wait_for_node(timeout)
 
-            ret = node.set_timeout_status()
-            if ret:
-                try:
-                    await db.update(node)
-                except ValueError as error:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=str(error)
-                    ) from error
-            else:
+            if node.status == 'pending':
                 return {"message": "Nodes are not completed yet"}
 
     operation = 'completed'
