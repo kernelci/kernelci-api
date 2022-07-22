@@ -102,6 +102,25 @@ class User(ModelId):
     )
 
 
+class KernelVersion(BaseModel):
+    """Linux kernel version model"""
+    version: int = Field(
+        description="Major version number e.g. 4 in 'v4.19'"
+    )
+    patchlevel: int = Field(
+        description="Minor version number or 'patch level' e.g. 19 in 'v4.19'"
+    )
+    sublevel: Optional[int] = Field(
+        description="Stable version or 'sub-level' e.g. 123 in 'v4.19.123'"
+    )
+    extra: Optional[str] = Field(
+        description="Extra version string e.g. -rc2 in 'v4.19-rc2'"
+    )
+    name: Optional[str] = Field(
+        description="Version name e.g. People's Front for v4.19"
+    )
+
+
 class Revision(BaseModel):
     """Linux kernel Git revision model"""
     tree: str = Field(
@@ -119,6 +138,9 @@ class Revision(BaseModel):
     describe: Optional[str] = Field(
         default=None,
         description='git describe of the revision'
+    )
+    version: Optional[KernelVersion] = Field(
+        description="Kernel version"
     )
 
 
