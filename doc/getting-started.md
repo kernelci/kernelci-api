@@ -78,38 +78,20 @@ which enables them to create new user accounts using the
 [kci_data](/docs/core/kci_data#creating-new-api-user-experimental) command line
 tool.
 
-So let's start by creating the initial admin user account.  First, get an
-encrypted hash for your password with the `/hash` API endpoint.  This uses a
-`POST` method for security reasons.  It doesn't require any authentication and
-it doesn't make any changes to the database.  For example, if the password is
-`hello`:
+So let's start by creating the initial admin user account.  This can be done
+with the
+[`create_admin_user`](https://github.com/kernelci/kernelci-api/blob/main/create_admin_user)
+tool provided in the `kernelci-api` repository.  Call it with the name of the
+admin user you want to create such as `admin`, then enter the admin password
+when prompted:
 
 ```
-curl \
-  -X POST \
-  -H 'Content-Type: application/json' \
-  -d '{"password": "hello"}' \
-  http://localhost:8001/hash
-"$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.xCZGmM8jWXUXJZ4K"
-```
-
-Then create the admin user entry in the database manually via `docker-compose
-exec` to access the database container.  You will need to provide the password
-hash from the previous command with special characters escaped.  In particular,
-`$` characters need to be escaped with `\$`.  For example:
-
-```
-$ docker-compose exec db /bin/mongo kernelci --eval \
-  "db.user.insert({\
-    username: 'admin', \
-    hashed_password: '\$2b\$12\$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.', \
-    active: true, \
-    is_admin: 1\
-})"
-MongoDB shell version v5.0.3
+$ ./create_admin_user admin
+Please enter the password: hello
+MongoDB shell version v5.0.9
 connecting to: mongodb://127.0.0.1:27017/kernelci?compressors=disabled&gssapiServiceName=mongodb
-Implicit session: session { "id" : UUID("84a62d1b-4b06-4631-8227-413964826100") }
-MongoDB server version: 5.0.3
+Implicit session: session { "id" : UUID("7de03dfa-4e3c-4103-8c44-4728fbc5f8c0") }
+MongoDB server version: 5.0.9
 WriteResult({ "nInserted" : 1 })
 ```
 
