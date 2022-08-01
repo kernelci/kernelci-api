@@ -36,7 +36,7 @@ class PyObjectId(ObjectId):
 class StatusValues(enum.Enum):
     """Enumeration to declare values to be used for Node.status"""
 
-    COMPLETED = "completed"
+    COMPLETE = "complete"
     PENDING = "pending"
     TIMEOUT = "timeout"
 
