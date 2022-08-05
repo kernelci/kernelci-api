@@ -6,7 +6,6 @@
 
 """KernelCI API model definitions"""
 
-import asyncio
 from datetime import datetime
 from typing import Optional, Dict, List
 import enum
@@ -225,14 +224,6 @@ completed',
         if parent:
             translated['parent'] = ObjectId(parent)
         return translated
-
-    @classmethod
-    async def wait_for_node(cls, timeout):
-        """Wait for node to get completed until timeout"""
-        current_time = datetime.utcnow()
-        if timeout > current_time:
-            time_delta = timeout - current_time
-            await asyncio.sleep(time_delta.total_seconds())
 
 
 class Regression(Node):
