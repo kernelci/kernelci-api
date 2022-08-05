@@ -8,17 +8,33 @@
 
 """KernelCI API main module"""
 
-from typing import List, Union
-from fastapi import Depends, FastAPI, HTTPException, status, Request, Security
+from typing import Union
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    status,
+    Request,
+    Security,
+    Query
+)
 from fastapi.security import (
     OAuth2PasswordRequestForm,
     SecurityScopes
 )
+from fastapi_pagination import add_pagination, paginate
 from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
 from .auth import Authentication, Token
 from .db import Database
-from .models import Node, Regression, User, Password, get_model_from_kind
+from .models import (
+    Node,
+    Regression,
+    User,
+    Password,
+    get_model_from_kind
+)
+from .paginator_models import PageModel
 from .pubsub import PubSub, Subscription
 
 app = FastAPI()
@@ -176,8 +192,10 @@ async def get_node(node_id: str, kind: str = "node"):
         ) from error
 
 
-@app.get('/nodes', response_model=List[Union[Regression, Node]])
-async def get_nodes(request: Request, kind: str = "node"):
+@app.get('/nodes', response_model=PageModel)
+async def get_nodes(request: Request, kind: str = "node",
+                    offset: int = Query(default=0, ge=0),
+                    limit: int = Query(default=50, ge=1)):
     """Get all the nodes if no request parameters have passed.
        Get all the matching nodes otherwise."""
     model = get_model_from_kind(kind)
@@ -188,6 +206,10 @@ async def get_nodes(request: Request, kind: str = "node"):
         )
 
     query_params = dict(request.query_params)
+
+    # Remove parameters provided for pagination from the dictionary
+    model.filter_params(query_params)
+
     is_valid, msg = model.validate_params(query_params)
     if not is_valid:
         raise HTTPException(
@@ -195,7 +217,9 @@ async def get_nodes(request: Request, kind: str = "node"):
                 detail=f"Invalid request parameters: {msg}"
             )
     translated_params = model.translate_fields(query_params)
-    return await db.find_by_attributes(model, translated_params)
+    return paginate(await db.find_by_attributes(model, translated_params))
+
+add_pagination(app)
 
 
 @app.get('/get_root_node/{node_id}', response_model=Node)
