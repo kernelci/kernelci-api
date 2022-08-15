@@ -75,7 +75,8 @@ async def post_user(
         current_user: User = Security(get_user, scopes=["admin"])):
     """Create new user"""
     try:
-        hashed_password = auth.get_password_hash(str(password.password))
+        hashed_password = auth.get_password_hash(
+                                password.password.get_secret_value())
         obj = await db.create(User(
                                 username=username,
                                 hashed_password=hashed_password,
