@@ -162,6 +162,9 @@ class Node(DatabaseModel):
     name: str = Field(
         description='Name of the node object'
     )
+    group: Optional[str] = Field(
+        description='Name of a group this node belongs to'
+    )
     revision: Revision = Field(
         description='Git revision object'
     )
