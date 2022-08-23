@@ -1,11 +1,12 @@
 ---
 title: "API details"
-date: 2022-05-09
+date: 2022-08-23
 description: "KernelCI API building blocks"
 weight: 3
 ---
 
-This guide describes KernelCI API building blocks such as Node model and PubSub interface. It also includes details about environment variables.
+This guide describes KernelCI API building blocks such as Node model and PubSub
+interface. It also includes details about environment variables.
 
 
 ## Environment Variables
@@ -14,11 +15,12 @@ The instructions about environment file is described [here].(https://kernelci.or
 
 ### Set ALGORITHM and ACCESS_TOKEN_EXPIRE_MINUTES in environment file
 
-We need to specify an algorithm for JWT token encoding and decoding. ALGORITHM variable needs to be passed in the parameter for that.
-ALGORITHM is set default to HS256.
-We have used ACCESS_TOKEN_EXPIRE_MINUTES variable to set expiry time on generated jwt access token.
-ACCESS_TOKEN_EXPIRE_MINUTES is set default to None.
-If a user wants to change any of the above variables, they should be added to the .env file.
+We need to specify an algorithm for JWT token encoding and decoding. ALGORITHM
+variable needs to be passed in the parameter for that.  ALGORITHM is set
+default to HS256.  We have used ACCESS_TOKEN_EXPIRE_MINUTES variable to set
+expiry time on generated jwt access token.  ACCESS_TOKEN_EXPIRE_MINUTES is set
+default to None.  If a user wants to change any of the above variables, they
+should be added to the .env file.
 
 
 ## Users
@@ -65,10 +67,12 @@ $ curl -X 'POST' \
 
 ### Create user using endpoint
 
-Now, we can use above created admin user to create regular users and other admin users using `/user` API endpoint.
-We need to provide token (retrieved with scope admin) to the endpoint for the authorization.
+Now, we can use above created admin user to create regular users and other
+admin users using `/user` API endpoint.  We need to provide token (retrieved
+with scope admin) to the endpoint for the authorization.
 
-To create a regular user, provide a username to request query parameter and password to request data dictionary.
+To create a regular user, provide a username to request query parameter and
+password to request data dictionary.
 
 ```
 $ curl -X 'POST'
@@ -80,14 +84,17 @@ $ curl -X 'POST'
 {'_id': '615f30020eb7c3c6616e5ac3', 'username': 'test', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'active': True, 'is_admin': False}
 ```
 
-To create an admin user, provide a username, and `is_admin` flag to request query parameter and password to request data dictionary.
+To create an admin user, provide a username, and `is_admin` flag to request
+query parameter and password to request data dictionary.
 
 ```
 $ curl -X 'POST' 'http://localhost:8001/user/test_admin?is_admin=1' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"password": "admin"}'
 {'_id': '615f30020eb7c3c6616e5ac6', 'username': 'test_admin', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'active': True, 'is_admin': True}
 ```
 
-Another way of creating users is to use `kci_data` from kernelci-core. The instructions are described [here](https://kernelci.org/docs/core/kci_data/#creating-user).
+Another way of creating users is to use `kci_data` from kernelci-core. The
+instructions are described
+[here](https://kernelci.org/docs/core/kci_data/#creating-user).
 
 
 ## Nodes
@@ -97,7 +104,8 @@ It's possible to create new objects and retrieve them via the API.
 
 ### Create a Node
 
-To create an object of `Node` model, a `POST` request should be made along with the Node attributes. This requires an authentication token:
+To create an object of `Node` model, a `POST` request should be made along with
+the Node attributes. This requires an authentication token:
 
 ```
 $ curl -X 'POST' \
@@ -134,7 +142,8 @@ $ curl http://localhost:8001/nodes
 [{"_id":"61b052199bca2a448fe49673","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-01T11:23:03.157648", "updated":"2022-02-02T11:23:03.157648"},{"_id":"61b052199bca2a448fe49674","kind":"node","name":"check-describe","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":"61b052199bca2a448fe49673","status":"pending", "result":null,"created":"2022-01-02T10:23:03.157648", "updated":"2022-01-02T11:23:03.157648"}]
 ```
 
-To get nodes by providing attributes, use `/nodes` endpoint with query parameters. All the attributes except node ID can be passed to this endpoint.
+To get nodes by providing attributes, use `/nodes` endpoint with query
+parameters. All the attributes except node ID can be passed to this endpoint.
 In case of ID, please use `/node` endpoint with node ID as described above.
 
 ```
@@ -173,7 +182,10 @@ events and publish them too.  All the events are formatted using
 
 ### Listen & Publish CloudEvent
 
-The [`client.py`](https://github.com/kernelci/kernelci-api/blob/main/api/client.py) script provides a reference implementation for publishing and listening to events.
+The
+[`client.py`](https://github.com/kernelci/kernelci-api/blob/main/api/client.py)
+script provides a reference implementation for publishing and listening to
+events.
 
 For example, in a first terminal:
 
