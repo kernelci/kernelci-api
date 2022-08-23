@@ -32,12 +32,13 @@ class PyObjectId(ObjectId):
         return ObjectId(value)
 
 
-class StatusValues(enum.Enum):
-    """Enumeration to declare values to be used for Node.status"""
+class StateValues(enum.Enum):
+    """Enumeration to declare values to be used for Node.state"""
 
-    COMPLETE = "complete"
-    PENDING = "pending"
-    TIMEOUT = "timeout"
+    RUNNING = 'running'
+    AVAILABLE = 'available'
+    CLOSING = 'closing'
+    DONE = 'done'
 
 
 class ResultValues(enum.Enum):
@@ -171,9 +172,9 @@ class Node(DatabaseModel):
     parent: Optional[PyObjectId] = Field(
         description='Parent commit SHA'
     )
-    status: Optional[StatusValues] = Field(
-        default=StatusValues.PENDING,
-        description='Status of node'
+    state: Optional[StateValues] = Field(
+        default=StateValues.RUNNING,
+        description='State of the node'
     )
     result: Optional[ResultValues] = Field(
         description='Result of node'
@@ -204,14 +205,12 @@ completed',
     @classmethod
     def validate_params(cls, params: dict):
         """Validate Node parameters"""
-        status = params.get('status')
-        if status and status not in [status.value
-                                     for status in StatusValues]:
-            return False, f"Invalid status value '{status}'"
+        state = params.get('state')
+        if state and state not in [state.value for state in StateValues]:
+            return False, f"Invalid state value '{state}'"
 
         result = params.get('result')
-        if result and result not in [result.value
-                                     for result in ResultValues]:
+        if result and result not in [result.value for result in ResultValues]:
             return False, f"Invalid result value '{result}'"
 
         parent = params.get('parent')
@@ -257,14 +256,12 @@ class Regression(Node):
         if not ret:
             return ret, msg
 
-        status = params.get('regression_data.status')
-        if status and status not in [status.value
-                                     for status in StatusValues]:
-            return False, f"Invalid status value '{status}'"
+        state = params.get('regression_data.state')
+        if state and state not in [state.value for state in StateValues]:
+            return False, f"Invalid state value '{state}'"
 
         result = params.get('regression_data.result')
-        if result and result not in [result.value
-                                     for result in ResultValues]:
+        if result and result not in [result.value for result in ResultValues]:
             return False, f"Invalid result value '{result}'"
 
         parent = params.get('regression_data.parent')
