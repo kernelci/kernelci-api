@@ -5,13 +5,16 @@ description: "KernelCI API building blocks"
 weight: 3
 ---
 
-This guide describes KernelCI API building blocks such as Node model and PubSub
-interface. It also includes details about environment variables.
+This guide describes the KernelCI API components such as data models and the
+Pub/Sub interface in detail.  It also explains how to use the API directly for
+setting things up and issuing low-level queries.
 
 
 ## Environment Variables
 
-The instructions about environment file is described [here].(https://kernelci.org/docs/api/getting-started/#create-the-environment-file)
+General instructions about the environment file are described on the [getting
+started](https://kernelci.org/docs/api/getting-started/#create-the-environment-file)
+page.  This section goes through all the environment variables used by the API.
 
 ### Set ALGORITHM and ACCESS_TOKEN_EXPIRE_MINUTES in environment file
 
