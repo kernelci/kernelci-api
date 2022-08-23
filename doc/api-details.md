@@ -176,6 +176,61 @@ $ curl -X 'PUT' \
 {"_id":"61bda8f2eb1a63d2b7152418","kind":"node","name":"checkout-test","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-02T11:23:03.157648", "updated":"2022-02-02T12:23:03.157648"}
 ```
 
+### State diagram
+
+The Node objects are governed by the following state machine:
+
+```mermaid
+graph LR
+  running(Running) --> job{successful?}
+  running -.-> |timeout| done(Done)
+  job --> |no| done(Done)
+  job --> |yes| available(Available)
+  available -.-> |timeout| done
+  available --> |holdoff expired| closing(Closing)
+  closing -.-> |timeout| done
+  closing --> |child nodes done| done
+```
+
+The state of the Node is kept in the `state` field in the `Node` models.  The
+different state values are described below:
+
+Running
+: The job has been scheduled and there is no result yet.
+
+Available
+: The job was successful.  Child nodes that depend on the job's success can now
+  be created.
+
+Closing
+: The holdoff time has been reached, the node is now waiting for any closing
+  child nodes to reach the Done state.
+
+Done
+: The node has reached its final state.
+
+
+> **Note** The information whether the job succeeded or not, or if any tests
+> passed or not is stored in a separate field `result`.  The state machine
+> doesn't rely on the data field at all, it's considered extra meta-data used
+> for looking at the actual results.  If a job fails, it goes straight from
+> Running to Done and any service waiting for it to be Available will know it
+> can't be used (for example, runtime tests can't be scheduled if a kernel
+> build failed).
+
+There are two fields that can cause time-driven state transitions:
+
+holdoff
+: This is for the node to remain in the Available state for a minimum amount of
+  time and allow other nodes that depend on its success to be created.  Without
+  this time constraint, there would be a race condition when the job is
+  complete as without any child nodes it would go directly to Done.
+
+timeout
+: This is the time when the node needs to go to the Done state regardless of
+  its current state.  The main reasons why this is needed are for when a node
+  gets stuck and never completes its job, or while waiting for child nodes to
+  complete.
 
 ## Pub/Sub and CloudEvent
 
