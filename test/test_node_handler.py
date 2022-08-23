@@ -44,7 +44,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
             group="debug",
             revision=revision_obj,
             parent=None,
-            status="pending",
+            state="closing",
             result=None,
         )
     mock_db_create.return_value = node_obj
@@ -82,7 +82,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
             'parent',
             'result',
             'revision',
-            'status',
+            'state',
             'updated',
         }
 
@@ -111,7 +111,7 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
             name="checkout",
             revision=revision_obj_1,
             parent="61bda8f2eb1a63d2b7152410",
-            status="pending",
+            state="closing",
             result=None,
         )
     revision_obj_2 = Revision(
@@ -128,7 +128,7 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
             name="checkout",
             revision=revision_obj_2,
             parent="61bda8f2eb1a63d2b7152410",
-            status="pending",
+            state="closing",
             result=None,
         )
     mock_db_find_by_attributes.return_value = [node_obj_1, node_obj_2]
@@ -137,7 +137,7 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
         "name": "checkout",
         "revision.tree": "mainline",
         "revision.branch": "master",
-        "status": "pending",
+        "state": "closing",
         "parent": "61bda8f2eb1a63d2b7152410",
     }
     with TestClient(app) as client:
@@ -201,7 +201,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
             group="blah",
             revision=revision_obj,
             parent=None,
-            status="pending",
+            state="closing",
             result=None,
         )
     mock_db_find_by_id.return_value = node_obj
@@ -221,7 +221,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
             'parent',
             'result',
             'revision',
-            'status',
+            'state',
             'updated',
         }
 
@@ -268,7 +268,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
             name="checkout",
             revision=revision_obj_1,
             parent=None,
-            status="pending",
+            state="closing",
             result=None,
         )
     revision_obj_2 = Revision(
@@ -285,7 +285,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
             name="test_node",
             revision=revision_obj_2,
             parent=None,
-            status="pending",
+            state="closing",
             result=None,
         )
     revision_obj_3 = Revision(
@@ -302,7 +302,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
             name="test",
             revision=revision_obj_3,
             parent=None,
-            status="pending",
+            state="closing",
             result=None,
         )
     mock_db_find_by_attributes.return_value = [node_obj_1, node_obj_2,
@@ -355,7 +355,7 @@ def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
             name="checkout",
             revision=revision_obj,
             parent="61bda8f2eb1a63d2b7152410",
-            status="pending",
+            state="closing",
             result=None,
         )
     root_node_obj = Node(
@@ -364,7 +364,7 @@ def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
             name="root",
             revision=revision_obj,
             parent=None,
-            status="pending",
+            state="closing",
             result=None,
         )
     mock_db_find_by_id.side_effect = [node_obj, root_node_obj]
@@ -384,7 +384,7 @@ def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
             'parent',
             'result',
             'revision',
-            'status',
+            'state',
             'updated'
         }
 
