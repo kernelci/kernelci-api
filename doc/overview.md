@@ -38,40 +38,44 @@ HTTP URLs.
 
 The new KernelCI API is a work-in-progress to replace the current
 [backend](https://api.kernelci.org/) used in production, which has several
-limitations.  In particular:
+limitations.  In particular, the [**previous backend
+API**](https://github.com/kernelci/kernelci-backend):
 
-* Written in Python 2.7, which has now reached end-of-life
-* Monolithic design with many built-in features (regression tracking, email
-  reports, parsing test results directly from LAVA labs...)
-* Asynchronous request handling is done using Celery, whereas modern Python can
-  do this natively
-* No pub/sub mechanism, orchestration relies on an external framework
+* was written in Python 2.7, which has now reached end-of-life
+* has a monolithic design with many built-in features (regression tracking,
+  email reports, parsing test results directly from LAVA labs...)
+* uses Celery for asynchronous request handling, whereas modern Python can do
+  this natively
+* has no pub/sub mechanism, orchestration relies on an external framework
   (i.e. Jenkins)
 
+To overcome these limitations, the **new API** has the following
+characteristics:
 
-To overcome these limitations, the new API has the following characteristics:
+* based on [FastAPI](https://fastapi.tiangolo.com/) to provide native
+  asynchronous request handling, data model validation using
+  [Pydantic](https://pydantic-docs.helpmanual.io/), automatically generated
+  documentation with [OpenAPI](https://www.openapis.org/).  See also the
+  [OpenAPI JSON description](https://staging.kernelci.org:9000/openapi.json).
+* Pub/Sub mechanism via the API, with [Redis](https://redis.io/) to manage
+  message queues.  This can now be used to coordinate client-side functions and
+  recreate a full modular pipeline with no additional framework
+* [CloudEvent](https://cloudevents.io/) for the formatting of Pub/Sub events
+* is written for [Python 3.10](https://www.python.org/downloads/release/python-3100/)
+* relies on [JWT](https://jwt.io/) authentication for inter-operability with
+  other services
+* treats storage entirely separately from the API which purely handles data.
+  An initial storage solution is provided using SSH for sending files and HTTP
+  for serving them.
 
-* Based on FastAPI to provide native asynchronous request handling, data model
-  validation using Pydantic, automatically generated documentation with
-  [OpenAPI](https://www.openapis.org/).  See also the [OpenAPI JSON
-  description](https://staging.kernelci.org:9000/openapi.json).
-* Pub/SUb mechanism via the API, with Redis to manage message queues.  This can
-  now be used to coordinate client-side functions and recreate a full modular
-  pipeline with no additional framework
-* CloudEvent for the formatting of Pub/Sub events
-* Written for Python 3.10
-* Authentication based on JWT for inter-operability with other services
-* Storage is entirely separate from the API as it purely handles data.  An
-  initial storage solution is provided using SSH for sending files and HTTP for
-  serving them.
+A few things **aren't changing**:
 
-A few things aren't changing:
-
-* MongoDB has been used with the first backend for several years and is
-  providing good results.  We might just move it to a Cloud-based hosting such
-  as Atlas for the future linux.kernelci.org deployment.
-* Redis is still being used internally as in-memory database for various
-  features in addition to the pub/sub channels
+* [MongoDB](https://www.mongodb.com/) has been used with the first backend for
+  several years and is providing good results.  We might just move it to a
+  Cloud-based hosting such as Atlas for the future linux.kernelci.org
+  deployment.
+* [Redis]((https://redis.io/)) is still being used internally as in-memory
+  database for various features in addition to the pub/sub channels
 
 ## Pipeline design
 
