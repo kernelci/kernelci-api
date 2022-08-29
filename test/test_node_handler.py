@@ -172,7 +172,7 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(
             )
         print("response.json()", response.json())
         assert response.status_code == 200
-        assert len(response.json()) == 0
+        assert response.json().get('total') == 0
 
 
 def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
@@ -327,7 +327,7 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
         response = client.get("/nodes")
         print("response.json()", response.json())
         assert response.status_code == 200
-        assert len(response.json()) == 0
+        assert response.json().get('total') == 0
 
 
 def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
