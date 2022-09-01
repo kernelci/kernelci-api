@@ -8,7 +8,7 @@
 
 from bson import ObjectId
 from motor import motor_asyncio
-from .models import Node, User, Regression
+from .models import Hierarchy, Node, User, Regression
 
 
 class Database:
@@ -89,6 +89,34 @@ class Database:
         res = await col.insert_one(obj.dict(by_alias=True))
         obj.id = res.inserted_id
         return obj
+
+    async def _create_recursively(self, hierarchy: Hierarchy, parent: Node,
+                                  cls, col):
+        obj, nodes = hierarchy.node, hierarchy.child_nodes
+        if parent:
+            obj.parent = parent.id
+        if obj.id:
+            obj.update()
+            res = await col.replace_one(
+                {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
+            )
+            if res.matched_count == 0:
+                raise ValueError(f"No object found with id: {obj.id}")
+        else:
+            delattr(obj, 'id')
+            res = await col.insert_one(obj.dict(by_alias=True))
+            obj.id = res.inserted_id
+        obj = cls(**await col.find_one({'_id': ObjectId(obj.id)}))
+        obj_list = [obj]
+        for node in nodes:
+            child_nodes = await self._create_recursively(node, obj, cls, col)
+            obj_list.extend(child_nodes)
+        return obj_list
+
+    async def create_hierarchy(self, hierarchy: Hierarchy, cls):
+        """Create a hierarchy of objects"""
+        col = self._get_collection(cls)
+        return await self._create_recursively(hierarchy, None, cls, col)
 
     async def update(self, obj):
         """Update an existing document from a model object
