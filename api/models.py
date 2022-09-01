@@ -248,6 +248,15 @@ completed',
                 del params[param]
 
 
+class Hierarchy(BaseModel):
+    """Hierarchy of nodes with child nodes"""
+    node: Node
+    child_nodes: List['Hierarchy']
+
+
+Hierarchy.update_forward_refs()
+
+
 class Regression(Node):
     """API model for regression tracking"""
 
