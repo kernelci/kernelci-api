@@ -8,7 +8,7 @@
 
 """KernelCI API main module"""
 
-from typing import Union
+from typing import List, Union
 from fastapi import (
     Depends,
     FastAPI,
@@ -29,6 +29,7 @@ from .auth import Authentication, Token
 from .db import Database
 from .models import (
     Node,
+    Hierarchy,
     Regression,
     User,
     Password,
@@ -273,6 +274,24 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
     await pubsub.publish_cloudevent('node', {'op': operation,
                                              'id': str(obj.id)})
     return obj
+
+
+@app.put('/nodes/{node_id}', response_model=List[Node])
+async def put_nodes(
+        node_id: str, nodes: Hierarchy, token: str = Depends(get_user)):
+    """Add a hierarchy of nodes to an existing root node"""
+    try:
+        nodes.node.id = ObjectId(node_id)
+        obj_list = await db.create_hierarchy(nodes, Node)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
+    await pubsub.publish_cloudevent('node', {
+        'op': 'updated', 'id': str(obj_list[0].id)
+    })
+    return obj_list
 
 
 # -----------------------------------------------------------------------------
