@@ -83,7 +83,7 @@ graph LR
   new --> |yes| tarball(Tarball)
   new -.-> |no| trigger
   tarball --> |event: <br /> new revision| runner(Test <br /> Runner)
-  runner --> |event: <br /> test pending| runtime(Runtime <br /> Environment)
+  runner --> |event: <br /> test running| runtime(Runtime <br /> Environment)
   runtime --> |event: <br /> test complete| email(Email <br /> Generator)
 ```
 
@@ -98,14 +98,14 @@ The Trigger step periodically checks whether a new kernel revision has appeared
 on a git branch.  It first gets the revision checksum from the top of the
 branch from the git repo and then queries the API to check whether it has
 already been covered.  If there's no revision entry with this checksum in the
-API, it then pushes one with "pending" state.
+API, it then pushes one with "available" state.
 
 ### Tarball
 
-The Tarball step listens for pub/sub events about new pending revisions.  When
-one is received, typically because the trigger pushed a new revision to the
-API, it then updates a local git checkout of the full kernel source tree.  Then
-it makes a tarball with the source code and pushes it to the storage.  Finally,
+The Tarball step listens for pub/sub events about new revisions.  When one is
+received, typically because the trigger pushed a new revision to the API, it
+then updates a local git checkout of the full kernel source tree.  Then it
+makes a tarball with the source code and pushes it to the storage.  Finally,
 the URL of the tarball is added to the revision data, the status is set to
 "complete" and an update is sent to the API.
 
@@ -114,8 +114,8 @@ the URL of the tarball is added to the revision data, the status is set to
 The Runner step listens for pub/sub events about completed revisions, typically
 following the tarball step.  It will then schedule some tests to be run in
 various runtime environments as defined in the pipeline YAML configuration from
-the Core tools.  An data entry is sent to the API for each test submitted with
-"pending" state.  It's then up to the test in the runtime environment to send
+the Core tools.  A node entry is sent to the API for each test submitted with
+"running" state.  It's then up to the test in the runtime environment to send
 its results to the API and set the final status.
 
 ### Runtime Environment
