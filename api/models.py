@@ -194,7 +194,7 @@ URLs (e.g. URL to binaries or logs)'
         default_factory=datetime.utcnow,
         description='Timestamp when node was last updated'
     )
-    max_wait_time: Optional[float] = Field(
+    timeout: Optional[float] = Field(
         default=24.0,
         description='Maximum time in hours to wait for node to get it \
 completed',
