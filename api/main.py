@@ -225,6 +225,29 @@ async def get_nodes(request: Request, kind: str = "node",
 add_pagination(app)
 
 
+@app.get('/count', response_model=int)
+async def get_nodes_count(request: Request, kind: str = "node"):
+    """Get the count of all the nodes if no request parameters have passed.
+       Get the count of all the matching nodes otherwise."""
+    model = get_model_from_kind(kind)
+    if model is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid kind: {kind}"
+        )
+
+    query_params = dict(request.query_params)
+
+    is_valid, msg = model.validate_params(query_params)
+    if not is_valid:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid request parameters: {msg}"
+            )
+    translated_params = model.translate_fields(query_params)
+    return await db.count(model, translated_params)
+
+
 @app.get('/get_root_node/{node_id}', response_model=Node)
 async def get_root_node(node_id: str):
     """Get root node information"""
