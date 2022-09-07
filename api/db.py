@@ -74,6 +74,15 @@ class Database:
         data = await col.find(attributes).to_list(None)
         return list(model(**obj) for obj in data)
 
+    async def count(self, model, attributes):
+        """Count objects with matching attributes
+
+        Count all objects with attributes matching the key/value pairs in the
+        attributes dictionary and return the count as an integer.
+        """
+        col = self._get_collection(model)
+        return await col.count_documents(attributes)
+
     async def create(self, obj):
         """Create a database document from a model object
 
