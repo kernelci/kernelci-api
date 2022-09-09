@@ -60,6 +60,15 @@ def mock_db_create(mocker):
 
 
 @pytest.fixture
+def mock_db_count(mocker):
+    """Mocks async call to Database class method used to count objects"""
+    async_mock = AsyncMock()
+    mocker.patch('api.db.Database.count',
+                 side_effect=async_mock)
+    return async_mock
+
+
+@pytest.fixture
 def mock_db_find_by_attributes(mocker):
     """
     Mocks async call to Database class method
