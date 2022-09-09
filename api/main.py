@@ -198,7 +198,7 @@ async def get_nodes(request: Request, kind: str = "node",
                     offset: int = Query(default=0, ge=0),
                     limit: int = Query(default=50, ge=1)):
     """Get all the nodes if no request parameters have passed.
-       Get all the matching nodes otherwise."""
+       Get all the matching nodes otherwise, within the pagination limit."""
     model = get_model_from_kind(kind)
     if model is None:
         raise HTTPException(
@@ -208,15 +208,17 @@ async def get_nodes(request: Request, kind: str = "node",
 
     query_params = dict(request.query_params)
 
-    # Remove parameters provided for pagination from the dictionary
-    model.filter_params(query_params)
+    # Drop pagination parameters from query as they're already in arguments
+    for pg_key in ['limit', 'offset']:
+        query_params.pop(pg_key, None)
 
     is_valid, msg = model.validate_params(query_params)
     if not is_valid:
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid request parameters: {msg}"
-            )
+        )
+
     translated_params = model.translate_fields(query_params)
     return paginate(await db.find_by_attributes(model, translated_params))
 
