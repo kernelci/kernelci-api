@@ -239,14 +239,6 @@ completed',
             translated['parent'] = ObjectId(parent)
         return translated
 
-    @classmethod
-    def filter_params(cls, params: dict):
-        """Drop parameters not matching model fields from the `params`
-        dictionary"""
-        for param in list(params):
-            if param not in cls.__fields__:
-                del params[param]
-
 
 class Hierarchy(BaseModel):
     """Hierarchy of nodes with child nodes"""
