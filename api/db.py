@@ -7,6 +7,7 @@
 """Database abstraction"""
 
 from bson import ObjectId
+from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
 from .models import Hierarchy, Node, User, Regression
 
@@ -68,11 +69,13 @@ class Database:
         """Find objects with matching attributes
 
         Find all objects with attributes matching the key/value pairs in the
-        attributes dictionary and return them as a list.
+        attributes dictionary using pagination and return the paginated
+        response.
+        The response dictionary will include 'items', 'total', 'limit',
+        and 'offset' keys.
         """
         col = self._get_collection(model)
-        data = await col.find(attributes).to_list(None)
-        return list(model(**obj) for obj in data)
+        return await paginate(collection=col, query_filter=attributes)
 
     async def count(self, model, attributes):
         """Count objects with matching attributes
