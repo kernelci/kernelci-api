@@ -136,7 +136,12 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
             state="closing",
             result=None,
         )
-    mock_db_find_by_attributes.return_value = [node_obj_1, node_obj_2]
+    mock_db_find_by_attributes.return_value = {
+        'items': [node_obj_1, node_obj_2],
+        'total': 2,
+        'limit': 50,
+        'offset': 0
+    }
 
     params = {
         "name": "checkout",
@@ -152,7 +157,7 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
             )
         print("response.json()", response.json())
         assert response.status_code == 200
-        assert len(response.json()) > 0
+        assert len(response.json()['items']) > 0
 
 
 def test_get_nodes_by_attributes_endpoint_node_not_found(
@@ -166,7 +171,13 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(
         HTTP Response Code 200 OK
         Empty list
     """
-    mock_db_find_by_attributes.return_value = []
+
+    mock_db_find_by_attributes.return_value = {
+        'items': [],
+        'total': 0,
+        'limit': 50,
+        'offset': 0
+    }
 
     params = {
         "name": "checkout",
@@ -315,8 +326,13 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
             state="closing",
             result=None,
         )
-    mock_db_find_by_attributes.return_value = [node_obj_1, node_obj_2,
-                                               node_obj_3]
+
+    mock_db_find_by_attributes.return_value = {
+        'items': [node_obj_1, node_obj_2, node_obj_3],
+        'total': 3,
+        'limit': 50,
+        'offset': 0
+    }
 
     with TestClient(app) as client:
         response = client.get("/nodes")
@@ -335,7 +351,12 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
         HTTP Response Code 200 OK
         Empty list as no Node object is added.
     """
-    mock_db_find_by_attributes.return_value = []
+    mock_db_find_by_attributes.return_value = {
+        'items': [],
+        'total': 0,
+        'limit': 50,
+        'offset': 0
+    }
 
     with TestClient(app) as client:
         response = client.get("/nodes")
