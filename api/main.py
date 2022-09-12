@@ -22,7 +22,7 @@ from fastapi.security import (
     OAuth2PasswordRequestForm,
     SecurityScopes
 )
-from fastapi_pagination import add_pagination, paginate
+from fastapi_pagination import add_pagination
 from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
 from .auth import Authentication, Token
@@ -220,7 +220,7 @@ async def get_nodes(request: Request, kind: str = "node",
         )
 
     translated_params = model.translate_fields(query_params)
-    return paginate(await db.find_by_attributes(model, translated_params))
+    return await db.find_by_attributes(model, translated_params)
 
 add_pagination(app)
 
