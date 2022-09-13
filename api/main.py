@@ -16,7 +16,6 @@ from fastapi import (
     status,
     Request,
     Security,
-    Query
 )
 from fastapi.security import (
     OAuth2PasswordRequestForm,
@@ -194,9 +193,7 @@ async def get_node(node_id: str, kind: str = "node"):
 
 
 @app.get('/nodes', response_model=PageModel)
-async def get_nodes(request: Request, kind: str = "node",
-                    offset: int = Query(default=0, ge=0),
-                    limit: int = Query(default=50, ge=1)):
+async def get_nodes(request: Request, kind: str = "node"):
     """Get all the nodes if no request parameters have passed.
        Get all the matching nodes otherwise, within the pagination limit."""
     model = get_model_from_kind(kind)
