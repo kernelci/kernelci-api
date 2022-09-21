@@ -201,6 +201,10 @@ completed',
         ge=0.0,
         le=24.0
     )
+    holdoff: Optional[datetime] = Field(
+        description='Holdoff expiry timestamp for node to be in \
+available state'
+    )
 
     def update(self):
         self.updated = datetime.utcnow()
