@@ -97,6 +97,7 @@ class Database:
         if obj.id is not None:
             raise ValueError(f"Object cannot be created with id: {obj.id}")
         delattr(obj, 'id')
+        obj.set_timeout()
         col = self._get_collection(obj.__class__)
         res = await col.insert_one(obj.dict(by_alias=True))
         obj.id = res.inserted_id
@@ -116,6 +117,7 @@ class Database:
                 raise ValueError(f"No object found with id: {obj.id}")
         else:
             delattr(obj, 'id')
+            obj.set_timeout()
             res = await col.insert_one(obj.dict(by_alias=True))
             obj.id = res.inserted_id
         obj = cls(**await col.find_one({'_id': ObjectId(obj.id)}))
