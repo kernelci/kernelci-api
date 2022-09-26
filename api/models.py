@@ -6,7 +6,7 @@
 
 """KernelCI API model definitions"""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Dict, List
 import enum
 from bson import ObjectId, errors
@@ -194,17 +194,21 @@ URLs (e.g. URL to binaries or logs)'
         default_factory=datetime.utcnow,
         description='Timestamp when node was last updated'
     )
-    timeout: Optional[float] = Field(
-        default=24.0,
-        description='Maximum time in hours to wait for node to get it \
-completed',
-        ge=0.0,
-        le=24.0
+    timeout: Optional[datetime] = Field(
+        description='Node expiry timestamp'
     )
     holdoff: Optional[datetime] = Field(
         description='Holdoff expiry timestamp for node to be in \
 available state'
     )
+
+    def set_timeout(self, hours: int = 24):
+        """Set Node timeout (expiry timestamp)
+
+        After the node's creation, it will timeout after the number
+        of hours (default: 24) provided.
+        """
+        self.timeout = self.created + timedelta(hours=hours)
 
     def update(self):
         self.updated = datetime.utcnow()
