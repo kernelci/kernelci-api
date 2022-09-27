@@ -176,6 +176,29 @@ $ curl -X 'PUT' \
 {"_id":"61bda8f2eb1a63d2b7152418","kind":"node","name":"checkout-test","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-02T11:23:03.157648", "updated":"2022-02-02T12:23:03.157648"}
 ```
 
+### Getting Nodes count
+
+To get a count of all the nodes, use GET request to `/count` endpoint.
+
+```
+$ curl http://localhost:8001/count
+4
+```
+
+To get count of nodes matching provided attributes, use `/count` endpoint with query parameters. All the Node attributes except ID and timestamps(created, updated, timeout, and holdoff) can be passed to this endpoint.
+```
+$ curl http://localhost:8001/count?name=checkout
+3
+$ curl http://localhost:8001/count?revision.branch=staging-mainline
+1
+```
+
+In case of providing multiple attributes, it will return count of nodes matching all the attributes.
+```
+$ curl 'http://localhost:8001/count?name=checkout&artifacts.tarball=http://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20220927.0.tar.gz'
+1
+```
+
 ### State diagram
 
 The Node objects are governed by the following state machine:
