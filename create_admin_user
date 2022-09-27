@@ -4,15 +4,18 @@
 #
 # Copyright (C) 2022 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
+# Author: Michal Galka <michal.galka@collabora.com>
 
 """Command line utility for creating an admin user"""
 
 import argparse
-import subprocess
+import getpass
 import json
-import urllib
 import re
 import requests
+import subprocess
+import sys
+import urllib
 
 
 DEFAULT_URL = 'http://localhost:8001'
@@ -26,22 +29,26 @@ def get_hashed_password(password, url):
     return res.json()
 
 
-def create_admin(args):
+def create_admin(username, hashed_password):
     """
     Create an admin user
     """
-    password = input("Please enter the password: ")
-    hashed_password = get_hashed_password(password, args.url)
-    subprocess.call(f"docker-compose exec db /bin/mongo kernelci --eval \
-\"db.user.insert({{username: '{args.username}', \
+    cmd = f"docker-compose exec db /bin/mongo kernelci --eval \
+\"db.user.insert({{username: '{username}', \
 hashed_password: '{re.escape(hashed_password)}', \
-active: true, is_admin: 1}})\"", shell=True)
+active: true, is_admin: 1}})\""
+    ret_code = subprocess.call(cmd, shell=True)
+    return ret_code == 0
+
+def main(args):
+    password = getpass.getpass()
+    hashed_password = get_hashed_password(password, args.url)
+    return create_admin(args.username, hashed_password)
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser("KernelCI API Admin")
     parser.add_argument('username', help="User name")
     parser.add_argument('--url', default=DEFAULT_URL, help="API host URL")
     args = parser.parse_args()
-    create_admin(args)
+    sys.exit(0 if main(args) else 1)
