@@ -87,11 +87,11 @@ when prompted:
 
 ```
 $ ./create_admin_user admin
-Please enter the password: hello
-MongoDB shell version v5.0.9
+Password: 
+MongoDB shell version v5.0.12
 connecting to: mongodb://127.0.0.1:27017/kernelci?compressors=disabled&gssapiServiceName=mongodb
-Implicit session: session { "id" : UUID("7de03dfa-4e3c-4103-8c44-4728fbc5f8c0") }
-MongoDB server version: 5.0.9
+Implicit session: session { "id" : UUID("789ad3c5-0caa-45a9-a514-efeec763dfeb") }
+MongoDB server version: 5.0.12
 WriteResult({ "nInserted" : 1 })
 ```
 
