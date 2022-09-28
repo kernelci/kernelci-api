@@ -201,6 +201,10 @@ completed',
         ge=0.0,
         le=24.0
     )
+    debug: Optional[Dict] = Field(
+        description='Additional debug fields. Can be ignored for all \
+purposes other than development.'
+    )
 
     def update(self):
         self.updated = datetime.utcnow()
