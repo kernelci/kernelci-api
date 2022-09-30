@@ -1,6 +1,6 @@
 ---
 title: "Pipeline details"
-date: 2022-08-23
+date: 2022-09-30
 description: "KernelCI Pipeline design details"
 weight: 4
 ---
@@ -34,25 +34,19 @@ flowchart
         job_done --> |Yes| pass_runner_node[Update node<br />state=done, result=pass/fail/skip]
         job_done --> |No| run_job
     end
-    subgraph set_completed_service[Set Completed Service]
-        get_closing_parent_nodes[Get nodes <br /> with state=available]
-        set_completed[Set Completed] --> get_closing_parent_nodes
-        get_closing_parent_nodes --> hold_off_reached{Hold off reached?}
-        hold_off_reached --> |Yes| node_completed{All child <br />nodes completed ?}
-        node_completed --> |Yes| generate_completed[Set node <br />state=done, result=pass]
-        node_completed --> |No| set_closing[Set node <br />state=closing]
-    end
     subgraph test_report_service[Test Report Service]
         test_report[Test Report] --> email_report[Generate and <br />email test report <br />for tarball]
     end
-    subgraph set_timeout_service[Set Timeout Service]
-        set_timeout[Set Timeout] --> get_incomplete_nodes
-        get_incomplete_nodes[Get nodes <br /> with state=closing] --> timeout
-        timeout{Node timed out?} --> |Yes| set_incomplete[Set parent and closing child nodes <br /> state=done, result=incomplete]
-        timeout --> |No| get_incomplete_nodes
+    subgraph timeout_service[Timeout Service]
+        get_nodes[Get nodes <br /> with state=running/available/closing] --> node_timedout{Node timed out?}
+        verify_avilable_nodes{Node state is available?} --> |Yes| hold_off_reached{Hold off reached?}
+        hold_off_reached --> |Yes| child_nodes_completed{All child <br />nodes completed ?}
+        child_nodes_completed --> |Yes| set_done[Set parent and child nodes <br /> state=done]
+        child_nodes_completed --> |No| set_closing[Set node <br />state=closing]
+        node_timedout --> |Yes| set_done
+        node_timedout --> |No| verify_avilable_nodes
     end
-    generate_completed --> |event: <br />updated <br /> state=done| received_tarball
-    set_incomplete --> |event: <br />updated <br /> state=done| received_tarball
+    set_done --> |event: <br />updated <br /> state=done| received_tarball
     received_tarball{Received tarball node? } --> |Yes| test_report
     test_report_service --> stop([Stop])
 ```
@@ -79,14 +73,12 @@ The Runner step listens for pub/sub events about available tarball node.  It wil
 The jobs added by runner will be run in specified runtime environment i.e. shell, Kubernetes or LAVA lab.
 Each environment needs to have its own API token set up locally to be able to submit the results to API. It updates the node with state "done" and result (pass, fail, or skip). This will generate pub/sub event of node update.
 
-### Set Timeout
+### Timeout
 
-The set timeout service periodically checks all nodes' state. If a node is in "closing" state, then it checks whether the maximum wait time (timeout) is over. If so, it sets the node state of the node and all its child nodes to "done" and result to "incomplete". This will generate pub/sub event of node update.
-
-### Set Completed
-
-The set completed service typically listens to all closing or available nodes.
-It checks whether the hold off time has been reached. If so, the parent node state will be set to "done" if all its child nodes are completed. If some of the child nodes are still in closing or available state, then the parent node state will be set to "closing".
+The timeout service periodically checks all nodes' state. If a node is not in "done" state, then it checks whether the maximum wait time (timeout) is over. If so, it sets the node and all its child nodes to "done" state.
+If the node is in "available" state and not timed-out, it will check for holdoff time. If the holdoff reached, and all its child nodes are completed, the node state will be moved to "done", otherwise the state will be set to "closing".
+The parent node with "closing" state can not have any new child nodes.
+This will generate pub/sub event of node update.
 
 ### Test Report
 
