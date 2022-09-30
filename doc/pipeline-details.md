@@ -15,16 +15,15 @@ flowchart
     subgraph trigger_service[Trigger Service]
         trigger[Trigger] --> kernel_revision{New kernel <br/>revision ?}
         kernel_revision --> |No| trigger
-        kernel_revision --> |Yes| checkout[Create 'checkout' node <br />state=available, result=None, set holdoff]
+        kernel_revision --> |Yes| checkout[Create 'checkout' node <br />state=running, result=None]
     end
     subgraph tarball_service[Tarball Service]
-        checkout --> |event: <br />checkout created, state=available| tarball[Tarball]
-        tarball --> tarball_node[Create 'tarball' node <br />state=running, result=None, holdoff=None <br />Update 'checkout' node <br />with describe and artifacts]
-        tarball_node --> upload_tarball[Create and upload tarball to the storage <br />state=available, result=None, set holdoff]
+        upload_tarball[Create and upload tarball to the storage]
+        checkout --> |event: <br />checkout created, state=running| upload_tarball
+        upload_tarball --> update_checkout_node[Update 'checkout' node <br />state=available, set holdoff <br /> update describe and artifacts]
     end
     subgraph runner_service[Runner Service]
-        upload_tarball --> |event: <br />tarball updated <br />state=available| runner[Runner]
-        runner --> runner_node[Create build/test node <br />state=running, result=None, holdoff=None]
+        update_checkout_node --> |event: <br />checkout updated <br />state=available| runner_node[Create build/test node <br />state=running, result=None, holdoff=None]
     end
     subgraph Run Builds/Tests
         runner_node --> runtime[Runtime Environment]
@@ -33,9 +32,6 @@ flowchart
         run_job --> job_done{Job done?}       
         job_done --> |Yes| pass_runner_node[Update node<br />state=done, result=pass/fail/skip]
         job_done --> |No| run_job
-    end
-    subgraph test_report_service[Test Report Service]
-        test_report[Test Report] --> email_report[Generate and <br />email test report <br />for tarball]
     end
     subgraph timeout_service[Timeout Service]
         get_nodes[Get nodes <br /> with state=running/available/closing] --> node_timedout{Node timed out?}
@@ -46,8 +42,10 @@ flowchart
         node_timedout --> |Yes| set_done
         node_timedout --> |No| verify_avilable_nodes
     end
+    subgraph test_report_service[Test Report Service]
+        received_tarball{Received checkout node? } --> |Yes| email_report[Generate and <br />email test report]
+    end
     set_done --> |event: <br />updated <br /> state=done| received_tarball
-    received_tarball{Received tarball node? } --> |Yes| test_report
     test_report_service --> stop([Stop])
 ```
 
@@ -62,11 +60,11 @@ the record. If not, it then pushes one node named "checkout". The node's state w
 
 ### Tarball
 
-When the trigger pushes new revision node (checkout), the tarball receives a pub/sub event. A node named 'tarball' is pushed with the 'running' state. The tarball then updates a local git checkout of the full kernel source tree.  Then it makes a tarball with the source code and pushes it to the API storage. The state of the tarball node will be updated to 'available'. The URL of the tarball is also added to the artifacts of the revision node.
+When the trigger pushes a new revision node (checkout), the tarball receives a pub/sub event. The tarball then updates a local git checkout of the full kernel source tree.  Then it makes a tarball with the source code and pushes it to the API storage. The state of the checkout node will be updated to 'available' and the holdoff time will be set. The URL of the tarball is also added to the artifacts of the revision node.
 
 ### Runner
 
-The Runner step listens for pub/sub events about available tarball node.  It will then schedule some jobs (it can be any kind of job including build and test) to be run in various runtime environments as defined in the pipeline YAML configuration from the Core tools. A node is pushed to the API with "available" state e.g. "kunit" node. This will generate pub/sub event of build or test node creation.
+The Runner step listens for pub/sub events about available checkout node.  It will then schedule some jobs (it can be any kind of job including build and test) to be run in various runtime environments as defined in the pipeline YAML configuration from the Core tools. A node is pushed to the API with "available" state e.g. "kunit" node. This will generate pub/sub event of build or test node creation.
 
 ### Runtime Environment
 
@@ -82,4 +80,4 @@ This will generate pub/sub event of node update.
 
 ### Test Report
 
-The Test Report in its current state listens for completed tarball node. It then generates a test report with the child nodes' details of the parent node and sends the report over an email.
+The Test Report in its current state listens for completed checkout node. It then generates a test report along with the child nodes' details and sends the report over an email.
