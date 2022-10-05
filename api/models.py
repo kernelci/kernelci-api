@@ -243,8 +243,11 @@ available state'
             translated['parent'] = ObjectId(parent)
         return translated
 
-    def validate_node_transition(self, new_state):
+    def validate_node_state_transition(self, new_state):
         """Validate Node.state transitions"""
+        if new_state == self.state:
+            return True, f"Transition to the same state: { new_state }. \
+                No validation is required."
         state_transition_map = {
             'running': ['available', 'closing', 'done'],
             'available': ['closing', 'done'],
