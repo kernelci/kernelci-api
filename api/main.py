@@ -269,6 +269,19 @@ async def get_root_node(node_id: str):
 async def post_node(node: Node, token: str = Depends(get_user)):
     """Create a new node"""
     try:
+        if node.parent:
+            parent = await db.find_by_id(Node, node.parent)
+            if not parent:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Parent not found with id: {node.parent}"
+                )
+            is_valid, message = parent.validate_parent()
+            if not is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=message
+                )
         obj = await db.create(node)
         operation = 'created'
     except ValueError as error:
