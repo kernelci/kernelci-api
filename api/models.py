@@ -256,6 +256,13 @@ available state'
             return False, f"Transition not allowed with state: {new_state}"
         return True, "Transition validated successfully"
 
+    def validate_parent(self):
+        """Validate the parent node's state before creating child nodes"""
+        if self.state != 'available':
+            return False, f"The node is unavailable to create child node: \
+{self.id}"
+        return True, f"The node is available to create child node: {self.id}"
+
 
 class Hierarchy(BaseModel):
     """Hierarchy of nodes with child nodes"""
