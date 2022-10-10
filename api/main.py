@@ -286,7 +286,7 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
     """Update an already added node"""
     try:
         node.id = ObjectId(node_id)
-        node_from_id = await get_node(node.id)
+        node_from_id = await db.find_by_id(Node, node_id)
         if not node_from_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -301,7 +301,7 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
             )
         obj = await db.update(node)
         operation = 'updated'
-    except ValueError as error:
+    except (ValueError, errors.InvalidId) as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
