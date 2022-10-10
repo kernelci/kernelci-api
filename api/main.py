@@ -287,6 +287,11 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
     try:
         node.id = ObjectId(node_id)
         node_from_id = await get_node(node.id)
+        if not node_from_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Node not found with id: {node.id}"
+            )
         is_valid, message = node_from_id.validate_node_state_transition(
             node.state)
         if not is_valid:
