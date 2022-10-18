@@ -44,8 +44,10 @@ class StateValues(enum.Enum):
 class ResultValues(enum.Enum):
     """Enumeration to declare values to be used for Node.result"""
 
-    PASS = "pass"
-    FAIL = "fail"
+    PASS = 'pass'
+    FAIL = 'fail'
+    SKIP = 'skip'
+    INCOMPLETE = 'incomplete'
 
 
 class ModelId(BaseModel):
