@@ -93,6 +93,9 @@ class DatabaseModel(ModelId):
     def create_indexes(cls, collection):
         """Method to create indexes"""
 
+    def set_timeout(self, hours: int):
+        """Method to set model timeout"""
+
 
 class User(DatabaseModel):
     """API user model"""
