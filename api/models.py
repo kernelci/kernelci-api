@@ -261,6 +261,24 @@ URLs (e.g. URL to binaries or logs)'
         parent = params.get('parent')
         if parent:
             translated['parent'] = ObjectId(parent)
+
+        timestamp_fields = ('created', 'updated', 'timeout', 'holdoff')
+        # Split params with `__` in key and translate timestamp fields
+        for key in params.keys():
+            if key in timestamp_fields:
+                translated[key] = datetime.fromisoformat(translated[key])
+            field = key.split('__')
+            if len(field) == 2:
+                if field[0] in timestamp_fields:
+                    translated[field[0]] = {
+                        field[1]: datetime.fromisoformat(translated[key])
+                    }
+                else:
+                    translated[field[0]] = {
+                        field[1]: translated[key]
+                    }
+                del translated[key]
+
         return translated
 
     def validate_node_state_transition(self, new_state):
