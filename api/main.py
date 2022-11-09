@@ -217,7 +217,13 @@ async def get_nodes(request: Request, kind: str = "node"):
         )
 
     translated_params = model.translate_fields(query_params)
-    return await db.find_by_attributes(model, translated_params)
+    try:
+        return await db.find_by_attributes(model, translated_params)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
 
 add_pagination(app)
 
@@ -241,8 +247,15 @@ async def get_nodes_count(request: Request, kind: str = "node"):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid request parameters: {msg}"
             )
+
     translated_params = model.translate_fields(query_params)
-    return await db.count(model, translated_params)
+    try:
+        return await db.count(model, translated_params)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        ) from error
 
 
 @app.get('/get_root_node/{node_id}', response_model=Node)
