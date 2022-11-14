@@ -13,8 +13,8 @@ Below is the detailed pipeline flow diagram with associated node and pub/sub eve
 flowchart
     start([Start]) --> trigger_service
     subgraph trigger_service[Trigger Service]
-        trigger[Trigger] --> kernel_revision{New kernel <br/>revision ?}
-        kernel_revision --> |No| trigger
+        kernel_revision{New kernel <br/>revision ?} --> |No| sleep[sleep]
+        sleep --> kernel_revision
         kernel_revision --> |Yes| checkout[Create 'checkout' node <br />state=running, result=None]
     end
     subgraph tarball_service[Tarball Service]
