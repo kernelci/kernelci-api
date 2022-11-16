@@ -93,9 +93,6 @@ class DatabaseModel(ModelId):
     def create_indexes(cls, collection):
         """Method to create indexes"""
 
-    def set_timeout(self, hours: int):
-        """Method to set model timeout"""
-
 
 class User(DatabaseModel):
     """API user model"""
@@ -229,14 +226,6 @@ URLs (e.g. URL to binaries or logs)'
         description='Holdoff expiry timestamp for node to be in \
 available state'
     )
-
-    def set_timeout(self, hours: int = 24):
-        """Set Node timeout (expiry timestamp)
-
-        After the node's creation, it will timeout after the number
-        of hours (default: 24) provided.
-        """
-        self.timeout = self.created + timedelta(hours=hours)
 
     def update(self):
         self.updated = datetime.utcnow()
