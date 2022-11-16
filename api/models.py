@@ -180,7 +180,7 @@ class Node(DatabaseModel):
     parent: Optional[PyObjectId] = Field(
         description='Parent commit SHA'
     )
-    state: Optional[StateValues] = Field(
+    state: StateValues = Field(
         default=StateValues.RUNNING,
         description='State of the node'
     )
@@ -191,11 +191,11 @@ class Node(DatabaseModel):
         description='Dictionary with names mapping to node associated \
 URLs (e.g. URL to binaries or logs)'
     )
-    created: Optional[datetime] = Field(
+    created: datetime = Field(
         default_factory=datetime.utcnow,
         description='Timestamp of node creation'
     )
-    updated: Optional[datetime] = Field(
+    updated: datetime = Field(
         default_factory=datetime.utcnow,
         description='Timestamp when node was last updated'
     )
