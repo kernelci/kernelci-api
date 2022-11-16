@@ -221,7 +221,8 @@ URLs (e.g. URL to binaries or logs)'
         default_factory=datetime.utcnow,
         description='Timestamp when node was last updated'
     )
-    timeout: Optional[datetime] = Field(
+    timeout: datetime = Field(
+        default_factory=DefaultTimeout(hours=6).get_timeout,
         description='Node expiry timestamp'
     )
     holdoff: Optional[datetime] = Field(
