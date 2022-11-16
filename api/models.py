@@ -223,8 +223,7 @@ URLs (e.g. URL to binaries or logs)'
         description='Node expiry timestamp'
     )
     holdoff: Optional[datetime] = Field(
-        description='Holdoff expiry timestamp for node to be in \
-available state'
+        description='Node expiry timestamp while in Available state'
     )
 
     def update(self):
