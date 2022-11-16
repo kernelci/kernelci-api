@@ -158,6 +158,28 @@ class Revision(BaseModel):
     )
 
 
+class DefaultTimeout:
+    """Helper to create default values for timeout fields
+
+    The `hours` and `minutes` provided are used to create a `timedelta` object
+    available in the `.delta` attribute.  This can then be used to get a
+    timeout value used as a default when defining a non-optional field in a
+    model with the `.get_timeout()` method.
+    """
+
+    def __init__(self, hours=0, minutes=0):
+        self._delta = timedelta(hours=hours, minutes=minutes)
+
+    @property
+    def delta(self):
+        """Get the timedelta set in this object"""
+        return self._delta
+
+    def get_timeout(self):
+        """Get a timeout timestamp with current time and delta"""
+        return datetime.utcnow() + self.delta
+
+
 class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
     kind: str = Field(
