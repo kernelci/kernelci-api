@@ -15,6 +15,7 @@ services:
     volumes:
       - './api:/home/kernelci/api'
       - './test:/home/kernelci/test'
+      - './migrations:/home/kernelci/migrations'
     ports:
       - '${API_HOST_PORT:-8001}:8000'
     env_file:
