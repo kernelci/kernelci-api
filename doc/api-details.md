@@ -1,6 +1,6 @@
 ---
 title: "API details"
-date: 2022-08-23
+date: 2022-11-25
 description: "KernelCI API building blocks"
 weight: 3
 ---
@@ -254,6 +254,59 @@ timeout
   its current state.  The main reasons why this is needed are for when a node
   gets stuck and never completes its job, or while waiting for child nodes to
   complete.
+
+
+## Migrations
+
+Migrations are required to propagate the changes made to API models to the database like updating or deleting a model field or a model.
+
+[`pymongo-migrate`](https://github.com/stxnext/pymongo-migrate) package has been integrated to enable migration support in the API.
+
+Use the below command to run migration from the `api` Docker container.
+```
+$ docker-compose exec api /bin/sh -c 'pymongo-migrate migrate -u mongodb://db/kernelci -m migrations -v'
+2022-11-25 06:12:17,996 [DEBUG]  Migration target not specified, assuming upgrade
+Command find#1957747793 STARTED
+SON([('find', 'pymongo_migrate'), ('filter', {'name': '20221014061654_set_timeout'}), ('limit', 1), ('singleBatch', True), ('lsid', {'id': Binary(b'7\x18\xe4\xe7\xd0\x88Gc\xafq\x0f[\x8b\x8d\xec\xde', 4)}), ('$db', 'kernelci'), ('$readPreference', {'mode': 'primaryPreferred'})])
+Command find#1957747793 SUCCEEDED in 215us
+2022-11-25 06:12:17,998 [INFO ]  Running upgrade migration '20221014061654_set_timeout'
+Command find#424238335 STARTED
+SON([('find', 'node'), ('filter', {}), ('lsid', {'id': Binary(b'7\x18\xe4\xe7\xd0\x88Gc\xafq\x0f[\x8b\x8d\xec\xde', 4)}), ('$db', 'kernelci'), ('$readPreference', {'mode': 'primaryPreferred'})])
+Command find#424238335 SUCCEEDED in 4404us
+Command update#719885386 STARTED
+SON([('update', 'node'), ('ordered', True), ('lsid', {'id': Binary(b'7\x18\xe4\xe7\xd0\x88Gc\xafq\x0f[\x8b\x8d\xec\xde', 4)}), ('$db', 'kernelci'), ('$readPreference', {'mode': 'primary'}), ('updates', [SON([('q', {'_id': ObjectId('63720d307d572b5aa15462f4')}), ('u', {'$set': {'timeout': datetime.datetime(2022, 11, 14, 15, 41, 4, 175000)}}), ('multi', False), ('upsert', False)])])])
+Command update#719885386 SUCCEEDED in 989us
+Command update#1649760492 STARTED
+SON([('update', 'node'), ('ordered', True), ('lsid', {'id': Binary(b'7\x18\xe4\xe7\xd0\x88Gc\xafq\x0f[\x8b\x8d\xec\xde', 4)}), ('$db', 'kernelci'), ('$readPreference', {'mode': 'primary'}), ('updates', [SON([('q', {'_id': ObjectId('63720d317d572b5aa15462f5')}), ('u', {'$set': {'timeout': datetime.datetime(2022, 11, 14, 15, 41, 5, 454000)}}), ('multi', False), ('upsert', False)])])])
+Command update#1649760492 SUCCEEDED in 151us
+```
+
+The above command will run the necessary `upgrade` for the migrations stored in `migrations` directory.
+If migration target is specified, it will run the necessary `upgrade` or `downgrade` to reach the target.
+
+The status of migration can be found with the below command:
+```
+$ docker-compose exec api /bin/sh -c 'pymongo-migrate show -u mongodb://db/kernelci -m migrations -v'
+Migration name            	Applied timestamp
+Command find#1957747793 STARTED
+SON([('find', 'pymongo_migrate'), ('filter', {'name': '20221014061654_set_timeout'}), ('limit', 1), ('singleBatch', True), ('lsid', {'id': Binary(b'\x1e\x0b"M\x1f\xb3N\xf4\xa3\x00\xaa\xff]c\xf8\xe5', 4)}), ('$db', 'kernelci'), ('$readPreference', {'mode': 'primaryPreferred'})])
+Command find#1957747793 SUCCEEDED in 228us
+20221014061654_set_timeout	2022-11-25T07:00:14.923000+00:00
+```
+
+If the `upgrade` has already been applied, `downgrade` can be run using the below command:
+```
+$ docker-compose exec api /bin/sh -c 'pymongo-migrate downgrade -u mongodb://db/kernelci -m migrations -v'
+Command find#1957747793 STARTED
+SON([('find', 'pymongo_migrate'), ('filter', {'name': '20221014061654_set_timeout'}), ('limit', 1), ('singleBatch', True), ('lsid', {'id': Binary(b'\x0c}X\x9d\xe9{O\xd5\x85\xb3\x904\xa2R\x89i', 4)}), ('$db', 'kernelci'), ('$readPreference', {'mode': 'primaryPreferred'})])
+Command find#1957747793 SUCCEEDED in 237us
+2022-11-25 07:07:21,857 [INFO ]  Running downgrade migration '20221014061654_set_timeout'
+2022-11-25 07:07:21,858 [INFO ]  Execution time of '20221014061654_set_timeout': 1.049041748046875e-05 seconds
+Command update#424238335 STARTED
+SON([('update', 'pymongo_migrate'), ('ordered', True), ('lsid', {'id': Binary(b'\x0c}X\x9d\xe9{O\xd5\x85\xb3\x904\xa2R\x89i', 4)}), ('$db', 'kernelci'), ('$readPreference', {'mode': 'primary'}), ('updates', [SON([('q', {'name': '20221014061654_set_timeout'}), ('u', {'name': '20221014061654_set_timeout', 'applied': None}), ('multi', False), ('upsert', True)])])])
+Command update#424238335 SUCCEEDED in 279us
+```
+
 
 ## Pub/Sub and CloudEvent
 
