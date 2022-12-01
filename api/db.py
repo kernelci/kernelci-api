@@ -26,6 +26,13 @@ class Database:
         Regression: 'regression',
     }
 
+    OPERATOR_MAP = {
+        'lt': '$lt',
+        'lte': '$lte',
+        'gt': '$gt',
+        'gte': '$gte',
+    }
+
     def __init__(self, host='db', db_name='kernelci'):
         self._motor = motor_asyncio.AsyncIOMotorClient(host=host)
         self._db = self._motor[db_name]
@@ -65,6 +72,20 @@ class Database:
         obj = await col.find_one({'_id': ObjectId(obj_id)})
         return model(**obj) if obj else None
 
+    def _operator_translation(self, attributes):
+        translated = attributes.copy()
+        for key, value in attributes.items():
+            if isinstance(value, dict):
+                for sub_key, sub_value in value.items():
+                    if not self.OPERATOR_MAP.get(sub_key):
+                        raise ValueError(
+                            f"No operator found matching '{sub_key}'"
+                        )
+                    translated[key] = {
+                        self.OPERATOR_MAP.get(sub_key): sub_value
+                    }
+        return translated
+
     async def find_by_attributes(self, model, attributes):
         """Find objects with matching attributes
 
@@ -75,7 +96,8 @@ class Database:
         and 'offset' keys.
         """
         col = self._get_collection(model)
-        return await paginate(collection=col, query_filter=attributes)
+        translated = self._operator_translation(attributes)
+        return await paginate(collection=col, query_filter=translated)
 
     async def count(self, model, attributes):
         """Count objects with matching attributes
@@ -84,7 +106,8 @@ class Database:
         attributes dictionary and return the count as an integer.
         """
         col = self._get_collection(model)
-        return await col.count_documents(attributes)
+        translated = self._operator_translation(attributes)
+        return await col.count_documents(translated)
 
     async def create(self, obj):
         """Create a database document from a model object
