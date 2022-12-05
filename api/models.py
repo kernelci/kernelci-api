@@ -9,7 +9,7 @@
 from datetime import datetime, timedelta
 from typing import Optional, Dict, List
 import enum
-from bson import ObjectId, errors
+from bson import ObjectId
 from pydantic import BaseModel, Field, SecretStr, HttpUrl
 
 
@@ -230,23 +230,25 @@ URLs (e.g. URL to binaries or logs)'
         self.updated = datetime.utcnow()
 
     @classmethod
+    def validate_state(cls, state):
+        """Validate Node.state"""
+        if state and state not in [state.value for state in StateValues]:
+            raise ValueError(f"Invalid state value '{state}'")
+
+    @classmethod
+    def validate_result(cls, result):
+        """Validate Node.result"""
+        if result and result not in [result.value for result in ResultValues]:
+            raise ValueError(f"Invalid result value '{result}'")
+
+    @classmethod
     def validate_params(cls, params: dict):
         """Validate Node parameters"""
-        state = params.get('state')
-        if state and state not in [state.value for state in StateValues]:
-            return False, f"Invalid state value '{state}'"
-
-        result = params.get('result')
-        if result and result not in [result.value for result in ResultValues]:
-            return False, f"Invalid result value '{result}'"
-
+        Node.validate_state(params.get('state'))
+        Node.validate_result(params.get('result'))
         parent = params.get('parent')
         if parent:
-            try:
-                ObjectId(parent)
-            except errors.InvalidId as error:
-                return False, str(error)
-        return True, "Validated successfully"
+            PyObjectId.validate(parent)
 
     @classmethod
     def translate_fields(cls, params: dict):
@@ -331,26 +333,13 @@ class Regression(Node):
     @classmethod
     def validate_params(cls, params: dict):
         """Validate regression parameters"""
-        ret, msg = Node.validate_params(params)
-        if not ret:
-            return ret, msg
-
-        state = params.get('regression_data.state')
-        if state and state not in [state.value for state in StateValues]:
-            return False, f"Invalid state value '{state}'"
-
-        result = params.get('regression_data.result')
-        if result and result not in [result.value for result in ResultValues]:
-            return False, f"Invalid result value '{result}'"
+        Node.validate_params(params)
+        Node.validate_state(params.get('regression_data.state'))
+        Node.validate_result(params.get('regression_data.result'))
 
         parent = params.get('regression_data.parent')
         if parent:
-            try:
-                ObjectId(parent)
-            except errors.InvalidId as error:
-                return False, str(error)
-
-        return True, "Validated successfully"
+            PyObjectId.validate(parent)
 
 
 def get_model_from_kind(kind: str):

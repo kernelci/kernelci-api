@@ -219,14 +219,9 @@ async def get_nodes(request: Request, kind: str = "node"):
         query_params.pop(pg_key, None)
 
     query_params = await translate_null_query_params(query_params)
-    is_valid, msg = model.validate_params(query_params)
-    if not is_valid:
-        raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid request parameters: {msg}"
-        )
 
     try:
+        model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
         return await db.find_by_attributes(model, translated_params)
     except ValueError as error:
@@ -252,14 +247,9 @@ async def get_nodes_count(request: Request, kind: str = "node"):
     query_params = dict(request.query_params)
 
     query_params = await translate_null_query_params(query_params)
-    is_valid, msg = model.validate_params(query_params)
-    if not is_valid:
-        raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid request parameters: {msg}"
-            )
 
     try:
+        model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
         return await db.count(model, translated_params)
     except ValueError as error:
