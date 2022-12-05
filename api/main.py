@@ -216,8 +216,8 @@ async def get_nodes(request: Request, kind: str = "node"):
                 detail=f"Invalid request parameters: {msg}"
         )
 
-    translated_params = model.translate_fields(query_params)
     try:
+        translated_params = model.translate_fields(query_params)
         return await db.find_by_attributes(model, translated_params)
     except ValueError as error:
         raise HTTPException(
@@ -248,8 +248,8 @@ async def get_nodes_count(request: Request, kind: str = "node"):
                 detail=f"Invalid request parameters: {msg}"
             )
 
-    translated_params = model.translate_fields(query_params)
     try:
+        translated_params = model.translate_fields(query_params)
         return await db.count(model, translated_params)
     except ValueError as error:
         raise HTTPException(
