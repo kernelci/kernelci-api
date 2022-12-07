@@ -189,16 +189,16 @@ async def get_node(node_id: str, kind: str = "node"):
     """Get node information from the provided node id"""
     try:
         model = get_model_from_kind(kind)
-        if model is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid kind: {kind}"
-            )
         return await db.find_by_id(model, node_id)
     except errors.InvalidId as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
+        ) from error
+    except KeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Node not found with the kind: {str(error)}"
         ) from error
 
 
@@ -206,13 +206,6 @@ async def get_node(node_id: str, kind: str = "node"):
 async def get_nodes(request: Request, kind: str = "node"):
     """Get all the nodes if no request parameters have passed.
        Get all the matching nodes otherwise, within the pagination limit."""
-    model = get_model_from_kind(kind)
-    if model is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid kind: {kind}"
-        )
-
     query_params = dict(request.query_params)
 
     # Drop pagination parameters from query as they're already in arguments
@@ -222,6 +215,7 @@ async def get_nodes(request: Request, kind: str = "node"):
     query_params = await translate_null_query_params(query_params)
 
     try:
+        model = get_model_from_kind(kind)
         model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
         return await db.find_by_attributes(model, translated_params)
@@ -229,6 +223,11 @@ async def get_nodes(request: Request, kind: str = "node"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
+        ) from error
+    except KeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Node not found with the kind: {str(error)}"
         ) from error
 
 add_pagination(app)
@@ -238,18 +237,12 @@ add_pagination(app)
 async def get_nodes_count(request: Request, kind: str = "node"):
     """Get the count of all the nodes if no request parameters have passed.
        Get the count of all the matching nodes otherwise."""
-    model = get_model_from_kind(kind)
-    if model is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid kind: {kind}"
-        )
-
     query_params = dict(request.query_params)
 
     query_params = await translate_null_query_params(query_params)
 
     try:
+        model = get_model_from_kind(kind)
         model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
         return await db.count(model, translated_params)
@@ -257,6 +250,11 @@ async def get_nodes_count(request: Request, kind: str = "node"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
+        ) from error
+    except KeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Node not found with the kind: {str(error)}"
         ) from error
 
 

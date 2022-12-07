@@ -344,11 +344,8 @@ class Regression(Node):
 
 def get_model_from_kind(kind: str):
     """Get model from kind parameter"""
-    try:
-        models = {
+    models = {
             "node": Node,
             "regression": Regression
         }
-        return models[kind]
-    except KeyError:
-        return None
+    return models[kind]
