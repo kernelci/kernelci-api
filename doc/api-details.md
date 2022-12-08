@@ -209,6 +209,12 @@ $ curl 'http://localhost:8001/count?name=checkout&artifacts.tarball=http://172.1
 1
 ```
 
+Same as `/nodes`, the `/count` endpoint also supports comparison operators for request query parameters.
+```
+$ curl 'http://localhost:8001/count?name=checkout&created__lt=2022-12-06T04:59:08.102000'
+3
+```
+
 ### State diagram
 
 The Node objects are governed by the following state machine:
