@@ -154,6 +154,16 @@ $ curl 'http://localhost:8001/nodes?name=checkout&revision.tree=mainline'
 [{"_id":"61b052199bca2a448fe49673","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-01T11:23:03.157648", "updated":"2022-02-02T11:23:03.157648"}]
 ```
 
+Attributes along with comparison operators are also supported for the 
+`/nodes` endpoint. The attribute name and operator should be separated by `__` i.e. `attribute__operator`. Supported operators are `lt`(less than), `gt`(greater than), `lte`(less than or equal to), and `gte`(greater than or equal to).
+
+```
+$ curl 'http://localhost:8001/nodes?name=checkout&created__gt=2022-12-06T04:59:08.102000'
+{"items":[{"_id":"638ecc1c749a8d1209b758af","kind":"node","name":"checkout","path":["checkout"],"group":null,"revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"bce9332220bd677d83b19d21502776ad555a0e73","describe":"v6.1-rc8-3-gbce9332220bd","version":{"version":6,"patchlevel":1,"sublevel":null,"extra":"-rc8-3-gbce9332220bd","name":null}},"parent":null,"state":"done","result":"pass","artifacts":{"tarball":"http://172.17.0.1:8002/linux-mainline-master-v6.1-rc8-3-gbce9332220bd.tar.gz"},"created":"2022-12-06T04:59:08.959000","updated":"2022-12-06T05:11:33.098000","timeout":"2022-12-07T04:59:08.959000","holdoff":"2022-12-06T05:11:30.873000"}],"total":1,"limit":50,"offset":0}
+```
+
+> **Note** In order to support comparison operators in URL request parameters, models can not contain `__` in the field name.
+
 ### Update a Node
 
 To update an existing node, use PUT request to `node/{node_id}` endpoint.
