@@ -268,6 +268,27 @@ URLs (e.g. URL to binaries or logs)'
                 del translated[key]
 
     @classmethod
+    def translate_timestamp_fields(cls, translated,
+                                   timestamp_fields):
+        """Translate timestamp fields
+
+        ISOformat timestamp fields will be translated to Date object.
+        This supports translation of fields provided along with operators
+        as well e.g field={operator: value}.
+        """
+        params = translated.copy()
+        for key, value in params.items():
+            if key in timestamp_fields:
+                if isinstance(value, dict):
+                    for sub_key, sub_value in value.items():
+                        translated[key] = {
+                            sub_key: datetime.fromisoformat(sub_value)
+                        }
+                else:
+                    translated[key] = datetime.fromisoformat(value)
+        return translated
+
+    @classmethod
     def translate_fields(cls, params: dict):
         """Translate fields in `params` into objects as applicable
 
