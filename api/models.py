@@ -361,6 +361,19 @@ class Regression(Node):
         if parent:
             PyObjectId.validate(parent)
 
+    @classmethod
+    def translate_fields(cls, params: dict):
+        """Translate regression parameters"""
+        translated = Node.translate_fields(params)
+        parent = translated.get('regression_data.parent')
+        if parent:
+            translated['regression_data.parent'] = ObjectId(parent)
+        timestamp_fields = (
+            'regression_data.created', 'regression_data.updated',
+            'regression_data.timeout', 'regression_data.holdoff'
+        )
+        return Node.translate_timestamp_fields(translated, timestamp_fields)
+
 
 def get_model_from_kind(kind: str):
     """Get model from kind parameter"""
