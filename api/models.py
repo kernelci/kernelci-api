@@ -251,6 +251,23 @@ URLs (e.g. URL to binaries or logs)'
             PyObjectId.validate(parent)
 
     @classmethod
+    def translate_fields_with_operators(cls, params, translated):
+        """Translate fields with comparison operator
+
+        The request query parameters can be provided with comparison operators
+        like `lt`, `gt`, `lte`, and `gte` with `param__operator=value`
+        format. This method will translate the parameter to
+        `param={operator: value}`.
+        """
+        for key in params.keys():
+            field = key.split('__')
+            if len(field) == 2:
+                translated[field[0]] = {
+                    field[1]: translated[key]
+                }
+                del translated[key]
+
+    @classmethod
     def translate_fields(cls, params: dict):
         """Translate fields in `params` into objects as applicable
 
