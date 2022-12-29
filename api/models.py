@@ -265,6 +265,8 @@ URLs (e.g. URL to binaries or logs)'
         timestamp_fields = ('created', 'updated', 'timeout', 'holdoff')
         # Split params with `__` in key and translate timestamp fields
         for key in params.keys():
+            if translated[key] is None:
+                continue
             if key in timestamp_fields:
                 translated[key] = datetime.fromisoformat(translated[key])
             field = key.split('__')
