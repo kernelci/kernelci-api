@@ -364,10 +364,10 @@ async def unsubscribe(sub_id: int, user: User = Depends(get_user)):
     """Unsubscribe handler for Pub/Sub channel"""
     try:
         await pubsub.unsubscribe(sub_id)
-    except ValueError as error:
+    except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error)
+            detail=f"Subscription id not found: {str(error)}"
         ) from error
 
 
