@@ -107,13 +107,10 @@ class PubSub:
         """Unsubscribe from a Pub/Sub channel
 
         Unsubscribe from a channel using the provided subscription id as found
-        in a Subscription object.  Raise a ValueError if the id is not a valid
-        one.
+        in a Subscription object.
         """
         async with self._lock:
-            sub = self._subscriptions.get(sub_id)
-            if sub is None:
-                raise ValueError(f"Invalid subscription id: {sub_id}")
+            sub = self._subscriptions[sub_id]
             self._subscriptions.pop(sub_id)
             self._update_channels()
             await sub.unsubscribe()
