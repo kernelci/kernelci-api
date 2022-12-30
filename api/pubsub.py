@@ -120,12 +120,9 @@ class PubSub:
 
         Listen on a given subscription id asynchronously and return a message
         when received.  Messages about subscribing to the channel are silenced.
-        Raise a ValueError if the id is not a valid one.
         """
         async with self._lock:
-            sub = self._subscriptions.get(sub_id)
-            if sub is None:
-                raise ValueError(f"Invalid subscription id: {sub_id}")
+            sub = self._subscriptions[sub_id]
 
         while True:
             msg = await sub.get_message(
