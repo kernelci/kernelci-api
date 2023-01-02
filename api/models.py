@@ -304,9 +304,8 @@ URLs (e.g. URL to binaries or logs)'
     def validate_parent(self):
         """Validate the parent node's state before creating child nodes"""
         if self.state != 'available':
-            return False, f"The node is unavailable to create child node: \
-{self.id}"
-        return True, f"The node is available to create child node: {self.id}"
+            raise ValueError(f"The node is unavailable to create child node: \
+{self.id}")
 
 
 class Hierarchy(BaseModel):
