@@ -69,6 +69,18 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
     )
 
 
+@app.exception_handler(errors.InvalidId)
+async def invalid_id_exception_handler(
+        request: Request,
+        exc: errors.InvalidId):
+    """Global exception handler for `errors.InvalidId`
+    The exception is raised from Database when invalid ObjectID is received"""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)},
+    )
+
+
 async def get_current_user(
         security_scopes: SecurityScopes,
         token: str = Depends(auth.oauth2_scheme)):
@@ -195,11 +207,6 @@ async def get_node(node_id: str, kind: str = "node"):
     try:
         model = get_model_from_kind(kind)
         return await db.find_by_id(model, node_id)
-    except errors.InvalidId as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -257,13 +264,7 @@ async def get_nodes_count(request: Request, kind: str = "node"):
 async def get_root_node(node_id: str):
     """Get root node information"""
     while node_id:
-        try:
-            node = await db.find_by_id(Node, node_id)
-        except errors.InvalidId as error:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=str(error)
-            ) from error
+        node = await db.find_by_id(Node, node_id)
         if node is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -294,28 +295,22 @@ async def post_node(node: Node, token: str = Depends(get_user)):
 @app.put('/node/{node_id}', response_model=Node)
 async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
     """Update an already added node"""
-    try:
-        node.id = ObjectId(node_id)
-        node_from_id = await db.find_by_id(Node, node_id)
-        if not node_from_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Node not found with id: {node.id}"
-            )
-        is_valid, message = node_from_id.validate_node_state_transition(
-            node.state)
-        if not is_valid:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=message
-            )
-        obj = await db.update(node)
-        operation = 'updated'
-    except errors.InvalidId as error:
+    node.id = ObjectId(node_id)
+    node_from_id = await db.find_by_id(Node, node_id)
+    if not node_from_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Node not found with id: {node.id}"
+        )
+    is_valid, message = node_from_id.validate_node_state_transition(
+        node.state)
+    if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
+            detail=message
+        )
+    obj = await db.update(node)
+    operation = 'updated'
     await pubsub.publish_cloudevent('node', {'op': operation,
                                              'id': str(obj.id)})
     return obj
