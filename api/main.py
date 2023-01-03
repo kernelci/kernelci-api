@@ -17,6 +17,7 @@ from fastapi import (
     Request,
     Security,
 )
+from fastapi.responses import JSONResponse
 from fastapi.security import (
     OAuth2PasswordRequestForm,
     SecurityScopes
@@ -57,6 +58,15 @@ async def pubsub_startup():
 async def create_indexes():
     """Startup event handler to create database indexes"""
     await db.create_indexes()
+
+
+@app.exception_handler(ValueError)
+async def value_error_exception_handler(request: Request, exc: ValueError):
+    """Global exception handler for 'ValueError'"""
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": str(exc)},
+    )
 
 
 async def get_current_user(
@@ -106,11 +116,6 @@ async def post_user(
                                 hashed_password=hashed_password,
                                 is_admin=is_admin))
         operation = 'created'
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
     except DuplicateKeyError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -219,11 +224,6 @@ async def get_nodes(request: Request, kind: str = "node"):
         model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
         return await db.find_by_attributes(model, translated_params)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -246,11 +246,6 @@ async def get_nodes_count(request: Request, kind: str = "node"):
         model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
         return await db.count(model, translated_params)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -281,22 +276,16 @@ async def get_root_node(node_id: str):
 @app.post('/node', response_model=Node)
 async def post_node(node: Node, token: str = Depends(get_user)):
     """Create a new node"""
-    try:
-        if node.parent:
-            parent = await db.find_by_id(Node, node.parent)
-            if not parent:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Parent not found with id: {node.parent}"
-                )
-            parent.validate_parent()
-        obj = await db.create(node)
-        operation = 'created'
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
+    if node.parent:
+        parent = await db.find_by_id(Node, node.parent)
+        if not parent:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Parent not found with id: {node.parent}"
+            )
+        parent.validate_parent()
+    obj = await db.create(node)
+    operation = 'created'
     await pubsub.publish_cloudevent('node', {'op': operation,
                                              'id': str(obj.id)})
     return obj
@@ -322,7 +311,7 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
             )
         obj = await db.update(node)
         operation = 'updated'
-    except (ValueError, errors.InvalidId) as error:
+    except errors.InvalidId as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(error)
@@ -336,14 +325,8 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
 async def put_nodes(
         node_id: str, nodes: Hierarchy, token: str = Depends(get_user)):
     """Add a hierarchy of nodes to an existing root node"""
-    try:
-        nodes.node.id = ObjectId(node_id)
-        obj_list = await db.create_hierarchy(nodes, Node)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
+    nodes.node.id = ObjectId(node_id)
+    obj_list = await db.create_hierarchy(nodes, Node)
     await pubsub.publish_cloudevent('node', {
         'op': 'updated', 'id': str(obj_list[0].id)
     })
@@ -398,14 +381,8 @@ async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
 async def post_regression(regression: Regression,
                           token: str = Depends(get_user)):
     """Create a new regression"""
-    try:
-        obj = await db.create(regression)
-        operation = 'created'
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
+    obj = await db.create(regression)
+    operation = 'created'
     await pubsub.publish_cloudevent('regression', {'op': operation,
                                                    'id': str(obj.id)})
     return obj
@@ -415,15 +392,9 @@ async def post_regression(regression: Regression,
 async def put_regression(regression_id: str, regression: Regression,
                          token: str = Depends(get_user)):
     """Update an already added regression"""
-    try:
-        regression.id = ObjectId(regression_id)
-        obj = await db.update(regression)
-        operation = 'updated'
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error)
-        ) from error
+    regression.id = ObjectId(regression_id)
+    obj = await db.update(regression)
+    operation = 'updated'
     await pubsub.publish_cloudevent('regression', {'op': operation,
                                                    'id': str(obj.id)})
     return obj
