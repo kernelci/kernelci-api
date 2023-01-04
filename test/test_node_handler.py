@@ -434,7 +434,7 @@ def test_get_root_node_endpoint_node_not_found(mock_db_find_by_id,
     Test Case : Test KernelCI API GET /get_root_node/{node_id} endpoint
     when node matching with the provided id does not exist.
     Expected Result :
-        HTTP Response Code 400 Bad Request
+        HTTP Response Code 404 Not Found
         JSON with 'detail' key
     """
     mock_db_find_by_id.return_value = None
@@ -444,7 +444,7 @@ def test_get_root_node_endpoint_node_not_found(mock_db_find_by_id,
             API_VERSION + "/get_root_node/61bda8f2eb1a63d2b7152419"
         )
         print("response.json()", response.json())
-        assert response.status_code == 400
+        assert response.status_code == 404
         assert 'detail' in response.json()
 
 
