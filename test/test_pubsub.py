@@ -78,7 +78,7 @@ async def test_unsubscribe_sub_id_not_exists(mock_pubsub_subscriptions):
         key should be equal 1.
     """
     # In case of subscription id does not exist
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         await mock_pubsub_subscriptions.unsubscribe(sub_id=2)
     assert len(mock_pubsub_subscriptions._subscriptions) == 1
     assert 1 in mock_pubsub_subscriptions._subscriptions
