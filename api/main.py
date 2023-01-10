@@ -22,6 +22,7 @@ from fastapi.security import (
     SecurityScopes
 )
 from fastapi_pagination import add_pagination
+from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
 from .auth import Authentication, Token
@@ -432,3 +433,16 @@ async def put_regression(regression_id: str, regression: Regression,
     await pubsub.publish_cloudevent('regression', {'op': operation,
                                                    'id': str(obj.id)})
     return obj
+
+
+app = VersionedFastAPI(
+        app,
+        version_format='{major}',
+        prefix_format='/v{major}',
+        enable_latest=True,
+        default_version=(0, 0),
+        on_startup=[
+            pubsub_startup,
+            create_indexes,
+        ]
+    )
