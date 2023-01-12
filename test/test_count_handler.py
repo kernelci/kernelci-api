@@ -8,6 +8,7 @@
 """Unit test functions for KernelCI API count handler"""
 
 
+from test.conftest import API_VERSION
 from fastapi.testclient import TestClient
 from api.main import app
 
@@ -21,7 +22,7 @@ def test_count_nodes(mock_db_count, mock_init_sub_id):
     """
     mock_db_count.return_value = 10
     with TestClient(app) as client:
-        response = client.get("/count")
+        response = client.get(API_VERSION + "/count")
         print("response.json()", response.json())
         assert response.status_code == 200
         assert response.json() >= 0
@@ -36,7 +37,7 @@ def test_count_nodes_matching_attributes(mock_db_count, mock_init_sub_id):
     """
     mock_db_count.return_value = 1
     with TestClient(app) as client:
-        response = client.get("/count?name=checkout")
+        response = client.get(API_VERSION + "/count?name=checkout")
         print("response.json()", response.json())
         assert response.status_code == 200
         assert response.json() == 1

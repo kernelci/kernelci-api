@@ -12,7 +12,7 @@
 
 import json
 
-from test.conftest import BEARER_TOKEN
+from test.conftest import BEARER_TOKEN, API_VERSION
 from bson import errors
 
 from fastapi.testclient import TestClient
@@ -64,7 +64,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
                 }
             }
         response = client.post(
-            "/node",
+            API_VERSION + "/node",
             headers={
                 "Accept": "application/json",
                 "Authorization": BEARER_TOKEN
@@ -153,7 +153,7 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
     }
     with TestClient(app) as client:
         response = client.get(
-            "/nodes",
+            API_VERSION + "/nodes",
             params=params,
             )
         print("response.json()", response.json())
@@ -186,7 +186,7 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(
     }
     with TestClient(app) as client:
         response = client.get(
-            "/nodes",
+            API_VERSION + "/nodes",
             params=params
             )
         print("response.json()", response.json())
@@ -225,7 +225,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
     mock_db_find_by_id.return_value = node_obj
 
     with TestClient(app) as client:
-        response = client.get("/node/61bda8f2eb1a63d2b7152418")
+        response = client.get(API_VERSION + "/node/61bda8f2eb1a63d2b7152418")
         print("response.json()", response.json())
         assert response.status_code == 200
         assert response.json().keys() == {
@@ -259,7 +259,7 @@ def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
     mock_db_find_by_id.return_value = None
 
     with TestClient(app) as client:
-        response = client.get("/node/61bda8f2eb1a63d2b7152419")
+        response = client.get(API_VERSION + "/node/61bda8f2eb1a63d2b7152419")
         print("response.json()", response.json())
         assert response.status_code == 200
         assert response.json() is None
@@ -337,7 +337,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
     }
 
     with TestClient(app) as client:
-        response = client.get("/nodes")
+        response = client.get(API_VERSION + "/nodes")
         print("response.json()", response.json())
         assert response.status_code == 200
         assert len(response.json()) > 0
@@ -361,7 +361,7 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
     }
 
     with TestClient(app) as client:
-        response = client.get("/nodes")
+        response = client.get(API_VERSION + "/nodes")
         print("response.json()", response.json())
         assert response.status_code == 200
         assert response.json().get('total') == 0
@@ -405,7 +405,9 @@ def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
     mock_db_find_by_id.side_effect = [node_obj, root_node_obj]
 
     with TestClient(app) as client:
-        response = client.get("/get_root_node/61bda8f2eb1a63d2b7152418")
+        response = client.get(
+            API_VERSION + "/get_root_node/61bda8f2eb1a63d2b7152418"
+        )
         print("response.json()", response.json())
         assert response.status_code == 200
         assert response.json().keys() == {
@@ -438,7 +440,9 @@ def test_get_root_node_endpoint_node_not_found(mock_db_find_by_id,
     mock_db_find_by_id.return_value = None
 
     with TestClient(app) as client:
-        response = client.get("/get_root_node/61bda8f2eb1a63d2b7152419")
+        response = client.get(
+            API_VERSION + "/get_root_node/61bda8f2eb1a63d2b7152419"
+        )
         print("response.json()", response.json())
         assert response.status_code == 400
         assert 'detail' in response.json()
@@ -456,7 +460,9 @@ def test_get_root_node_endpoint_invalid_node_id(mock_db_find_by_id,
     mock_db_find_by_id.side_effect = errors.InvalidId
 
     with TestClient(app) as client:
-        response = client.get("/get_root_node/61bda8f2eb1a63d2b71524")
+        response = client.get(
+            API_VERSION + "/get_root_node/61bda8f2eb1a63d2b71524"
+        )
         print("response.json()", response.json())
         assert response.status_code == 400
         assert 'detail' in response.json()

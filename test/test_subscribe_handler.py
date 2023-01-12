@@ -7,7 +7,7 @@
 
 """Unit test function for KernelCI API subscribe handler"""
 
-from test.conftest import BEARER_TOKEN
+from test.conftest import BEARER_TOKEN, API_VERSION
 
 from fastapi.testclient import TestClient
 
@@ -29,7 +29,7 @@ def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
     with TestClient(app) as client:
         # Use context manager to trigger a startup event on the app object
         response = client.post(
-            "/subscribe/abc",
+            API_VERSION + "/subscribe/abc",
             headers={
                 "Authorization": BEARER_TOKEN
             },
