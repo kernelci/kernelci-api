@@ -10,7 +10,7 @@
 
 """Unit test functions for KernelCI API listen handler"""
 
-from test.conftest import BEARER_TOKEN
+from test.conftest import BEARER_TOKEN, API_VERSION
 
 from fastapi.testclient import TestClient
 
@@ -31,7 +31,7 @@ def test_listen_endpoint(mock_get_current_user,
 
     with TestClient(app) as client:
         response = client.get(
-            "/listen/1",
+            API_VERSION + "/listen/1",
             headers={
                 "Authorization": BEARER_TOKEN
             },
@@ -51,7 +51,7 @@ def test_listen_endpoint_not_found(mock_get_current_user,
     """
     with TestClient(app) as client:
         response = client.get(
-            "/listen/1",
+            API_VERSION + "/listen/1",
             headers={
                 "Authorization": BEARER_TOKEN
             },
@@ -71,7 +71,7 @@ def test_listen_endpoint_without_token(mock_get_current_user,
     """
     with TestClient(app) as client:
         response = client.get(
-            "/listen/1",
+            API_VERSION + "/listen/1",
             headers={
                 "Accept": "application/json"
             },

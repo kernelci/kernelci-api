@@ -8,6 +8,7 @@
 
 """Unit test function for KernelCI API token handler"""
 
+from test.conftest import API_VERSION
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -28,7 +29,7 @@ def test_token_endpoint(mock_db_find_one):
     mock_db_find_one.return_value = user
     client = TestClient(app)
     response = client.post(
-        "/token",
+       API_VERSION + "/token",
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"
@@ -58,7 +59,7 @@ def test_token_endpoint_incorrect_password(mock_db_find_one):
 
     # Pass incorrect password
     response = client.post(
-        "/token",
+        API_VERSION + "/token",
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"
@@ -84,7 +85,7 @@ def test_token_endpoint_admin_user(mock_db_find_one):
     mock_db_find_one.return_value = user
     client = TestClient(app)
     response = client.post(
-        "/token",
+        API_VERSION + "/token",
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"

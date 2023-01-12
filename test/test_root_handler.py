@@ -5,6 +5,8 @@
 
 """Unit test function for KernelCI API root handler"""
 
+from test.conftest import API_VERSION
+
 
 def test_root_endpoint(client):
     """
@@ -13,6 +15,6 @@ def test_root_endpoint(client):
         HTTP Response Code 200 OK
         JSON with 'message' key
     """
-    response = client.get("/")
+    response = client.get(API_VERSION + "/")
     assert response.status_code == 200
     assert response.json() == {"message": "KernelCI API"}

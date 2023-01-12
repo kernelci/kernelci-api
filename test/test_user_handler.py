@@ -9,7 +9,7 @@
 
 import json
 
-from test.conftest import ADMIN_BEARER_TOKEN, BEARER_TOKEN
+from test.conftest import ADMIN_BEARER_TOKEN, BEARER_TOKEN, API_VERSION
 
 from fastapi.testclient import TestClient
 
@@ -33,7 +33,7 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True)
 
     with TestClient(app) as client:
         response = client.post(
-            "/user/test",
+            API_VERSION + "/user/test",
             headers={
                 "Accept": "application/json",
                 "Authorization": ADMIN_BEARER_TOKEN
@@ -62,7 +62,7 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True)
 
     with TestClient(app) as client:
         response = client.post(
-            "/user/test_admin?is_admin=1",
+            API_VERSION + "/user/test_admin?is_admin=1",
             headers={
                 "Accept": "application/json",
                 "Authorization": ADMIN_BEARER_TOKEN
@@ -88,7 +88,7 @@ def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
 
     with TestClient(app) as client:
         response = client.post(
-            "/user/test",
+            API_VERSION + "/user/test",
             headers={
                 "Accept": "application/json",
                 "Authorization": BEARER_TOKEN
