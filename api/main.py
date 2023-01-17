@@ -174,6 +174,15 @@ def get_password_hash(password: Password):
 # -----------------------------------------------------------------------------
 # Nodes
 
+async def translate_null_query_params(query_params: dict):
+    """Translate null query parameters to None"""
+    translated = query_params.copy()
+    for key, value in query_params.items():
+        if value == 'null':
+            translated[key] = None
+    return translated
+
+
 @app.get('/node/{node_id}', response_model=Union[Regression, Node])
 async def get_node(node_id: str, kind: str = "node"):
     """Get node information from the provided node id"""
