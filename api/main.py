@@ -218,6 +218,7 @@ async def get_nodes(request: Request, kind: str = "node"):
     for pg_key in ['limit', 'offset']:
         query_params.pop(pg_key, None)
 
+    query_params = await translate_null_query_params(query_params)
     is_valid, msg = model.validate_params(query_params)
     if not is_valid:
         raise HTTPException(
@@ -250,6 +251,7 @@ async def get_nodes_count(request: Request, kind: str = "node"):
 
     query_params = dict(request.query_params)
 
+    query_params = await translate_null_query_params(query_params)
     is_valid, msg = model.validate_params(query_params)
     if not is_valid:
         raise HTTPException(
