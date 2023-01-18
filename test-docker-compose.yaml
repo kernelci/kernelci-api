@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2023 Collabora Limited
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
+
+version: '3'
+services:
+
+  api:
+    container_name: 'test-kernelci-api'
+    build:
+      context: 'docker/api'
+      args:
+        - REQUIREMENTS=${REQUIREMENTS:-requirements.txt}
+    volumes:
+      - './api:/home/kernelci/api'
+    ports:
+      - '${API_HOST_PORT:-8001}:8000'
+    env_file:
+      - '.env'
+
+  db:
+    container_name: 'test-kernelci-api-db'
+    image: 'mongo:5.0'
+
+  redis:
+    container_name: 'test-kernelci-api-redis'
+    image: 'redis:6.2'
+    volumes:
+      - './docker/redis/data:/data'
+
+  storage:
+    container_name: 'test-kernelci-api-storage'
+    image: 'nginx:1.21.3'
+    volumes:
+      - './docker/storage/data:/usr/share/nginx/html'
+    ports:
+      - ${STORAGE_HOST_PORT:-8002}:80
+
+  ssh:
+    container_name: 'test-kernelci-api-ssh'
+    build:
+      context: 'docker/ssh'
+    volumes:
+      - './docker/storage/data:/home/kernelci/data'
+      - './docker/ssh/user-data:/home/kernelci/.ssh'
+    ports:
+      - '${SSH_HOST_PORT:-8022}:22'
+
+  test:
+    container_name: 'kernelci-api-e2e-tests'
+    build:
+      context: 'docker/test'
+    volumes:
+      - './api:/home/kernelci/api'
+      - './e2e_tests:/home/kernelci/e2e_tests'
+    depends_on:
+      - api
+    env_file:
+      - '.env'
