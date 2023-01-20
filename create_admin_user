@@ -18,7 +18,7 @@ import sys
 import urllib
 
 
-DEFAULT_URL = 'http://localhost:8001'
+DEFAULT_URL = 'http://localhost:8001/latest/'
 
 
 def get_hashed_password(password, url):
