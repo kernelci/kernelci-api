@@ -23,7 +23,7 @@ DEFAULT_URL = 'http://localhost:8001/latest/'
 
 def get_hashed_password(password, url):
     """Method to get hashed password"""
-    url = urllib.parse.urljoin(url, '/hash')
+    url = urllib.parse.urljoin(url, 'hash')
     data = {'password': password}
     res = requests.post(url, data=json.dumps(data))
     return res.json()
