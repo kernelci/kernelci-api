@@ -164,6 +164,17 @@ $ curl 'http://localhost:8001/nodes?name=checkout&created__gt=2022-12-06T04:59:0
 
 > **Note** In order to support comparison operators in URL request parameters, models can not contain `__` in the field name.
 
+Nodes with `null` fields can also be retrieved using the endpoint.
+For example, the below command will get all the nodes with `parent` field set to `null`:
+
+```
+$ curl 'http://localhost:8001/nodes?parent=null'
+"items":[{"_id":"63c549319fb3b62c7626e7f9","kind":"node","name":"checkout","path":["checkout"],"group":null,"revision":{"tree":"kernelci","url":"https://github.com/kernelci/linux.git","branch":"staging-mainline","commit":"1385303d0d85c68473d8901d69c7153b03a3150b","describe":"staging-mainline-20230115.1","version":{"version":6,"patchlevel":2,"sublevel":null,"extra":"-rc4-2-g1385303d0d85","name":null}},"parent":null,"state":"available","result":null,"artifacts":{"tarball":"http://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20230115.1.tar.gz"},"created":"2023-01-16T12:55:13.879000","updated":"2023-01-16T12:55:51.780000","timeout":"2023-01-16T13:55:13.877000","holdoff":"2023-01-16T13:05:51.776000"},{"_id":"63c549329fb3b62c7626e7fa","kind":"node","name":"checkout","path":["checkout"],"group":null,"revision":{"tree":"kernelci","url":"https://github.com/kernelci/linux.git","branch":"staging-next","commit":"39384a5d7e2eb2f28039a92c022aed886a675fbf","describe":"staging-next-20230116.0","version":{"version":6,"patchlevel":2,"sublevel":null,"extra":"-rc4-5011-g39384a5d7e2e","name":null}},"parent":null,"state":"available","result":null,"artifacts":{"tarball":"http://172.17.0.1:8002/linux-kernelci-staging-next-staging-next-20230116.0.tar.gz"},"created":"2023-01-16T12:55:14.706000","updated":"2023-01-16T12:56:30.886000","timeout":"2023-01-16T13:55:14.703000","holdoff":"2023-01-16T13:06:30.882000"}],"total":2,"limit":50,"offset":0}
+```
+
+Please make sure that the query parameter provided with the `null` value in the request exists in the `Node` schema. Otherwise, the API will behave unexpectedly and return all the nodes.
+
+
 ### Update a Node
 
 To update an existing node, use PUT request to `node/{node_id}` endpoint.
@@ -213,6 +224,13 @@ Same as `/nodes`, the `/count` endpoint also supports comparison operators for r
 ```
 $ curl 'http://localhost:8001/count?name=checkout&created__lt=2022-12-06T04:59:08.102000'
 3
+```
+
+To query the count of nodes with `null` attributes, use the endpoint with
+query parameters set to `null`.
+```
+$ curl 'http://localhost:8001/count?result=null'
+2
 ```
 
 ### State diagram
