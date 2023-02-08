@@ -11,3 +11,4 @@ fastapi-versioning==0.10.0
 pytest==6.2.5
 pytest-asyncio==0.16.0
 httpx==0.23.3
+pytest-dependency==0.5.1
