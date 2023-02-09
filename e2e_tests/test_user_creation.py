@@ -14,6 +14,7 @@ from e2e_tests.conftest import db_create
 
 
 @pytest.mark.dependency()
+@pytest.mark.order(1)
 @pytest.mark.asyncio
 async def test_create_admin_user(test_async_client):
     """
@@ -59,6 +60,7 @@ async def test_create_admin_user(test_async_client):
 
 
 @pytest.mark.dependency(depends=["test_create_admin_user"])
+@pytest.mark.order(2)
 @pytest.mark.asyncio
 async def test_create_regular_user(test_async_client):
     """
