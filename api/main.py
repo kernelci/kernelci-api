@@ -284,7 +284,6 @@ async def post_node(node: Node, token: str = Depends(get_user)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Parent not found with id: {node.parent}"
             )
-        parent.validate_parent()
     obj = await db.create(node)
     operation = 'created'
     await pubsub.publish_cloudevent('node', {'op': operation,
