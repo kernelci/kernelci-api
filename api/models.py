@@ -322,12 +322,6 @@ URLs (e.g. URL to binaries or logs)'
             return False, f"Transition not allowed with state: {new_state}"
         return True, "Transition validated successfully"
 
-    def validate_parent(self):
-        """Validate the parent node's state before creating child nodes"""
-        if self.state != 'available':
-            raise ValueError(f"The node is unavailable to create child node: \
-{self.id}")
-
 
 class Hierarchy(BaseModel):
     """Hierarchy of nodes with child nodes"""
