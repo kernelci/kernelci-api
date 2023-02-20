@@ -14,7 +14,14 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, List
 import enum
 from bson import ObjectId
-from pydantic import AnyUrl, BaseModel, Field, FileUrl, SecretStr
+from pydantic import (
+    AnyHttpUrl,
+    AnyUrl,
+    BaseModel,
+    Field,
+    FileUrl,
+    SecretStr,
+)
 
 
 class PyObjectId(ObjectId):
@@ -210,7 +217,7 @@ class Node(DatabaseModel):
     result: Optional[ResultValues] = Field(
         description='Result of node'
     )
-    artifacts: Optional[Dict] = Field(
+    artifacts: Optional[Dict[str, AnyHttpUrl]] = Field(
         description='Dictionary with names mapping to node associated \
 URLs (e.g. URL to binaries or logs)'
     )
