@@ -14,7 +14,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, List
 import enum
 from bson import ObjectId
-from pydantic import BaseModel, Field, SecretStr, HttpUrl
+from pydantic import AnyUrl, BaseModel, Field, FileUrl, SecretStr
 
 
 class PyObjectId(ObjectId):
@@ -141,7 +141,7 @@ class Revision(BaseModel):
     tree: str = Field(
         description='git tree of the revision'
     )
-    url: HttpUrl = Field(
+    url: AnyUrl | FileUrl = Field(
         description='git URL of the revision'
     )
     branch: str = Field(
