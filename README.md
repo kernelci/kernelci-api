@@ -64,8 +64,8 @@ Export the file with SECRET_KEY environment variable in it:
 export $(cat .env)
 ```
 
-Run the below command from kernelci-api/api directory:
+Run the below command from kernelci-api directory:
 ```
-pytest
+pytest -v test/
 ```
-This will start running test cases from kernelci-api/api/test_api.py and display results.
+This will start running unit test cases from kernelci-api/test directory and display results.
