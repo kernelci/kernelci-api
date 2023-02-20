@@ -69,3 +69,14 @@ Run the below command from kernelci-api directory:
 pytest -v test/
 ```
 This will start running unit test cases from kernelci-api/test directory and display results.
+
+In addition to the unit tests, end-to-end tests for API has been developed.
+A Github action check `test` is running on every push and pull to execute the end-to-end tests.
+
+In order to ease the execution of the tests locally, a shell script `run_e2e_tests.sh` has been introduced.
+
+Run the below command from kernelci-api directory:
+```
+./run_e2e_tests.sh
+```
+This will start running e2e test cases in a `docker-compose` environment from kernelci-api/e2e_tests directory and display results.
