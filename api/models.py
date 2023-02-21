@@ -4,6 +4,10 @@
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
+# Disable below flag as some models are just for storing the data and do not
+# need methods
+# pylint: disable=too-few-public-methods
+
 """KernelCI API model definitions"""
 
 from datetime import datetime, timedelta
