@@ -9,6 +9,7 @@
 """KernelCI API main module"""
 
 from typing import List, Union
+import json  # unused import
 from fastapi import (
     Depends,
     FastAPI,
