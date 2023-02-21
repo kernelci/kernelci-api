@@ -17,7 +17,7 @@ from bson import ObjectId
 from pydantic import BaseModel, Field, SecretStr, HttpUrl
 
 
-class PyObjectId(ObjectId):
+class PyObjectId(ObjectId):  # Trailing whitespace 
     """Wrapper around ObjectId to be able to use it in Pydantic models"""
 
     @classmethod
