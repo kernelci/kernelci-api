@@ -85,3 +85,4 @@ jobs:
           use-pycodestyle: true
           use-pydocstyle: false
           use-vulture: false
+          python-version: "3.10"
