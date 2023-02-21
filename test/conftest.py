@@ -32,6 +32,8 @@ t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k'
 API_VERSION = '/latest'
 
 
+
+# added a blank line
 @pytest.fixture
 def client():
     """Returns test client instance"""
