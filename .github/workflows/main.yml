@@ -83,7 +83,7 @@ jobs:
       - if: env.CHANGED_FILES
         name: Install Python packages
         run: |
-          pip install -r docker/api/requirements-dev.txt
+          pip install -r docker/api/requirements-tests.txt
 
       - if: env.CHANGED_FILES
         uses: marian-code/python-lint-annotate@v3
