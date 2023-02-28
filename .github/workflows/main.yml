@@ -47,10 +47,10 @@ jobs:
         run: |
           pylint api.auth
           pylint api.db
+          pylint api.main
           pylint api.models
           pylint api.pubsub
           pylint test
-          pylint api.main
 
       - name: Export environment variables
         run: |
