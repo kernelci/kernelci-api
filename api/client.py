@@ -2,6 +2,7 @@ import argparse
 import os
 import requests
 import urllib.parse
+import json # Unused import
 
 from cloudevents.http import CloudEvent, to_structured, from_json
 
