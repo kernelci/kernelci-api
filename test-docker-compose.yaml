@@ -11,7 +11,7 @@ services:
     build:
       context: 'docker/api'
       args:
-        - REQUIREMENTS=${REQUIREMENTS:-requirements.txt}
+        - REQUIREMENTS=${REQUIREMENTS:-requirements-dev.txt}
     volumes:
       - './api:/home/kernelci/api'
     ports:
