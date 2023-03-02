@@ -50,7 +50,10 @@ services:
   test:
     container_name: 'kernelci-api-e2e-tests'
     build:
-      context: 'docker/test'
+      context: 'docker/api'
+      args:
+        - REQUIREMENTS=${REQUIREMENTS:-requirements-dev.txt}
+    command: "pytest -v e2e_tests"
     volumes:
       - './api:/home/kernelci/api'
       - './e2e_tests:/home/kernelci/e2e_tests'
