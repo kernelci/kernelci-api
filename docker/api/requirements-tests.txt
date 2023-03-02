@@ -2,4 +2,7 @@
 fakeredis==1.7.0
 pytest==6.2.5
 pytest-asyncio==0.16.0
+pytest-dependency==0.5.1
 pytest-mock==3.6.1
+pytest-order==1.0.1
+httpx==0.23.3
