@@ -8,7 +8,7 @@
 """Unit test functions for KernelCI API count handler"""
 
 
-from test.conftest import API_VERSION
+from tests.unit_tests.conftest import API_VERSION
 from fastapi.testclient import TestClient
 from api.main import app
 
