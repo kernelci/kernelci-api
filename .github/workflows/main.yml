@@ -50,7 +50,7 @@ jobs:
           pylint api.main
           pylint api.models
           pylint api.pubsub
-          pylint test
+          pylint tests/unit_tests
 
       - name: Export environment variables
         run: |
@@ -58,7 +58,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          pytest -v test/
+          pytest -v tests/unit_tests
 
   lint:
     runs-on: ubuntu-22.04
