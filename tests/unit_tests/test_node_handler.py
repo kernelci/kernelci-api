@@ -11,12 +11,10 @@
 """Unit test functions for KernelCI API node handler"""
 
 import json
-
-from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
 from bson import errors
-
 from fastapi.testclient import TestClient
 
+from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
 from api.main import app
 from api.models import Node, Revision
 

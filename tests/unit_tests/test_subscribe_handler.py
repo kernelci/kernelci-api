@@ -7,10 +7,9 @@
 
 """Unit test function for KernelCI API subscribe handler"""
 
-from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
-
 from fastapi.testclient import TestClient
 
+from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
 from api.main import app
 from api.pubsub import Subscription
 

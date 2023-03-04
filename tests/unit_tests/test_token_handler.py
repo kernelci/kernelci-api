@@ -8,9 +8,9 @@
 
 """Unit test function for KernelCI API token handler"""
 
-from tests.unit_tests.conftest import API_VERSION
 from fastapi.testclient import TestClient
 
+from tests.unit_tests.conftest import API_VERSION
 from api.main import app
 from api.models import User
 

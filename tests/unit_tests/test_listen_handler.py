@@ -10,9 +10,9 @@
 
 """Unit test functions for KernelCI API listen handler"""
 
-from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
-
 from fastapi.testclient import TestClient
+
+from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
 
 from api.main import app
 
