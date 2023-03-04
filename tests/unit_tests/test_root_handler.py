@@ -5,7 +5,7 @@
 
 """Unit test function for KernelCI API root handler"""
 
-from test.conftest import API_VERSION
+from tests.unit_tests.conftest import API_VERSION
 
 
 def test_root_endpoint(client):

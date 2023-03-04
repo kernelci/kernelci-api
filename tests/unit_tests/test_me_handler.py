@@ -7,7 +7,7 @@
 
 """Unit test function for KernelCI API me handler"""
 
-from test.conftest import BEARER_TOKEN, API_VERSION
+from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
 
 from fastapi.testclient import TestClient
 

@@ -9,7 +9,7 @@
 
 import json
 
-from test.conftest import ADMIN_BEARER_TOKEN, BEARER_TOKEN, API_VERSION
+from tests.unit_tests.conftest import ADMIN_BEARER_TOKEN, BEARER_TOKEN, API_VERSION
 
 from fastapi.testclient import TestClient
 
