@@ -10,16 +10,12 @@
 
 """Unit test functions for KernelCI API listen handler"""
 
-from fastapi.testclient import TestClient
-
-from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
-
-from api.main import app
+from tests.unit_tests.conftest import BEARER_TOKEN
 
 
 def test_listen_endpoint(mock_get_current_user,
                          mock_init_sub_id,
-                         mock_listen):
+                         mock_listen, test_client):
     """
     Test Case : Test KernelCI API GET /listen endpoint for the
     positive path
@@ -29,18 +25,17 @@ def test_listen_endpoint(mock_get_current_user,
     """
     mock_listen.return_value = 'Listening for events on channel 1'
 
-    with TestClient(app) as client:
-        response = client.get(
-            API_VERSION + "/listen/1",
-            headers={
-                "Authorization": BEARER_TOKEN
-            },
-        )
-        assert response.status_code == 200
+    response = test_client.get(
+        "listen/1",
+        headers={
+            "Authorization": BEARER_TOKEN
+        },
+    )
+    assert response.status_code == 200
 
 
 def test_listen_endpoint_not_found(mock_get_current_user,
-                                   mock_init_sub_id):
+                                   mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API GET /listen endpoint for the
     negative path
@@ -49,19 +44,18 @@ def test_listen_endpoint_not_found(mock_get_current_user,
         JSON with 'detail' key
         No existing pub/sub subscription with provided id
     """
-    with TestClient(app) as client:
-        response = client.get(
-            API_VERSION + "/listen/1",
-            headers={
-                "Authorization": BEARER_TOKEN
-            },
-        )
-        assert response.status_code == 404
-        assert 'detail' in response.json()
+    response = test_client.get(
+        "listen/1",
+        headers={
+            "Authorization": BEARER_TOKEN
+        },
+    )
+    assert response.status_code == 404
+    assert 'detail' in response.json()
 
 
 def test_listen_endpoint_without_token(mock_get_current_user,
-                                       mock_init_sub_id):
+                                       mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API GET /listen endpoint for the
     negative path
@@ -69,11 +63,10 @@ def test_listen_endpoint_without_token(mock_get_current_user,
         HTTP Response Code 401 Unauthorized
         The request requires user authentication by token in header
     """
-    with TestClient(app) as client:
-        response = client.get(
-            API_VERSION + "/listen/1",
-            headers={
-                "Accept": "application/json"
-            },
-        )
-        assert response.status_code == 401
+    response = test_client.get(
+        "listen/1",
+        headers={
+            "Accept": "application/json"
+        },
+    )
+    assert response.status_code == 401

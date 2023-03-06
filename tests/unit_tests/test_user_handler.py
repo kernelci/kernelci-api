@@ -9,19 +9,16 @@
 
 import json
 
-from fastapi.testclient import TestClient
-
 from tests.unit_tests.conftest import (
     ADMIN_BEARER_TOKEN,
     BEARER_TOKEN,
-    API_VERSION,
 )
-from api.main import app
 from api.models import User
 
 
 def test_create_regular_user(mock_init_sub_id, mock_get_current_admin_user,
-                             mock_db_create, mock_publish_cloudevent):
+                             mock_db_create, mock_publish_cloudevent,
+                             test_client):
     """
     Test Case : Test KernelCI API /user endpoint to create regular user
     when requested with admin user's bearer token
@@ -34,23 +31,23 @@ def test_create_regular_user(mock_init_sub_id, mock_get_current_admin_user,
 HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True)
     mock_db_create.return_value = user
 
-    with TestClient(app) as client:
-        response = client.post(
-            API_VERSION + "/user/test",
-            headers={
-                "Accept": "application/json",
-                "Authorization": ADMIN_BEARER_TOKEN
-            },
-            data=json.dumps({"password": "test"})
-        )
-        print(response.json())
-        assert response.status_code == 200
-        assert ('_id', 'username', 'hashed_password', 'active',
-                'is_admin') == tuple(response.json().keys())
+    response = test_client.post(
+        "user/test",
+        headers={
+            "Accept": "application/json",
+            "Authorization": ADMIN_BEARER_TOKEN
+        },
+        data=json.dumps({"password": "test"})
+    )
+    print(response.json())
+    assert response.status_code == 200
+    assert ('_id', 'username', 'hashed_password', 'active',
+            'is_admin') == tuple(response.json().keys())
 
 
 def test_create_admin_user(mock_init_sub_id, mock_get_current_admin_user,
-                           mock_db_create, mock_publish_cloudevent):
+                           mock_db_create, mock_publish_cloudevent,
+                           test_client):
     """
     Test Case : Test KernelCI API /user endpoint to create admin user
     when requested with admin user's bearer token
@@ -63,23 +60,22 @@ def test_create_admin_user(mock_init_sub_id, mock_get_current_admin_user,
 HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True)
     mock_db_create.return_value = user
 
-    with TestClient(app) as client:
-        response = client.post(
-            API_VERSION + "/user/test_admin?is_admin=1",
-            headers={
-                "Accept": "application/json",
-                "Authorization": ADMIN_BEARER_TOKEN
-            },
-            data=json.dumps({"password": "test"})
-        )
-        print(response.json())
-        assert response.status_code == 200
-        assert ('_id', 'username', 'hashed_password', 'active',
-                'is_admin') == tuple(response.json().keys())
+    response = test_client.post(
+        "user/test_admin?is_admin=1",
+        headers={
+            "Accept": "application/json",
+            "Authorization": ADMIN_BEARER_TOKEN
+        },
+        data=json.dumps({"password": "test"})
+    )
+    print(response.json())
+    assert response.status_code == 200
+    assert ('_id', 'username', 'hashed_password', 'active',
+            'is_admin') == tuple(response.json().keys())
 
 
 def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
-                                       mock_publish_cloudevent):
+                                       mock_publish_cloudevent, test_client):
     """
     Test Case : Test KernelCI API /user endpoint when requested
     with regular user's bearer token
@@ -89,15 +85,14 @@ def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
     """
     mock_get_current_user.return_value = None, "Access denied"
 
-    with TestClient(app) as client:
-        response = client.post(
-            API_VERSION + "/user/test",
-            headers={
-                "Accept": "application/json",
-                "Authorization": BEARER_TOKEN
-            },
-            data=json.dumps({"password": "test"})
-        )
-        print(response.json())
-        assert response.status_code == 401
-        assert response.json() == {'detail': 'Access denied'}
+    response = test_client.post(
+        "user/test",
+        headers={
+            "Accept": "application/json",
+            "Authorization": BEARER_TOKEN
+        },
+        data=json.dumps({"password": "test"})
+    )
+    print(response.json())
+    assert response.status_code == 401
+    assert response.json() == {'detail': 'Access denied'}

@@ -12,15 +12,14 @@
 
 import json
 from bson import errors
-from fastapi.testclient import TestClient
 
-from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
-from api.main import app
+from tests.unit_tests.conftest import BEARER_TOKEN
 from api.models import Node, Revision
 
 
 def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
-                              mock_db_create, mock_publish_cloudevent):
+                              mock_db_create, mock_publish_cloudevent,
+                              test_client):
     """
     Test Case : Test KernelCI API /node endpoint
     Expected Result :
@@ -48,50 +47,49 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
         )
     mock_db_create.return_value = node_obj
 
-    with TestClient(app) as client:
-        request_dict = {
-            "name": "checkout",
-            "path": ["checkout"],
-            "revision": {
-                "tree": "mainline",
-                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
-                        "torvalds/linux.git",
-                "branch": "master",
-                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-                "describe": "v5.16-rc4-31-g2a987e65025e"
-                }
+    request_dict = {
+        "name": "checkout",
+        "path": ["checkout"],
+        "revision": {
+            "tree": "mainline",
+            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                    "torvalds/linux.git",
+            "branch": "master",
+            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+            "describe": "v5.16-rc4-31-g2a987e65025e"
             }
-        response = client.post(
-            API_VERSION + "/node",
-            headers={
-                "Accept": "application/json",
-                "Authorization": BEARER_TOKEN
-            },
-            data=json.dumps(request_dict)
-            )
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert response.json().keys() == {
-            '_id',
-            'artifacts',
-            'created',
-            'group',
-            'holdoff',
-            'kind',
-            'name',
-            'path',
-            'parent',
-            'result',
-            'revision',
-            'state',
-            'timeout',
-            'updated',
         }
+    response = test_client.post(
+        "node",
+        headers={
+            "Accept": "application/json",
+            "Authorization": BEARER_TOKEN
+        },
+        data=json.dumps(request_dict)
+        )
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json().keys() == {
+        '_id',
+        'artifacts',
+        'created',
+        'group',
+        'holdoff',
+        'kind',
+        'name',
+        'path',
+        'parent',
+        'result',
+        'revision',
+        'state',
+        'timeout',
+        'updated',
+    }
 
 
 def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
                                           mock_db_find_by_attributes,
-                                          mock_init_sub_id):
+                                          mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
     endpoint for the positive path
@@ -149,20 +147,20 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
         "state": "closing",
         "parent": "61bda8f2eb1a63d2b7152410",
     }
-    with TestClient(app) as client:
-        response = client.get(
-            API_VERSION + "/nodes",
-            params=params,
-            )
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert len(response.json()['items']) > 0
+    response = test_client.get(
+        "nodes",
+        params=params,
+        )
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert len(response.json()['items']) > 0
 
 
 def test_get_nodes_by_attributes_endpoint_node_not_found(
         mock_get_current_user,
         mock_db_find_by_attributes,
-        mock_init_sub_id):
+        mock_init_sub_id,
+        test_client):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
     endpoint for the node not found
@@ -182,18 +180,17 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(
         "name": "checkout",
         "revision.tree": "baseline"
     }
-    with TestClient(app) as client:
-        response = client.get(
-            API_VERSION + "/nodes",
-            params=params
-            )
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert response.json().get('total') == 0
+    response = test_client.get(
+        "nodes",
+        params=params
+        )
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json().get('total') == 0
 
 
 def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
-                                 mock_init_sub_id):
+                                 mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
     for the positive path
@@ -222,31 +219,31 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
         )
     mock_db_find_by_id.return_value = node_obj
 
-    with TestClient(app) as client:
-        response = client.get(API_VERSION + "/node/61bda8f2eb1a63d2b7152418")
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert response.json().keys() == {
-            '_id',
-            'artifacts',
-            'created',
-            'group',
-            'holdoff',
-            'kind',
-            'name',
-            'path',
-            'parent',
-            'result',
-            'revision',
-            'state',
-            'timeout',
-            'updated',
-        }
+    response = test_client.get("node/61bda8f2eb1a63d2b7152418")
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json().keys() == {
+        '_id',
+        'artifacts',
+        'created',
+        'group',
+        'holdoff',
+        'kind',
+        'name',
+        'path',
+        'parent',
+        'result',
+        'revision',
+        'state',
+        'timeout',
+        'updated',
+    }
 
 
 def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
                                                 mock_db_find_by_id,
-                                                mock_init_sub_id):
+                                                mock_init_sub_id,
+                                                test_client):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
     for negative path
@@ -256,15 +253,14 @@ def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
     """
     mock_db_find_by_id.return_value = None
 
-    with TestClient(app) as client:
-        response = client.get(API_VERSION + "/node/61bda8f2eb1a63d2b7152419")
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert response.json() is None
+    response = test_client.get("node/61bda8f2eb1a63d2b7152419")
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json() is None
 
 
 def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
-                       mock_init_sub_id):
+                       mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API GET /nodes endpoint for the
     positive path
@@ -334,16 +330,15 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
         'offset': 0
     }
 
-    with TestClient(app) as client:
-        response = client.get(API_VERSION + "/nodes")
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert len(response.json()) > 0
+    response = test_client.get("nodes")
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert len(response.json()) > 0
 
 
 def test_get_all_nodes_empty_response(mock_get_current_user,
                                       mock_db_find_by_attributes,
-                                      mock_init_sub_id):
+                                      mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API GET /nodes endpoint for the
     negative path
@@ -358,14 +353,14 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
         'offset': 0
     }
 
-    with TestClient(app) as client:
-        response = client.get(API_VERSION + "/nodes")
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert response.json().get('total') == 0
+    response = test_client.get("nodes")
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json().get('total') == 0
 
 
-def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
+def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id,
+                                test_client):
     """
     Test Case : Test KernelCI API GET /get_root_node/{node_id} endpoint
     Expected Result :
@@ -402,32 +397,32 @@ def test_get_root_node_endpoint(mock_db_find_by_id, mock_init_sub_id):
         )
     mock_db_find_by_id.side_effect = [node_obj, root_node_obj]
 
-    with TestClient(app) as client:
-        response = client.get(
-            API_VERSION + "/get_root_node/61bda8f2eb1a63d2b7152418"
-        )
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert response.json().keys() == {
-            '_id',
-            'artifacts',
-            'created',
-            'group',
-            'holdoff',
-            'kind',
-            'name',
-            'path',
-            'parent',
-            'result',
-            'revision',
-            'state',
-            'timeout',
-            'updated'
-        }
+    response = test_client.get(
+        "get_root_node/61bda8f2eb1a63d2b7152418"
+    )
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json().keys() == {
+        '_id',
+        'artifacts',
+        'created',
+        'group',
+        'holdoff',
+        'kind',
+        'name',
+        'path',
+        'parent',
+        'result',
+        'revision',
+        'state',
+        'timeout',
+        'updated'
+    }
 
 
 def test_get_root_node_endpoint_node_not_found(mock_db_find_by_id,
-                                               mock_init_sub_id):
+                                               mock_init_sub_id,
+                                               test_client):
     """
     Test Case : Test KernelCI API GET /get_root_node/{node_id} endpoint
     when node matching with the provided id does not exist.
@@ -437,17 +432,17 @@ def test_get_root_node_endpoint_node_not_found(mock_db_find_by_id,
     """
     mock_db_find_by_id.return_value = None
 
-    with TestClient(app) as client:
-        response = client.get(
-            API_VERSION + "/get_root_node/61bda8f2eb1a63d2b7152419"
-        )
-        print("response.json()", response.json())
-        assert response.status_code == 404
-        assert 'detail' in response.json()
+    response = test_client.get(
+        "get_root_node/61bda8f2eb1a63d2b7152419"
+    )
+    print("response.json()", response.json())
+    assert response.status_code == 404
+    assert 'detail' in response.json()
 
 
 def test_get_root_node_endpoint_invalid_node_id(mock_db_find_by_id,
-                                                mock_init_sub_id):
+                                                mock_init_sub_id,
+                                                test_client):
     """
     Test Case : Test KernelCI API GET /get_root_node/{node_id} endpoint
     for the case when provided node id is invalid.
@@ -457,10 +452,9 @@ def test_get_root_node_endpoint_invalid_node_id(mock_db_find_by_id,
     """
     mock_db_find_by_id.side_effect = errors.InvalidId
 
-    with TestClient(app) as client:
-        response = client.get(
-            API_VERSION + "/get_root_node/61bda8f2eb1a63d2b71524"
-        )
-        print("response.json()", response.json())
-        assert response.status_code == 400
-        assert 'detail' in response.json()
+    response = test_client.get(
+        "get_root_node/61bda8f2eb1a63d2b71524"
+    )
+    print("response.json()", response.json())
+    assert response.status_code == 400
+    assert 'detail' in response.json()

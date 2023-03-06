@@ -8,12 +8,7 @@
 """Unit test functions for KernelCI API count handler"""
 
 
-from fastapi.testclient import TestClient
-from tests.unit_tests.conftest import API_VERSION
-from api.main import app
-
-
-def test_count_nodes(mock_db_count, mock_init_sub_id):
+def test_count_nodes(mock_db_count, mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API GET /count endpoint
     Expected Result :
@@ -21,14 +16,14 @@ def test_count_nodes(mock_db_count, mock_init_sub_id):
         Total number of nodes available
     """
     mock_db_count.return_value = 10
-    with TestClient(app) as client:
-        response = client.get(API_VERSION + "/count")
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert response.json() >= 0
+    response = test_client.get("count")
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json() >= 0
 
 
-def test_count_nodes_matching_attributes(mock_db_count, mock_init_sub_id):
+def test_count_nodes_matching_attributes(mock_db_count, mock_init_sub_id,
+                                         test_client):
     """
     Test Case : Test KernelCI API GET /count endpoint with attributes
     Expected Result :
@@ -36,8 +31,7 @@ def test_count_nodes_matching_attributes(mock_db_count, mock_init_sub_id):
         Number of nodes matching attributes
     """
     mock_db_count.return_value = 1
-    with TestClient(app) as client:
-        response = client.get(API_VERSION + "/count?name=checkout")
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert response.json() == 1
+    response = test_client.get("count?name=checkout")
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json() == 1

@@ -7,15 +7,12 @@
 
 """Unit test function for KernelCI API subscribe handler"""
 
-from fastapi.testclient import TestClient
-
-from tests.unit_tests.conftest import BEARER_TOKEN, API_VERSION
-from api.main import app
+from tests.unit_tests.conftest import BEARER_TOKEN
 from api.pubsub import Subscription
 
 
 def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
-                            mock_subscribe):
+                            mock_subscribe, test_client):
     """
     Test Case : Test KernelCI API /subscribe endpoint
     Expected Result :
@@ -25,14 +22,12 @@ def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
     subscribe = Subscription(id=1, channel='abc')
     mock_subscribe.return_value = subscribe
 
-    with TestClient(app) as client:
-        # Use context manager to trigger a startup event on the app object
-        response = client.post(
-            API_VERSION + "/subscribe/abc",
-            headers={
-                "Authorization": BEARER_TOKEN
-            },
-        )
-        print("response.json()", response.json())
-        assert response.status_code == 200
-        assert ('id', 'channel') == tuple(response.json().keys())
+    response = test_client.post(
+        "subscribe/abc",
+        headers={
+            "Authorization": BEARER_TOKEN
+        },
+    )
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert ('id', 'channel') == tuple(response.json().keys())
