@@ -29,7 +29,8 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\
 eyJzdWIiOiJib2IiLCJzY29wZXMiOlsiYWRtaW4iXX0.\
 t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k'
 
-API_VERSION = '/latest'
+API_VERSION = 'latest'
+BASE_URL = f'http://testserver/{API_VERSION}/'
 
 
 @pytest.fixture
