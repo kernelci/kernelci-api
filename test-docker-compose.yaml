@@ -56,7 +56,7 @@ services:
     command: "pytest -v e2e_tests"
     volumes:
       - './api:/home/kernelci/api'
-      - './e2e_tests:/home/kernelci/e2e_tests'
+      - './tests/e2e_tests:/home/kernelci/e2e_tests'
     depends_on:
       - api
     env_file:
