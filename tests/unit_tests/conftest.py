@@ -34,9 +34,10 @@ BASE_URL = f'http://testserver/{API_VERSION}/'
 
 
 @pytest.fixture
-def client():
-    """Returns test client instance"""
-    return TestClient(app)
+def test_client():
+    """Fixture to get FastAPI Test client instance"""
+    with TestClient(app=app, base_url=BASE_URL) as client:
+        return client
 
 
 @pytest.fixture
