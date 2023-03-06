@@ -6,16 +6,14 @@
 # Copyright (C) 2022 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
+# pylint: disable=unused-argument
+
 """Unit test function for KernelCI API token handler"""
 
-from fastapi.testclient import TestClient
-
-from tests.unit_tests.conftest import API_VERSION
-from api.main import app
 from api.models import User
 
 
-def test_token_endpoint(mock_db_find_one):
+def test_token_endpoint(mock_db_find_one, mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API token endpoint
     Expected Result :
@@ -27,9 +25,8 @@ def test_token_endpoint(mock_db_find_one):
                                 'xCZGmM8jWXUXJZ4K',
                 active=True)
     mock_db_find_one.return_value = user
-    client = TestClient(app)
-    response = client.post(
-       API_VERSION + "/token",
+    response = test_client.post(
+        "token",
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"
@@ -41,7 +38,8 @@ def test_token_endpoint(mock_db_find_one):
     assert ('access_token', 'token_type') == tuple(response.json().keys())
 
 
-def test_token_endpoint_incorrect_password(mock_db_find_one):
+def test_token_endpoint_incorrect_password(mock_db_find_one, mock_init_sub_id,
+                                           test_client):
     """
     Test Case : Test KernelCI API token endpoint for negative path
     Incorrect password should be passed to the endpoint
@@ -55,11 +53,10 @@ def test_token_endpoint_incorrect_password(mock_db_find_one):
                                 'xCZGmM8jWXUXJZ4K',
                 active=True)
     mock_db_find_one.return_value = user
-    client = TestClient(app)
 
     # Pass incorrect password
-    response = client.post(
-        API_VERSION + "/token",
+    response = test_client.post(
+        "token",
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"
@@ -71,7 +68,8 @@ def test_token_endpoint_incorrect_password(mock_db_find_one):
     assert response.json() == {'detail': 'Incorrect username or password'}
 
 
-def test_token_endpoint_admin_user(mock_db_find_one):
+def test_token_endpoint_admin_user(mock_db_find_one, mock_init_sub_id,
+                                   test_client):
     """
     Test Case : Test KernelCI API token endpoint for admin user
     Expected Result :
@@ -83,9 +81,8 @@ def test_token_endpoint_admin_user(mock_db_find_one):
                                 'xCZGmM8jWXUXJZ4K',
                 active=True, is_admin=True)
     mock_db_find_one.return_value = user
-    client = TestClient(app)
-    response = client.post(
-        API_VERSION + "/token",
+    response = test_client.post(
+        "token",
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"
