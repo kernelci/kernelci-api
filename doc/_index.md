@@ -17,4 +17,4 @@ An instance has been set up on `staging.kernelci.org`.  The Docker logs are
 available in real-time via a [web
 interface](https://staging.kernelci.org:9088/) for both the API and the
 pipeline.  It also provides some [interactive API
-documentation](https://staging.kernelci.org:9000/docs).
+documentation](https://staging.kernelci.org:9000/latest/docs).
