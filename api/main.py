@@ -177,9 +177,9 @@ async def login_for_access_token(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@app.get('/me', response_model=User)
-async def read_users_me(current_user: User = Depends(get_user)):
-    """Get user information"""
+@app.get('/whoami', response_model=User)
+async def whoami(current_user: User = Depends(get_user)):
+    """Get current user information"""
     return current_user
 
 
