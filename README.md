@@ -16,7 +16,7 @@ Please refer to the [architecture](https://kernelci.org/docs/api/overview/#api-a
 
 ## Getting started with docker-compose
 
-Please refer to [start Docker containers](https://kernelci.org/docs/api/getting-started/#start-docker-compose) of all the services. 
+Please refer to [start Docker containers](https://kernelci.org/docs/api/getting-started/#start-docker-compose) of all the services.
 
 Note that the FastAPI server is running on port 8000 inside the container, but
 it's exposed to the host via port 8001 to avoid conflicts with other services.
@@ -39,11 +39,12 @@ stages.
 ## API Documentation
 
 The FastAPI server will automatically generate documentation for the API itself
-and serve it directly:: http://localhost:8001/docs
+and serve it directly: http://localhost:8001/latest/docs
 
-To use the generated documentation, first open it on
-http://localhost:8001/docs.  Then click on "Authorize", enter the user name and
-password and click on the "Authorize" button.
+To use the generated documentation, first [open
+it](http://localhost:8001/latest/docs) with a web browser.  Then click on
+"Authorize 🔓", enter the user name and password and click on the new
+"Authorize" button.
 
 This is based on OpenAPI, and you can also download the `openapi.json` file to
 use it with other tools: http://localhost:8001/openapi.json
