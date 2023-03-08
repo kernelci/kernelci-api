@@ -99,16 +99,16 @@ async def test_create_regular_user(test_async_client):
 
 
 @pytest.mark.dependency(depends=["test_create_regular_user"])
-def test_me_endpoint(test_client):
+def test_whoami(test_client):
     """
-    Test Case : Test KernelCI API /me endpoint
+    Test Case : Test KernelCI API /whoami endpoint
     Expected Result :
         HTTP Response Code 200 OK
         JSON with '_id', 'username', 'hashed_password'
         and 'active' keys
     """
     response = test_client.get(
-        "me",
+        "whoami",
         headers={
             "Accept": "application/json",
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"

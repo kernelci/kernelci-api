@@ -5,21 +5,21 @@
 
 # pylint: disable=unused-argument
 
-"""Unit test function for KernelCI API me handler"""
+"""Unit test function for KernelCI API whoami handler"""
 
 from tests.unit_tests.conftest import BEARER_TOKEN
 
 
-def test_me_endpoint(mock_get_current_user, mock_init_sub_id, test_client):
+def test_whoami_endpoint(mock_get_current_user, mock_init_sub_id, test_client):
     """
-    Test Case : Test KernelCI API /me endpoint
+    Test Case : Test KernelCI API /whoami endpoint
     Expected Result :
         HTTP Response Code 200 OK
         JSON with '_id', 'username', 'hashed_password'
         and 'active' keys
     """
     response = test_client.get(
-        "me",
+        "whoami",
         headers={
             "Accept": "application/json",
             "Authorization": BEARER_TOKEN
