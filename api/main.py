@@ -260,20 +260,6 @@ async def get_nodes_count(request: Request, kind: str = "node"):
         ) from error
 
 
-@app.get('/get_root_node/{node_id}', response_model=Node)
-async def get_root_node(node_id: str):
-    """Get root node information"""
-    while node_id:
-        node = await db.find_by_id(Node, node_id)
-        if node is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Node not found with id: {node_id}"
-            )
-        node_id = node.parent
-    return node
-
-
 @app.post('/node', response_model=Node)
 async def post_node(node: Node, token: str = Depends(get_user)):
     """Create a new node"""
