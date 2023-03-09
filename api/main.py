@@ -43,7 +43,7 @@ app = FastAPI()
 db = Database()
 auth = Authentication(db, token_url='token',
                       user_scopes={"admin": "Superusers",
-                                    "users": "Regular users"})
+                                   "users": "Regular users"})
 pubsub = None  # pylint: disable=invalid-name
 
 
