@@ -147,7 +147,7 @@ class PubSub:
         populated by default if not provided.  See the CloudEvent documentation
         for more details.
         """
-        if attributes is None:
+        if not attributes:
             attributes = {
                 "type": "api.kernelci.org",
                 "source": self._settings.cloud_events_source,
