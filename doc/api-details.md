@@ -59,7 +59,7 @@ provided with white space separation. For example:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/token' \
+  'http://localhost:8001/latest/token' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   s-d 'grant_type=&username=test_admin&password=admin&scope=admin users'
@@ -79,7 +79,7 @@ password to request data dictionary.
 
 ```
 $ curl -X 'POST'
-  'http://localhost:8001/user/test' \
+  'http://localhost:8001/latest/user/test' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' \
@@ -91,7 +91,7 @@ To create an admin user, provide a username, and `is_admin` flag to request
 query parameter and password to request data dictionary.
 
 ```
-$ curl -X 'POST' 'http://localhost:8001/user/test_admin?is_admin=1' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"password": "admin"}'
+$ curl -X 'POST' 'http://localhost:8001/latest/user/test_admin?is_admin=1' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"password": "admin"}'
 {'_id': '615f30020eb7c3c6616e5ac6', 'username': 'test_admin', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'active': True, 'is_admin': True}
 ```
 
@@ -112,7 +112,7 @@ the Node attributes. This requires an authentication token:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/node' \
+  'http://localhost:8001/latest/node' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1SEdkp5M1S1AgYvX8VdB20' \
   -H 'Content-Type: application/json' \
@@ -134,14 +134,14 @@ Reading Node doesn't require authentication, so plain URLs can be used.
 To get node by ID, use `/node` endpoint with node ID as a path parameter:
 
 ```
-$ curl http://localhost:8001/node/61bda8f2eb1a63d2b7152418
+$ curl http://localhost:8001/latest/node/61bda8f2eb1a63d2b7152418
 {"_id":"61bda8f2eb1a63d2b7152418","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-02T11:23:03.157648", "updated":"2022-02-02T11:23:03.157648"}
 ```
 
 To get all the nodes as a list, use the `/nodes` API endpoint:
 
 ```
-$ curl http://localhost:8001/nodes
+$ curl http://localhost:8001/latest/nodes
 [{"_id":"61b052199bca2a448fe49673","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-01T11:23:03.157648", "updated":"2022-02-02T11:23:03.157648"},{"_id":"61b052199bca2a448fe49674","kind":"node","name":"check-describe","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":"61b052199bca2a448fe49673","status":"pending", "result":null,"created":"2022-01-02T10:23:03.157648", "updated":"2022-01-02T11:23:03.157648"}]
 ```
 
@@ -150,7 +150,7 @@ parameters. All the attributes except node ID can be passed to this endpoint.
 In case of ID, please use `/node` endpoint with node ID as described above.
 
 ```
-$ curl 'http://localhost:8001/nodes?name=checkout&revision.tree=mainline'
+$ curl 'http://localhost:8001/latest/nodes?name=checkout&revision.tree=mainline'
 [{"_id":"61b052199bca2a448fe49673","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-01T11:23:03.157648", "updated":"2022-02-02T11:23:03.157648"}]
 ```
 
@@ -158,7 +158,7 @@ Attributes along with comparison operators are also supported for the
 `/nodes` endpoint. The attribute name and operator should be separated by `__` i.e. `attribute__operator`. Supported operators are `lt`(less than), `gt`(greater than), `lte`(less than or equal to), and `gte`(greater than or equal to).
 
 ```
-$ curl 'http://localhost:8001/nodes?name=checkout&created__gt=2022-12-06T04:59:08.102000'
+$ curl 'http://localhost:8001/latest/nodes?name=checkout&created__gt=2022-12-06T04:59:08.102000'
 {"items":[{"_id":"638ecc1c749a8d1209b758af","kind":"node","name":"checkout","path":["checkout"],"group":null,"revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"bce9332220bd677d83b19d21502776ad555a0e73","describe":"v6.1-rc8-3-gbce9332220bd","version":{"version":6,"patchlevel":1,"sublevel":null,"extra":"-rc8-3-gbce9332220bd","name":null}},"parent":null,"state":"done","result":"pass","artifacts":{"tarball":"http://172.17.0.1:8002/linux-mainline-master-v6.1-rc8-3-gbce9332220bd.tar.gz"},"created":"2022-12-06T04:59:08.959000","updated":"2022-12-06T05:11:33.098000","timeout":"2022-12-07T04:59:08.959000","holdoff":"2022-12-06T05:11:30.873000"}],"total":1,"limit":50,"offset":0}
 ```
 
@@ -168,7 +168,7 @@ Nodes with `null` fields can also be retrieved using the endpoint.
 For example, the below command will get all the nodes with `parent` field set to `null`:
 
 ```
-$ curl 'http://localhost:8001/nodes?parent=null'
+$ curl 'http://localhost:8001/latest/nodes?parent=null'
 "items":[{"_id":"63c549319fb3b62c7626e7f9","kind":"node","name":"checkout","path":["checkout"],"group":null,"revision":{"tree":"kernelci","url":"https://github.com/kernelci/linux.git","branch":"staging-mainline","commit":"1385303d0d85c68473d8901d69c7153b03a3150b","describe":"staging-mainline-20230115.1","version":{"version":6,"patchlevel":2,"sublevel":null,"extra":"-rc4-2-g1385303d0d85","name":null}},"parent":null,"state":"available","result":null,"artifacts":{"tarball":"http://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20230115.1.tar.gz"},"created":"2023-01-16T12:55:13.879000","updated":"2023-01-16T12:55:51.780000","timeout":"2023-01-16T13:55:13.877000","holdoff":"2023-01-16T13:05:51.776000"},{"_id":"63c549329fb3b62c7626e7fa","kind":"node","name":"checkout","path":["checkout"],"group":null,"revision":{"tree":"kernelci","url":"https://github.com/kernelci/linux.git","branch":"staging-next","commit":"39384a5d7e2eb2f28039a92c022aed886a675fbf","describe":"staging-next-20230116.0","version":{"version":6,"patchlevel":2,"sublevel":null,"extra":"-rc4-5011-g39384a5d7e2e","name":null}},"parent":null,"state":"available","result":null,"artifacts":{"tarball":"http://172.17.0.1:8002/linux-kernelci-staging-next-staging-next-20230116.0.tar.gz"},"created":"2023-01-16T12:55:14.706000","updated":"2023-01-16T12:56:30.886000","timeout":"2023-01-16T13:55:14.703000","holdoff":"2023-01-16T13:06:30.882000"}],"total":2,"limit":50,"offset":0}
 ```
 
@@ -181,7 +181,7 @@ To update an existing node, use PUT request to `node/{node_id}` endpoint.
 
 ```
 $ curl -X 'PUT' \
-  'http://localhost:8001/node/61bda8f2eb1a63d2b7152418' \
+  'http://localhost:8001/latest/node/61bda8f2eb1a63d2b7152418' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1SEdkp5M1S1AgYvX8VdB20' \
   -H 'Content-Type: application/json' \
@@ -202,34 +202,34 @@ $ curl -X 'PUT' \
 To get a count of all the nodes, use GET request to `/count` endpoint.
 
 ```
-$ curl http://localhost:8001/count
+$ curl http://localhost:8001/latest/count
 4
 ```
 
 To get count of nodes matching provided attributes, use `/count` endpoint with query parameters. All the Node attributes except ID and timestamps(created, updated, timeout, and holdoff) can be passed to this endpoint.
 ```
-$ curl http://localhost:8001/count?name=checkout
+$ curl http://localhost:8001/latest/count?name=checkout
 3
-$ curl http://localhost:8001/count?revision.branch=staging-mainline
+$ curl http://localhost:8001/latest/count?revision.branch=staging-mainline
 1
 ```
 
 In case of providing multiple attributes, it will return count of nodes matching all the attributes.
 ```
-$ curl 'http://localhost:8001/count?name=checkout&artifacts.tarball=http://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20220927.0.tar.gz'
+$ curl 'http://localhost:8001/latest/count?name=checkout&artifacts.tarball=http://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20220927.0.tar.gz'
 1
 ```
 
 Same as `/nodes`, the `/count` endpoint also supports comparison operators for request query parameters.
 ```
-$ curl 'http://localhost:8001/count?name=checkout&created__lt=2022-12-06T04:59:08.102000'
+$ curl 'http://localhost:8001/latest/count?name=checkout&created__lt=2022-12-06T04:59:08.102000'
 3
 ```
 
 To query the count of nodes with `null` attributes, use the endpoint with
 query parameters set to `null`.
 ```
-$ curl 'http://localhost:8001/count?result=null'
+$ curl 'http://localhost:8001/latest/count?result=null'
 2
 ```
 
