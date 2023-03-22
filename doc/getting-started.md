@@ -52,7 +52,7 @@ It can take a few minutes to build the images from scratch the first time.
 Then the services should be up and running.  To confirm the API is available:
 
 ```
-$ curl http://localhost:8001/
+$ curl http://localhost:8001/latest/
 {"message":"KernelCI API"}
 ```
 
@@ -106,7 +106,7 @@ previously:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/token' \
+  'http://localhost:8001/latest/token' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=&username=admin&password=hello&scope=admin users'
@@ -123,7 +123,7 @@ For example, to check it's working:
 
 ```
 $ curl -X 'GET' \
-  'http://localhost:8001/me' \
+  'http://localhost:8001/latest/me' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4'
 {"_id":"615f30020eb7c3c6616e5ac3","username":"bob","hashed_password":"$2b$12$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.","active":true}
