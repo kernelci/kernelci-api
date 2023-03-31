@@ -87,7 +87,7 @@ when prompted:
 
 ```
 $ ./create_admin_user admin
-Password: 
+Password:
 MongoDB shell version v5.0.12
 connecting to: mongodb://127.0.0.1:27017/kernelci?compressors=disabled&gssapiServiceName=mongodb
 Implicit session: session { "id" : UUID("789ad3c5-0caa-45a9-a514-efeec763dfeb") }
@@ -204,7 +204,7 @@ It can be made available to the pipeline clients by storing it in the `.env`
 file which provides environment variables for the Docker containers:
 
 ```
-echo "API_TOKEN=<your token>" >> .env
+echo "KCI_API_TOKEN=<your token>" >> .env
 ```
 
 ### Start docker-compose
