@@ -47,7 +47,7 @@ it](http://localhost:8001/latest/docs) with a web browser.  Then click on
 "Authorize" button.
 
 This is based on OpenAPI, and you can also download the `openapi.json` file to
-use it with other tools: http://localhost:8001/openapi.json
+use it with other tools: http://localhost:8001/latest/openapi.json
 
 
 ## API Testing
