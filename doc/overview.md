@@ -56,7 +56,8 @@ characteristics:
   asynchronous request handling, data model validation using
   [Pydantic](https://pydantic-docs.helpmanual.io/), automatically generated
   documentation with [OpenAPI](https://www.openapis.org/).  See also the
-  [OpenAPI JSON description](https://staging.kernelci.org:9000/openapi.json).
+  [OpenAPI JSON
+  description](https://staging.kernelci.org:9000/latest/openapi.json).
 * Pub/Sub mechanism via the API, with [Redis](https://redis.io/) to manage
   message queues.  This can now be used to coordinate client-side functions and
   recreate a full modular pipeline with no additional framework
