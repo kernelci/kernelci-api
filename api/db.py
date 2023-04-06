@@ -69,6 +69,8 @@ class Database:
                 op_name, op_value = value
                 op_key = self.OPERATOR_MAP.get(op_name)
                 if op_key:
+                    if isinstance(op_value, str) and op_value.isdecimal():
+                        op_value = int(op_value)
                     yield key, {op_key: op_value}
 
     def _prepare_query(self, attributes):
