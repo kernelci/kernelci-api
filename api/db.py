@@ -63,8 +63,8 @@ class Database:
         obj = await col.find_one(ObjectId(obj_id))
         return model(**obj) if obj else None
 
-    def _operator_translation(self, attributes):
-        translated = attributes.copy()
+    def _translate_operators(self, attributes):
+        translated = {}
         for key, value in attributes.items():
             if isinstance(value, dict):
                 for sub_key, sub_value in value.items():
@@ -77,6 +77,11 @@ class Database:
                     }
         return translated
 
+    def _prepare_query(self, attributes):
+        query = attributes.copy()
+        query.update(self._translate_operators(query))
+        return query
+
     async def find_by_attributes(self, model, attributes):
         """Find objects with matching attributes
 
@@ -87,8 +92,8 @@ class Database:
         and 'offset' keys.
         """
         col = self._get_collection(model)
-        translated = self._operator_translation(attributes)
-        return await paginate(collection=col, query_filter=translated)
+        query = self._prepare_query(attributes)
+        return await paginate(collection=col, query_filter=query)
 
     async def count(self, model, attributes):
         """Count objects with matching attributes
@@ -97,8 +102,8 @@ class Database:
         attributes dictionary and return the count as an integer.
         """
         col = self._get_collection(model)
-        translated = self._operator_translation(attributes)
-        return await col.count_documents(translated)
+        query = self._prepare_query(attributes)
+        return await col.count_documents(query)
 
     async def create(self, obj):
         """Create a database document from a model object
