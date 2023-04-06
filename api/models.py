@@ -262,42 +262,48 @@ URLs (e.g. URL to binaries or logs)'
             PyObjectId.validate(parent)
 
     @classmethod
-    def translate_fields_with_operators(cls, params, translated):
-        """Translate fields with comparison operator
+    def _translate_operators(cls, params):
+        """Translate fields with an operator
 
-        The request query parameters can be provided with comparison operators
-        like `lt`, `gt`, `lte`, and `gte` with `param__operator=value`
-        format. This method will translate the parameter to
-        `param={operator: value}`.
+        The request query parameters can be provided with operators such `lt`,
+        `gt`, `lte`, and `gte` with `param__operator=value` format. This method
+        will generate translated parameters of the form:
+
+          `parameter, (operator, value)`
+
+        when an operator is found, otherwise:
+
+          `parameter, value`
         """
-        for key in params.keys():
+        for key, value in params.items():
             field = key.split('__')
             if len(field) == 2:
-                translated[field[0]] = {
-                    field[1]: translated[key]
-                }
-                del translated[key]
+                param, op_name = field
+                yield param, (op_name, value)
+            else:
+                yield key, value
 
     @classmethod
-    def translate_timestamp_fields(cls, translated,
-                                   timestamp_fields):
+    def _translate_timestamps(cls, params, timestamp_fields):
         """Translate timestamp fields
 
-        ISOformat timestamp fields will be translated to Date object.
-        This supports translation of fields provided along with operators
-        as well e.g field={operator: value}.
+        Translate ISOformat timestamp fields as Date objects.  This supports
+        translation of fields provided along with operators as well.  It will
+        generate the translated parameters of the form:
+
+          `field, (operator, datetime)`
+
+        when an operator is found, otherwise:
+
+          `field, datetime`
         """
-        params = translated.copy()
         for key, value in params.items():
             if key in timestamp_fields:
-                if isinstance(value, dict):
-                    for sub_key, sub_value in value.items():
-                        translated[key] = {
-                            sub_key: datetime.fromisoformat(sub_value)
-                        }
+                if isinstance(value, tuple) and len(value) == 2:
+                    op_key, op_value = value
+                    yield key, (op_key, datetime.fromisoformat(op_value))
                 else:
-                    translated[key] = datetime.fromisoformat(value)
-        return translated
+                    yield key, datetime.fromisoformat(value)
 
     @classmethod
     def translate_fields(cls, params: dict):
@@ -308,14 +314,15 @@ URLs (e.g. URL to binaries or logs)'
         to ObjectId.  Return a new dictionary with the translated values
         replaced.
         """
-        translated = params.copy()
-        parent = params.get('parent')
+        translated = dict(cls._translate_operators(params))
+        parent = translated.get('parent')
         if parent:
             translated['parent'] = ObjectId(parent)
-
         timestamp_fields = ('created', 'updated', 'timeout', 'holdoff')
-        Node.translate_fields_with_operators(params, translated)
-        return Node.translate_timestamp_fields(translated, timestamp_fields)
+        translated.update(cls._translate_timestamps(
+            translated, timestamp_fields
+        ))
+        return translated
 
     def validate_node_state_transition(self, new_state):
         """Validate Node.state transitions"""
@@ -377,7 +384,10 @@ class Regression(Node):
             'regression_data.created', 'regression_data.updated',
             'regression_data.timeout', 'regression_data.holdoff'
         )
-        return Node.translate_timestamp_fields(translated, timestamp_fields)
+        translated.update(cls._translate_timestamps(
+            translated, timestamp_fields
+        ))
+        return translated
 
 
 def get_model_from_kind(kind: str):
