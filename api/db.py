@@ -47,15 +47,6 @@ class Database:
             col = self._get_collection(model)
             model.create_indexes(col)
 
-    async def find_all(self, model):
-        """Find all objects of a given model"""
-        col = self._get_collection(model)
-        objs = []
-        data = col.find()
-        async for obj in data:
-            objs.append(model(**obj))
-        return objs
-
     async def find_one(self, model, **kwargs):
         """Find one object with matching attributes
 
