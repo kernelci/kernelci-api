@@ -60,7 +60,7 @@ class Database:
     async def find_by_id(self, model, obj_id):
         """Find one object with a given id"""
         col = self._get_collection(model)
-        obj = await col.find_one({'_id': ObjectId(obj_id)})
+        obj = await col.find_one(ObjectId(obj_id))
         return model(**obj) if obj else None
 
     def _operator_translation(self, attributes):
@@ -132,7 +132,7 @@ class Database:
             delattr(obj, 'id')
             res = await col.insert_one(obj.dict(by_alias=True))
             obj.id = res.inserted_id
-        obj = cls(**await col.find_one({'_id': ObjectId(obj.id)}))
+        obj = cls(**await col.find_one(ObjectId(obj.id)))
         obj_list = [obj]
         for node in nodes:
             child_nodes = await self._create_recursively(node, obj, cls, col)
@@ -161,4 +161,4 @@ class Database:
         )
         if res.matched_count == 0:
             raise ValueError(f"No object found with id: {obj.id}")
-        return obj.__class__(**await col.find_one({'_id': ObjectId(obj.id)}))
+        return obj.__class__(**await col.find_one(ObjectId(obj.id)))
