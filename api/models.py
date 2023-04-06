@@ -237,6 +237,9 @@ URLs (e.g. URL to binaries or logs)'
         description='Node expiry timestamp while in Available state'
     )
 
+    _OBJECT_ID_FIELDS = ['parent']
+    _TIMESTAMP_FIELDS = ['created', 'updated', 'timeout', 'holdoff']
+
     def update(self):
         self.updated = datetime.utcnow()
 
@@ -284,7 +287,18 @@ URLs (e.g. URL to binaries or logs)'
                 yield key, value
 
     @classmethod
-    def _translate_timestamps(cls, params, timestamp_fields):
+    def _translate_object_ids(cls, params):
+        """Translate ObjectId fields into ObjectId instances
+
+        Generate 2-tuple (key, value) objects for the parameters that need to
+        be converted to ObjectId.
+        """
+        for key, value in params.items():
+            if key in cls._OBJECT_ID_FIELDS:
+                yield key, ObjectId(value)
+
+    @classmethod
+    def _translate_timestamps(cls, params):
         """Translate timestamp fields
 
         Translate ISOformat timestamp fields as Date objects.  This supports
@@ -298,7 +312,7 @@ URLs (e.g. URL to binaries or logs)'
           `field, datetime`
         """
         for key, value in params.items():
-            if key in timestamp_fields:
+            if key in cls._TIMESTAMP_FIELDS:
                 if isinstance(value, tuple) and len(value) == 2:
                     op_key, op_value = value
                     yield key, (op_key, datetime.fromisoformat(op_value))
@@ -315,13 +329,8 @@ URLs (e.g. URL to binaries or logs)'
         replaced.
         """
         translated = dict(cls._translate_operators(params))
-        parent = translated.get('parent')
-        if parent:
-            translated['parent'] = ObjectId(parent)
-        timestamp_fields = ('created', 'updated', 'timeout', 'holdoff')
-        translated.update(cls._translate_timestamps(
-            translated, timestamp_fields
-        ))
+        translated.update(cls._translate_object_ids(translated))
+        translated.update(cls._translate_timestamps(translated))
         return translated
 
     def validate_node_state_transition(self, new_state):
@@ -362,6 +371,16 @@ class Regression(Node):
         description='Regression details'
     )
 
+    _OBJECT_ID_FIELDS = [
+        'regression_data.parent',
+    ]
+    _TIMESTAMP_FIELDS = [
+        'regression_data.created',
+        'regression_data.updated',
+        'regression_data.timeout',
+        'regression_data.holdoff',
+    ]
+
     @classmethod
     def validate_params(cls, params: dict):
         """Validate regression parameters"""
@@ -376,17 +395,9 @@ class Regression(Node):
     @classmethod
     def translate_fields(cls, params: dict):
         """Translate regression parameters"""
-        translated = Node.translate_fields(params)
-        parent = translated.get('regression_data.parent')
-        if parent:
-            translated['regression_data.parent'] = ObjectId(parent)
-        timestamp_fields = (
-            'regression_data.created', 'regression_data.updated',
-            'regression_data.timeout', 'regression_data.holdoff'
-        )
-        translated.update(cls._translate_timestamps(
-            translated, timestamp_fields
-        ))
+        translated = cls.translate_fields(params)
+        translated.update(cls._translate_object_ids(translated))
+        translated.update(cls._translate_timestamps(translated))
         return translated
 
 
