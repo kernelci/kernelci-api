@@ -74,7 +74,7 @@ async def invalid_id_exception_handler(
         request: Request,
         exc: errors.InvalidId):
     """Global exception handler for `errors.InvalidId`
-    The exception is raised from Database when invalid ObjectID is received"""
+    The exception is raised from Database when invalid ObjectId is received"""
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={"detail": str(exc)},
