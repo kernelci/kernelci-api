@@ -64,18 +64,12 @@ class Database:
         return model(**obj) if obj else None
 
     def _translate_operators(self, attributes):
-        translated = {}
         for key, value in attributes.items():
             if isinstance(value, dict):
                 for sub_key, sub_value in value.items():
-                    if not self.OPERATOR_MAP.get(sub_key):
-                        raise ValueError(
-                            f"No operator found matching '{sub_key}'"
-                        )
-                    translated[key] = {
-                        self.OPERATOR_MAP.get(sub_key): sub_value
-                    }
-        return translated
+                    op = self.OPERATOR_MAP.get(sub_key)
+                    if op:
+                        yield key, {op: sub_value}
 
     def _prepare_query(self, attributes):
         query = attributes.copy()
