@@ -65,11 +65,11 @@ class Database:
 
     def _translate_operators(self, attributes):
         for key, value in attributes.items():
-            if isinstance(value, dict):
-                for sub_key, sub_value in value.items():
-                    op = self.OPERATOR_MAP.get(sub_key)
-                    if op:
-                        yield key, {op: sub_value}
+            if isinstance(value, tuple) and len(value) == 2:
+                op_name, op_value = value
+                op_key = self.OPERATOR_MAP.get(op_name)
+                if op_key:
+                    yield key, {op_key: op_value}
 
     def _prepare_query(self, attributes):
         query = attributes.copy()
