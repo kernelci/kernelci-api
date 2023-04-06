@@ -166,6 +166,10 @@ class Revision(BaseModel):
     )
 
 
+NODE_DATA_MODELS = {
+}
+
+
 class DefaultTimeout:
     """Helper to create default values for timeout fields
 
@@ -241,6 +245,13 @@ URLs (e.g. URL to binaries or logs)'
 
     _OBJECT_ID_FIELDS = ['parent']
     _TIMESTAMP_FIELDS = ['created', 'updated', 'timeout', 'holdoff']
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.data:
+            data_model = NODE_DATA_MODELS.get(self.kind)
+            if data_model:
+                self.data = data_model(**self.data)
 
     def update(self):
         self.updated = datetime.utcnow()
