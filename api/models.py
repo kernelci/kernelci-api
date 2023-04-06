@@ -166,7 +166,24 @@ class Revision(BaseModel):
     )
 
 
+class KernelBuild(BaseModel):
+    """Kernel build data"""
+    arch: str = Field(
+        description="CPU architecture as per the kernel's convention"
+    )
+    defconfig: str = Field(
+        description="Name of the base defconfig file used for the build"
+    )
+    fragments: list = Field(
+        description="List of the config fragment names for the build"
+    )
+    compiler: str = Field(
+        description="Name of the compiler used for the build"
+    )
+
+
 NODE_DATA_MODELS = {
+    'kbuild': KernelBuild,
 }
 
 
@@ -417,7 +434,8 @@ class Regression(Node):
 def get_model_from_kind(kind: str):
     """Get model from kind parameter"""
     models = {
-            "node": Node,
-            "regression": Regression
-        }
+        "kbuild": Node,
+        "node": Node,
+        "regression": Regression,
+    }
     return models[kind]
