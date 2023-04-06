@@ -73,9 +73,17 @@ class Database:
                         op_value = int(op_value)
                     yield key, {op_key: op_value}
 
+    @classmethod
+    def _convert_int_values(cls, attributes):
+        return {
+            key: int(val[1]) for key, val in attributes.items()
+            if isinstance(val, tuple) and len(val) == 2 and val[0] == 'int'
+        }
+
     def _prepare_query(self, attributes):
         query = attributes.copy()
         query.update(self._translate_operators(query))
+        query.update(self._convert_int_values(query))
         return query
 
     async def find_by_attributes(self, model, attributes):
