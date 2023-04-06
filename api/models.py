@@ -11,7 +11,7 @@
 """KernelCI API model definitions"""
 
 from datetime import datetime, timedelta
-from typing import Optional, Dict, List
+from typing import Any, Optional, Dict, List
 import enum
 from bson import ObjectId
 from pydantic import (
@@ -220,6 +220,9 @@ class Node(DatabaseModel):
     artifacts: Optional[Dict[str, AnyHttpUrl]] = Field(
         description='Dictionary with names mapping to node associated \
 URLs (e.g. URL to binaries or logs)'
+    )
+    data: Optional[Dict[str, Any]] = Field(
+        description='Arbitrary data stored in the node'
     )
     created: datetime = Field(
         default_factory=datetime.utcnow,

@@ -56,8 +56,9 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
             "branch": "master",
             "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
             "describe": "v5.16-rc4-31-g2a987e65025e"
-            }
-        }
+        },
+        "data": {"foo": "bar"},
+    }
     response = test_client.post(
         "node",
         headers={
@@ -72,6 +73,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
         '_id',
         'artifacts',
         'created',
+        'data',
         'group',
         'holdoff',
         'kind',
@@ -225,6 +227,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
         '_id',
         'artifacts',
         'created',
+        'data',
         'group',
         'holdoff',
         'kind',

@@ -32,6 +32,7 @@ async def create_regression(test_async_client, regression_node):
             '_id',
             'artifacts',
             'created',
+            'data',
             'group',
             'holdoff',
             'kind',
