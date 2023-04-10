@@ -86,9 +86,7 @@ class Password(BaseModel):
     This model is required to be able to send a plaintext password in a POST
     method in order to retrieve a hash.
     """
-    password: SecretStr = Field(
-        description='The plaintext password'
-    )
+    password: SecretStr = Field(description="The plaintext password")
 
 
 # -----------------------------------------------------------------------------
@@ -108,14 +106,14 @@ class DatabaseModel(ModelId):
 class User(DatabaseModel):
     """API user model"""
     username: str
-    hashed_password: str = Field(description='Hash of the plaintext password')
+    hashed_password: str = Field(description="Hash of the plaintext password")
     active: bool = Field(
         default=True,
-        description='To check if user is active or not'
+        description="To check if user is active or not"
     )
     is_admin: bool = Field(
         default=False,
-        description='True if superuser otherwise False'
+        description="True if superuser otherwise False"
     )
 
     @classmethod
@@ -146,20 +144,20 @@ class KernelVersion(BaseModel):
 class Revision(BaseModel):
     """Linux kernel Git revision model"""
     tree: str = Field(
-        description='git tree of the revision'
+        description="git tree of the revision"
     )
     url: AnyUrl | FileUrl = Field(
-        description='git URL of the revision'
+        description="git URL of the revision"
     )
     branch: str = Field(
-        description='git branch of the revision'
+        description="git branch of the revision"
     )
     commit: str = Field(
-        description='git commit SHA of the revision'
+        description="git commit SHA of the revision"
     )
     describe: Optional[str] = Field(
         default=None,
-        description='git describe of the revision'
+        description="git describe of the revision"
     )
     version: Optional[KernelVersion] = Field(
         description="Kernel version"
@@ -192,51 +190,50 @@ class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
     kind: str = Field(
         default='node',
-        description='Type of the object'
+        description="Type of the object"
     )
     name: str = Field(
-        description='Name of the node object'
+        description="Name of the node object"
     )
     path: List[str] = Field(
-        description='Full path with node names from the top-level node'
+        description="Full path with node names from the top-level node"
     )
     group: Optional[str] = Field(
-        description='Name of a group this node belongs to'
+        description="Name of a group this node belongs to"
     )
     revision: Revision = Field(
-        description='Git revision object'
+        description="Git revision object"
     )
     parent: Optional[PyObjectId] = Field(
-        description='Parent commit SHA'
+        description="Parent commit SHA"
     )
     state: StateValues = Field(
         default=StateValues.RUNNING,
-        description='State of the node'
+        description="State of the node"
     )
     result: Optional[ResultValues] = Field(
-        description='Result of node'
+        description="Result of node"
     )
     artifacts: Optional[Dict[str, AnyHttpUrl]] = Field(
-        description='Dictionary with names mapping to node associated \
-URLs (e.g. URL to binaries or logs)'
+        description="Artifacts associated with the node (binaries, logs...)"
     )
     data: Optional[Dict[str, Any]] = Field(
-        description='Arbitrary data stored in the node'
+        description="Arbitrary data stored in the node"
     )
     created: datetime = Field(
         default_factory=datetime.utcnow,
-        description='Timestamp of node creation'
+        description="Timestamp of node creation"
     )
     updated: datetime = Field(
         default_factory=datetime.utcnow,
-        description='Timestamp when node was last updated'
+        description="Timestamp when node was last updated"
     )
     timeout: datetime = Field(
         default_factory=DefaultTimeout(hours=6).get_timeout,
-        description='Node expiry timestamp'
+        description="Node expiry timestamp"
     )
     holdoff: Optional[datetime] = Field(
-        description='Node expiry timestamp while in Available state'
+        description="Node expiry timestamp while in Available state"
     )
 
     _OBJECT_ID_FIELDS = ['parent']
