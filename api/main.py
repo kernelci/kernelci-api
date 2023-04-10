@@ -192,6 +192,13 @@ def get_password_hash(password: Password):
 # -----------------------------------------------------------------------------
 # Nodes
 
+def _get_node_event_data(operation, node):
+    return {
+        'op': operation,
+        'id': str(node.id),
+    }
+
+
 async def translate_null_query_params(query_params: dict):
     """Translate null query parameters to None"""
     translated = query_params.copy()
@@ -271,9 +278,8 @@ async def post_node(node: Node, token: str = Depends(get_user)):
                 detail=f"Parent not found with id: {node.parent}"
             )
     obj = await db.create(node)
-    operation = 'created'
-    await pubsub.publish_cloudevent('node', {'op': operation,
-                                             'id': str(obj.id)})
+    data = _get_node_event_data('created', obj)
+    await pubsub.publish_cloudevent('node', data)
     return obj
 
 
@@ -295,9 +301,8 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
             detail=message
         )
     obj = await db.update(node)
-    operation = 'updated'
-    await pubsub.publish_cloudevent('node', {'op': operation,
-                                             'id': str(obj.id)})
+    data = _get_node_event_data('updated', obj)
+    await pubsub.publish_cloudevent('node', data)
     return obj
 
 
@@ -307,9 +312,8 @@ async def put_nodes(
     """Add a hierarchy of nodes to an existing root node"""
     nodes.node.id = ObjectId(node_id)
     obj_list = await db.create_hierarchy(nodes, Node)
-    await pubsub.publish_cloudevent('node', {
-        'op': 'updated', 'id': str(obj_list[0].id)
-    })
+    data = _get_node_event_data('updated', obj_list[0])
+    await pubsub.publish_cloudevent('node', data)
     return obj_list
 
 
