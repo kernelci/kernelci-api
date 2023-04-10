@@ -156,7 +156,6 @@ class Revision(BaseModel):
         description="git commit SHA of the revision"
     )
     describe: Optional[str] = Field(
-        default=None,
         description="git describe of the revision"
     )
     version: Optional[KernelVersion] = Field(
