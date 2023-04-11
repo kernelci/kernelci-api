@@ -207,7 +207,7 @@ class Node(DatabaseModel):
         description="Parent commit SHA"
     )
     state: StateValues = Field(
-        default=StateValues.RUNNING,
+        default=StateValues.RUNNING.value,
         description="State of the node"
     )
     result: Optional[ResultValues] = Field(
