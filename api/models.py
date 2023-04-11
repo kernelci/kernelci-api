@@ -242,22 +242,8 @@ class Node(DatabaseModel):
         self.updated = datetime.utcnow()
 
     @classmethod
-    def validate_state(cls, state):
-        """Validate Node.state"""
-        if state and state not in [state.value for state in StateValues]:
-            raise ValueError(f"Invalid state value '{state}'")
-
-    @classmethod
-    def validate_result(cls, result):
-        """Validate Node.result"""
-        if result and result not in [result.value for result in ResultValues]:
-            raise ValueError(f"Invalid result value '{result}'")
-
-    @classmethod
     def validate_params(cls, params: dict):
         """Validate Node parameters"""
-        Node.validate_state(params.get('state'))
-        Node.validate_result(params.get('result'))
         parent = params.get('parent')
         if parent:
             PyObjectId.validate(parent)
@@ -383,8 +369,6 @@ class Regression(Node):
     def validate_params(cls, params: dict):
         """Validate regression parameters"""
         Node.validate_params(params)
-        Node.validate_state(params.get('regression_data.state'))
-        Node.validate_result(params.get('regression_data.result'))
 
         parent = params.get('regression_data.parent')
         if parent:
