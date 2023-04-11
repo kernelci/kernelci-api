@@ -43,7 +43,7 @@ class PyObjectId(ObjectId):
         return ObjectId(value)
 
 
-class StateValues(enum.Enum):
+class StateValues(str, enum.Enum):
     """Enumeration to declare values to be used for Node.state"""
 
     RUNNING = 'running'
@@ -52,7 +52,7 @@ class StateValues(enum.Enum):
     DONE = 'done'
 
 
-class ResultValues(enum.Enum):
+class ResultValues(str, enum.Enum):
     """Enumeration to declare values to be used for Node.result"""
 
     PASS = 'pass'
