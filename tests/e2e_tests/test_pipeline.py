@@ -58,7 +58,8 @@ async def test_node_pipeline(test_async_client):
     # Get result of pubsub event listen task
     await task_listen
     event_data = from_json(task_listen.result().json().get('data')).data
-    assert ('op', 'id') == tuple(event_data.keys())
+    keys = {'op', 'id', 'name', 'path', 'group', 'state', 'result', 'revision'}
+    assert keys == event_data.keys()
     assert event_data.get('op') == 'created'
     assert event_data.get('id') == response.json()['_id']
 
@@ -78,5 +79,6 @@ async def test_node_pipeline(test_async_client):
     # Get result of pubsub event listen task
     await task_listen
     event_data = from_json(task_listen.result().json().get('data')).data
-    assert ('op', 'id') == tuple(event_data.keys())
+    keys = {'op', 'id', 'name', 'path', 'group', 'state', 'result', 'revision'}
+    assert keys == event_data.keys()
     assert event_data.get('op') == 'updated'
