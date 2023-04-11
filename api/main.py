@@ -241,7 +241,6 @@ async def get_nodes(request: Request, kind: str = "node"):
 
     try:
         model = get_model_from_kind(kind)
-        model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
         return await db.find_by_attributes(model, translated_params)
     except KeyError as error:
@@ -263,7 +262,6 @@ async def get_nodes_count(request: Request, kind: str = "node"):
 
     try:
         model = get_model_from_kind(kind)
-        model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
         return await db.count(model, translated_params)
     except KeyError as error:
