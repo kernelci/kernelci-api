@@ -349,23 +349,15 @@ class Regression(Node):
         description='Regression details'
     )
 
-    _OBJECT_ID_FIELDS = [
+    _OBJECT_ID_FIELDS = Node._OBJECT_ID_FIELDS + [
         'regression_data.parent',
     ]
-    _TIMESTAMP_FIELDS = [
+    _TIMESTAMP_FIELDS = Node._TIMESTAMP_FIELDS + [
         'regression_data.created',
         'regression_data.updated',
         'regression_data.timeout',
         'regression_data.holdoff',
     ]
-
-    @classmethod
-    def translate_fields(cls, params: dict):
-        """Translate regression parameters"""
-        translated = cls.translate_fields(params)
-        translated.update(cls._translate_object_ids(translated))
-        translated.update(cls._translate_timestamps(translated))
-        return translated
 
 
 def get_model_from_kind(kind: str):
