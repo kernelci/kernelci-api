@@ -214,7 +214,8 @@ async def translate_null_query_params(query_params: dict):
     return translated
 
 
-@app.get('/node/{node_id}', response_model=Union[Regression, Node])
+@app.get('/node/{node_id}', response_model=Union[Regression, Node],
+         response_model_by_alias=False)
 async def get_node(node_id: str, kind: str = "node"):
     """Get node information from the provided node id"""
     try:
@@ -273,7 +274,7 @@ async def get_nodes_count(request: Request, kind: str = "node"):
         ) from error
 
 
-@app.post('/node', response_model=Node)
+@app.post('/node', response_model=Node, response_model_by_alias=False)
 async def post_node(node: Node, token: str = Depends(get_user)):
     """Create a new node"""
     if node.parent:
@@ -289,7 +290,7 @@ async def post_node(node: Node, token: str = Depends(get_user)):
     return obj
 
 
-@app.put('/node/{node_id}', response_model=Node)
+@app.put('/node/{node_id}', response_model=Node, response_model_by_alias=False)
 async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
     """Update an already added node"""
     node.id = ObjectId(node_id)
@@ -312,7 +313,8 @@ async def put_node(node_id: str, node: Node, token: str = Depends(get_user)):
     return obj
 
 
-@app.put('/nodes/{node_id}', response_model=List[Node])
+@app.put('/nodes/{node_id}', response_model=List[Node],
+         response_model_by_alias=False)
 async def put_nodes(
         node_id: str, nodes: Hierarchy, token: str = Depends(get_user)):
     """Add a hierarchy of nodes to an existing root node"""
@@ -367,7 +369,8 @@ async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
 # -----------------------------------------------------------------------------
 # Regression
 
-@app.post('/regression', response_model=Regression)
+@app.post('/regression', response_model=Regression,
+          response_model_by_alias=False)
 async def post_regression(regression: Regression,
                           token: str = Depends(get_user)):
     """Create a new regression"""
@@ -378,7 +381,8 @@ async def post_regression(regression: Regression,
     return obj
 
 
-@app.put('/regression/{regression_id}', response_model=Regression)
+@app.put('/regression/{regression_id}', response_model=Regression,
+         response_model_by_alias=False)
 async def put_regression(regression_id: str, regression: Regression,
                          token: str = Depends(get_user)):
     """Update an already added regression"""
