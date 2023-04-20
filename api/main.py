@@ -228,6 +228,21 @@ async def get_node(node_id: str, kind: str = "node"):
         ) from error
 
 
+def serialize_paginated_data(model, data: list):
+    """
+    Serialize models to generate response without using alias.
+    This is required to get models with `id` field in the response
+    instead of `_id`.
+    In usual cases providing `response_model_by_alias` to endpoint
+    definition serves the purpose. However, that doesn't work in case
+    of paginated data. Hence, need to serialize it manually.
+    """
+    serialized_data = []
+    for obj in data:
+        serialized_data.append(model(**obj).dict())
+    return serialized_data
+
+
 @app.get('/nodes', response_model=PageModel)
 async def get_nodes(request: Request, kind: str = "node"):
     """Get all the nodes if no request parameters have passed.
@@ -244,7 +259,10 @@ async def get_nodes(request: Request, kind: str = "node"):
         model = get_model_from_kind(kind)
         model.validate_params(query_params)
         translated_params = model.translate_fields(query_params)
-        return await db.find_by_attributes(model, translated_params)
+        paginated_resp = await db.find_by_attributes(model, translated_params)
+        paginated_resp.items = serialize_paginated_data(
+            model, paginated_resp.items)
+        return paginated_resp
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
