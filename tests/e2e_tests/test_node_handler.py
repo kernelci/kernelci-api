@@ -27,7 +27,7 @@ async def create_node(test_async_client, node):
         )
     assert response.status_code == 200
     assert response.json().keys() == {
-            '_id',
+            'id',
             'artifacts',
             'created',
             'data',
@@ -62,7 +62,7 @@ async def get_node_by_id(test_async_client, node_id):
     )
     assert response.status_code == 200
     assert response.json().keys() == {
-            '_id',
+            'id',
             'artifacts',
             'created',
             'data',
@@ -116,7 +116,7 @@ async def update_node(test_async_client, node):
         JSON with updated Node object
     """
     response = await test_async_client.put(
-        f"node/{node['_id']}",
+        f"node/{node['id']}",
         headers={
             "Accept": "application/json",
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
@@ -125,7 +125,7 @@ async def update_node(test_async_client, node):
     )
     assert response.status_code == 200
     assert response.json().keys() == {
-            '_id',
+            'id',
             'artifacts',
             'created',
             'data',

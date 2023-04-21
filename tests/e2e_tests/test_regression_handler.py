@@ -29,7 +29,7 @@ async def create_regression(test_async_client, regression_node):
         )
     assert response.status_code == 200
     assert response.json().keys() == {
-            '_id',
+            'id',
             'artifacts',
             'created',
             'data',
@@ -74,7 +74,7 @@ async def test_regression_handler(test_async_client):
         "name": "passed_kver",
         "path": ["checkout", "kver"],
         "group": "kver",
-        "parent": checkout_node["_id"],
+        "parent": checkout_node["id"],
         "revision": {
             "tree": "mainline",
             "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
@@ -109,6 +109,6 @@ async def test_regression_handler(test_async_client):
         for field in regression_fields
     }
 
-    regression_node["parent"] = failed_node_obj["_id"]
+    regression_node["parent"] = failed_node_obj["id"]
     regression_node["regression_data"] = [failed_node_obj, passed_node_obj]
     await create_regression(test_async_client, regression_node)

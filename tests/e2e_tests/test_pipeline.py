@@ -61,7 +61,7 @@ async def test_node_pipeline(test_async_client):
     keys = {'op', 'id', 'name', 'path', 'group', 'state', 'result', 'revision'}
     assert keys == event_data.keys()
     assert event_data.get('op') == 'created'
-    assert event_data.get('id') == response.json()['_id']
+    assert event_data.get('id') == response.json()['id']
 
     # Get node id from event data and get created node by id
     response = await get_node_by_id(test_async_client, event_data.get('id'))
