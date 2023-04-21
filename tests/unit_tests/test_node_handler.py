@@ -14,6 +14,7 @@ import json
 
 from tests.unit_tests.conftest import BEARER_TOKEN
 from api.models import Node, Revision
+from api.paginator_models import PageModel
 
 
 def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
@@ -34,7 +35,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
                 describe="v5.16-rc4-31-g2a987e65025e"
     )
     node_obj = Node(
-            _id="61bda8f2eb1a63d2b7152418",
+            id="61bda8f2eb1a63d2b7152418",
             kind="node",
             name="checkout",
             path=["checkout"],
@@ -70,7 +71,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
     print("response.json()", response.json())
     assert response.status_code == 200
     assert response.json().keys() == {
-        '_id',
+        'id',
         'artifacts',
         'created',
         'data',
@@ -98,48 +99,46 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
         HTTP Response Code 200 OK
         List with matching Node objects
     """
-    revision_obj_1 = Revision(
-                tree="mainline",
-                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
+    node_obj_1 = {
+        "id": "61bda8f2eb1a63d2b7152418",
+        "kind": "node",
+        "name": "checkout",
+        "path": ["checkout"],
+        "revision": {
+            "tree": "mainline",
+            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
                     "torvalds/linux.git",
-                branch="master",
-                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-                describe="v5.16-rc4-31-g2a987e65025e"
-                )
-    node_obj_1 = Node(
-            _id="61bda8f2eb1a63d2b7152418",
-            kind="node",
-            name="checkout",
-            path=["checkout"],
-            revision=revision_obj_1,
-            parent="61bda8f2eb1a63d2b7152410",
-            state="closing",
-            result=None,
-        )
-    revision_obj_2 = Revision(
-                tree="mainline",
-                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-                branch="master",
-                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb45",
-                describe="v5.16-rc4-31-g2a987e65025e"
-                )
-    node_obj_2 = Node(
-            _id="61bda8f2eb1a63d2b7152414",
-            kind="node",
-            name="checkout",
-            path=["checkout"],
-            revision=revision_obj_2,
-            parent="61bda8f2eb1a63d2b7152410",
-            state="closing",
-            result=None,
-        )
-    mock_db_find_by_attributes.return_value = {
-        'items': [node_obj_1, node_obj_2],
-        'total': 2,
-        'limit': 50,
-        'offset': 0
+            "branch": "master",
+            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+            "describe": "v5.16-rc4-31-g2a987e65025e",
+        },
+        "parent": "61bda8f2eb1a63d2b7152410",
+        "state": "closing",
+        "result": None,
     }
+    node_obj_2 = {
+        "id": "61bda8f2eb1a63d2b7152414",
+        "kind": "node",
+        "name": "checkout",
+        "path": ["checkout"],
+        "revision": {
+            "tree": "mainline",
+            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                "torvalds/linux.git",
+            "branch": "master",
+            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb45",
+            "describe": "v5.16-rc4-31-g2a987e65025e",
+        },
+        "parent": "61bda8f2eb1a63d2b7152410",
+        "state": "closing",
+        "result": None,
+    }
+    mock_db_find_by_attributes.return_value = PageModel(
+        items=[node_obj_1, node_obj_2],
+        total=2,
+        limit=50,
+        offset=0
+    )
 
     params = {
         "name": "checkout",
@@ -170,12 +169,12 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(
         Empty list
     """
 
-    mock_db_find_by_attributes.return_value = {
-        'items': [],
-        'total': 0,
-        'limit': 50,
-        'offset': 0
-    }
+    mock_db_find_by_attributes.return_value = PageModel(
+        items=[],
+        total=0,
+        limit=50,
+        offset=0
+    )
 
     params = {
         "name": "checkout",
@@ -208,7 +207,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
                 describe="v5.16-rc4-31-g2a987e65025e"
     )
     node_obj = Node(
-            _id="61bda8f2eb1a63d2b7152418",
+            id="61bda8f2eb1a63d2b7152418",
             kind="node",
             name="checkout",
             path=["checkout"],
@@ -224,7 +223,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
     print("response.json()", response.json())
     assert response.status_code == 200
     assert response.json().keys() == {
-        '_id',
+        'id',
         'artifacts',
         'created',
         'data',
@@ -270,67 +269,71 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
         HTTP Response Code 200 OK
         List of all the node objects.
     """
-    revision_obj_1 = Revision(
-                tree="mainline",
-                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-                branch="master",
-                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-                describe="v5.16-rc4-31-g2a987e65025e"
-                )
-    node_obj_1 = Node(
-            _id="61bda8f2eb1a63d2b7152418",
-            kind="node",
-            name="checkout",
-            path=["checkout"],
-            revision=revision_obj_1,
-            parent=None,
-            state="closing",
-            result=None,
-        )
-    revision_obj_2 = Revision(
-                tree="mainline",
-                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-                branch="master",
-                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb45",
-                describe="v5.16-rc4-31-g2a987e65025e"
-                )
-    node_obj_2 = Node(
-            _id="61bda8f2eb1a63d2b7152414",
-            kind="node",
-            name="test_node",
-            path=["checkout", "test_suite", "test_node"],
-            revision=revision_obj_2,
-            parent=None,
-            state="closing",
-            result=None,
-        )
-    revision_obj_3 = Revision(
-                tree="baseline",
-                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-                branch="master",
-                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-                describe="v5.16-rc4-31-g2a987e65025e"
-                )
-    node_obj_3 = Node(
-            _id="61bda8f2eb1a63d2b7152421",
-            kind="node",
-            name="test",
-            path=["checkout", "group", "test"],
-            revision=revision_obj_3,
-            parent=None,
-            state="closing",
-            result=None,
-        )
-
-    mock_db_find_by_attributes.return_value = {
-        'items': [node_obj_1, node_obj_2, node_obj_3],
-        'total': 3,
-        'limit': 50,
-        'offset': 0
+    node_obj_1 = {
+        "id": "61bda8f2eb1a63d2b7152418",
+        "kind": "node",
+        "name": "checkout",
+        "path": ["checkout"],
+        "revision": {
+            "tree": "mainline",
+            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                "torvalds/linux.git",
+            "branch": "master",
+            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+            "describe": "v5.16-rc4-31-g2a987e65025e",
+            "version": None,
+        },
+        "parent": None,
+        "state": "closing",
+        "result": None,
     }
+
+    node_obj_2 = {
+        "id": "61bda8f2eb1a63d2b7152414",
+        "kind": "node",
+        "name": "test_node",
+        "path": ["checkout", "test_suite", "test_node"],
+        "group": None,
+        "revision": {
+            "tree": "mainline",
+            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                   "torvalds/linux.git",
+            "branch": "master",
+            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb45",
+            "describe": "v5.16-rc4-31-g2a987e65025e",
+            "version": None,
+        },
+        "parent": None,
+        "state": "closing",
+        "result": None,
+    }
+
+    node_obj_3 = {
+        "id": "61bda8f2eb1a63d2b7152421",
+        "kind": "node",
+        "name": "test",
+        "path": ["checkout", "group", "test"],
+        "group": None,
+        "revision": {
+            "tree": "baseline",
+            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
+                    "torvalds/linux.git",
+            "branch": "master",
+            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+            "describe": "v5.16-rc4-31-g2a987e65025e",
+            "version": None,
+        },
+        "parent": None,
+        "state": "closing",
+        "result": None,
+    }
+
+    mock_db_find_by_attributes.return_value = PageModel(
+        items=[node_obj_1, node_obj_2, node_obj_3],
+        total=3,
+        limit=50,
+        offset=0
+    )
 
     response = test_client.get("nodes")
     print("response.json()", response.json())
@@ -348,12 +351,12 @@ def test_get_all_nodes_empty_response(mock_get_current_user,
         HTTP Response Code 200 OK
         Empty list as no Node object is added.
     """
-    mock_db_find_by_attributes.return_value = {
-        'items': [],
-        'total': 0,
-        'limit': 50,
-        'offset': 0
-    }
+    mock_db_find_by_attributes.return_value = PageModel(
+        items=[],
+        total=0,
+        limit=50,
+        offset=0
+    )
 
     response = test_client.get("nodes")
     print("response.json()", response.json())
