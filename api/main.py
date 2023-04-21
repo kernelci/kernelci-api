@@ -357,7 +357,7 @@ async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
 # -----------------------------------------------------------------------------
 # Regression
 
-@app.post('/regression')
+@app.post('/regression', response_model=Regression)
 async def post_regression(regression: Regression,
                           token: str = Depends(get_user)):
     """Create a new regression"""
