@@ -78,6 +78,7 @@ class ModelId(BaseModel):
         json_encoders = {
             ObjectId: str,
         }
+        allow_population_by_field_name = True
 
 
 class Password(BaseModel):
