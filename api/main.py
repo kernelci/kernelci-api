@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2021, 2022 Collabora Limited
+# Copyright (C) 2021-2023 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
@@ -33,6 +33,7 @@ from .models import (
     Hierarchy,
     Regression,
     User,
+    UserGroup,
     Password,
     get_model_from_kind
 )
@@ -135,6 +136,24 @@ async def post_user(
         ) from error
     await pubsub.publish_cloudevent('user', {'op': operation,
                                              'id': str(obj.id)})
+    return obj
+
+
+@app.post('/group', response_model=UserGroup, response_model_by_alias=False)
+async def post_user_group(
+        group: UserGroup,
+        current_user: User = Security(get_user, scopes=["admin"])):
+    """Create new user group"""
+    try:
+        obj = await db.create(group)
+    except DuplicateKeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Group '{group.name}' already exists. \
+Use a different group name."
+        ) from error
+    await pubsub.publish_cloudevent('user_group', {'op': 'created',
+                                                   'id': str(obj.id)})
     return obj
 
 
