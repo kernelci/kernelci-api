@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2021, 2022 Collabora Limited
+# Copyright (C) 2021-2023 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
@@ -9,7 +9,7 @@
 from bson import ObjectId
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
-from .models import Hierarchy, Node, User, Regression
+from .models import Hierarchy, Node, User, Regression, UserGroup
 
 
 class Database:
@@ -24,6 +24,7 @@ class Database:
         User: 'user',
         Node: 'node',
         Regression: 'regression',
+        UserGroup: 'usergroup',
     }
 
     OPERATOR_MAP = {
