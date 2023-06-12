@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2021, 2022 Collabora Limited
+# Copyright (C) 2021-2023 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
@@ -102,6 +102,18 @@ class DatabaseModel(ModelId):
     @classmethod
     def create_indexes(cls, collection):
         """Method to create indexes"""
+
+
+class UserGroup(DatabaseModel):
+    """API model to group associated user accounts"""
+    name: str = Field(
+        description="User group name"
+    )
+
+    @classmethod
+    def create_indexes(cls, collection):
+        """Create an index to bind unique constraint to group name"""
+        collection.create_index("name", unique=True)
 
 
 class User(DatabaseModel):
