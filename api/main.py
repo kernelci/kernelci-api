@@ -16,6 +16,7 @@ from fastapi import (
     status,
     Request,
     Security,
+    Query,
 )
 from fastapi.responses import JSONResponse
 from fastapi.security import (
@@ -116,25 +117,38 @@ async def get_user(user: User = Depends(get_current_user)):
     return user
 
 
-@app.post('/user/{username}', response_model=User)
+@app.post('/user/{username}', response_model=User,
+          response_model_by_alias=False)
 async def post_user(
         username: str, password: Password, is_admin: bool = False,
+        groups: List[str] = Query([]),
         current_user: User = Security(get_user, scopes=["admin"])):
     """Create new user"""
     try:
         hashed_password = auth.get_password_hash(
                                 password.password.get_secret_value())
+        group_obj = []
+        if groups:
+            for group_name in groups:
+                group = await db.find_one(UserGroup, name=group_name)
+                if not group:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"User group does not exist with name: \
+{group_name}")
+                group_obj.append(group)
         obj = await db.create(User(
                                 username=username,
                                 hashed_password=hashed_password,
-                                is_admin=is_admin))
-        operation = 'created'
+                                is_admin=is_admin,
+                                groups=group_obj
+                                ))
     except DuplicateKeyError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"{username} is already taken. Try with different username."
         ) from error
-    await pubsub.publish_cloudevent('user', {'op': operation,
+    await pubsub.publish_cloudevent('user', {'op': 'created',
                                              'id': str(obj.id)})
     return obj
 
