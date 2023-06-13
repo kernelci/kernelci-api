@@ -128,6 +128,10 @@ class User(DatabaseModel):
         default=False,
         description="True if superuser otherwise False"
     )
+    groups: List[UserGroup] = Field(
+        default=[],
+        description="A list of groups that user belongs to"
+    )
 
     @classmethod
     def create_indexes(cls, collection):
