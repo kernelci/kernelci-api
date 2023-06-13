@@ -3,7 +3,7 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 #
-# Copyright (C) 2022 Collabora Limited
+# Copyright (C) 2022, 2023 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 # pylint: disable=protected-access
@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from api.main import app
-from api.models import User
+from api.models import User, UserGroup
 from api.pubsub import PubSub
 
 BEARER_TOKEN = "Bearer \
@@ -132,7 +132,8 @@ def mock_get_current_admin_user(mocker):
     user = User(username='admin',
                 hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                                 'xCZGmM8jWXUXJZ4K',
-                active=True, is_admin=True)
+                active=True, is_admin=True, groups=[
+                    UserGroup(name='admin')])
     mocker.patch('api.auth.Authentication.get_current_user',
                  side_effect=async_mock)
     async_mock.return_value = user, None
