@@ -8,13 +8,16 @@
 import json
 import pytest
 
-from api.models import User
+from api.models import User, UserGroup
 from api.db import Database
 from e2e_tests.conftest import db_create
 
 
+@pytest.mark.dependency(
+    depends=["e2e_tests/test_user_group_creation.py::test_create_user_groups"],
+    scope="session")
 @pytest.mark.dependency()
-@pytest.mark.order(1)
+@pytest.mark.order(2)
 @pytest.mark.asyncio
 async def test_create_admin_user(test_async_client):
     """
@@ -37,7 +40,8 @@ async def test_create_admin_user(test_async_client):
         User(
             username=username,
             hashed_password=hashed_password,
-            is_admin=1
+            is_admin=1,
+            groups=[UserGroup(name="admin")]
         ))
     assert obj is not None
 
@@ -60,7 +64,7 @@ async def test_create_admin_user(test_async_client):
 
 
 @pytest.mark.dependency(depends=["test_create_admin_user"])
-@pytest.mark.order(2)
+@pytest.mark.order(3)
 @pytest.mark.asyncio
 async def test_create_regular_user(test_async_client):
     """
@@ -79,8 +83,8 @@ async def test_create_regular_user(test_async_client):
         data=json.dumps({'password': password})
     )
     assert response.status_code == 200
-    assert ('_id', 'username', 'hashed_password', 'active',
-            'is_admin') == tuple(response.json().keys())
+    assert ('id', 'username', 'hashed_password', 'active',
+            'is_admin', 'groups') == tuple(response.json().keys())
 
     response = await test_async_client.post(
         "token",
@@ -116,7 +120,7 @@ def test_whoami(test_client):
     )
     assert response.status_code == 200
     assert ('_id', 'username', 'hashed_password', 'active',
-            'is_admin') == tuple(response.json().keys())
+            'is_admin', 'groups') == tuple(response.json().keys())
     assert response.json()['username'] == 'test_user'
 
 
