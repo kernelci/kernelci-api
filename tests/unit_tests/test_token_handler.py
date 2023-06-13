@@ -3,14 +3,14 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 #
-# Copyright (C) 2022 Collabora Limited
+# Copyright (C) 2022, 2023 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 # pylint: disable=unused-argument
 
 """Unit test function for KernelCI API token handler"""
 
-from api.models import User
+from api.models import User, UserGroup
 
 
 def test_token_endpoint(mock_db_find_one, mock_init_sub_id, test_client):
@@ -23,7 +23,7 @@ def test_token_endpoint(mock_db_find_one, mock_init_sub_id, test_client):
     user = User(username='bob',
                 hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                                 'xCZGmM8jWXUXJZ4K',
-                active=True)
+                active=True, groups=[])
     mock_db_find_one.return_value = user
     response = test_client.post(
         "token",
@@ -51,7 +51,7 @@ def test_token_endpoint_incorrect_password(mock_db_find_one, mock_init_sub_id,
     user = User(username='bob',
                 hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                                 'xCZGmM8jWXUXJZ4K',
-                active=True)
+                active=True, groups=[])
     mock_db_find_one.return_value = user
 
     # Pass incorrect password
@@ -79,7 +79,7 @@ def test_token_endpoint_admin_user(mock_db_find_one, mock_init_sub_id,
     user = User(username='test_admin',
                 hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                                 'xCZGmM8jWXUXJZ4K',
-                active=True, is_admin=True)
+                active=True, is_admin=True, groups=[UserGroup(name='admin')])
     mock_db_find_one.return_value = user
     response = test_client.post(
         "token",

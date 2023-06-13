@@ -2,6 +2,9 @@
 #
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
+#
+# Copyright (C) 2023 Collabora Limited
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 # pylint: disable=unused-argument
 
@@ -27,4 +30,4 @@ def test_whoami_endpoint(mock_get_current_user, mock_init_sub_id, test_client):
     )
     assert response.status_code == 200
     assert ('_id', 'username', 'hashed_password', 'active',
-            'is_admin') == tuple(response.json().keys())
+            'is_admin', 'groups') == tuple(response.json().keys())
