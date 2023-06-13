@@ -17,7 +17,7 @@ from .test_node_handler import create_node, get_node_by_id, update_node
     depends=[
         'e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel'],
     scope='session')
-@pytest.mark.order(4)
+@pytest.mark.order(5)
 @pytest.mark.asyncio
 async def test_node_pipeline(test_async_client):
     """
