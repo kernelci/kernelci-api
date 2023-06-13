@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2022 Collabora Limited
+# Copyright (C) 2022, 2023 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 # Author: Michal Galka <michal.galka@collabora.com>
 
@@ -29,21 +29,34 @@ def get_hashed_password(password, url):
     return res.json()
 
 
-def create_admin(username, hashed_password):
+def get_admin_group_obj(url):
+    """Check if user group 'admin' exists"""
+    url = urllib.parse.urljoin('http://localhost:8001/latest/', 'groups?name=admin')
+    res = requests.get(url)
+    if not res.json()['total']:
+        return None
+    return res.json()['items'][0]
+
+
+def create_admin(username, hashed_password, admin_group):
     """
     Create an admin user
     """
     cmd = f"docker-compose exec db /bin/mongo kernelci --eval \
 \"db.user.insert({{username: '{username}', \
 hashed_password: '{re.escape(hashed_password)}', \
-active: true, is_admin: 1}})\""
+active: true, is_admin: 1, groups: [{admin_group}]}})\""
     ret_code = subprocess.call(cmd, shell=True)
     return ret_code == 0
 
 def main(args):
+    admin_group = get_admin_group_obj(args.url)
+    if not admin_group:
+        print("Error: Please create user group 'admin' before creating any admin user")
+        return False
     password = getpass.getpass()
     hashed_password = get_hashed_password(password, args.url)
-    return create_admin(args.username, hashed_password)
+    return create_admin(args.username, hashed_password, admin_group)
 
 
 if __name__ == "__main__":
