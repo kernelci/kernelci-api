@@ -248,6 +248,13 @@ class Node(DatabaseModel):
     holdoff: Optional[datetime] = Field(
         description="Node expiry timestamp while in Available state"
     )
+    owner: Optional[str] = Field(
+        description="Username of node owner"
+    )
+    user_groups: List[str] = Field(
+        default=[],
+        description="User groups that are permitted to update node"
+    )
 
     _OBJECT_ID_FIELDS = ['parent']
     _TIMESTAMP_FIELDS = ['created', 'updated', 'timeout', 'holdoff']
