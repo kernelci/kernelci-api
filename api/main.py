@@ -118,6 +118,25 @@ async def get_user(user: User = Depends(get_current_user)):
     return user
 
 
+async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
+    """Return the user if active, authenticated, and authorized"""
+    if not user.active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+
+    # Only the user that created the node or any other user from the permitted
+    # user groups will be allowed to update the node
+    node_from_id = await db.find_by_id(Node, node_id)
+    if node_from_id.owner:
+        if not user.username == node_from_id.owner:
+            if not any(group.name in node_from_id.user_groups
+                       for group in user.groups):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Unauthorized to complete the operation"
+                )
+    return user
+
+
 @app.post('/user/{username}', response_model=User,
           response_model_by_alias=False)
 async def post_user(
