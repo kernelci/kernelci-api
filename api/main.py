@@ -347,8 +347,17 @@ async def get_nodes_count(request: Request, kind: str = "node"):
         ) from error
 
 
+async def _verify_user_group_existence(user_groups: List[str]):
+    """Check if user group exists"""
+    for group_name in user_groups:
+        if not await db.find_one(UserGroup, name=group_name):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"User group does not exist with name: {group_name}")
+
+
 @app.post('/node', response_model=Node, response_model_by_alias=False)
-async def post_node(node: Node, token: str = Depends(get_user)):
+async def post_node(node: Node, current_user: str = Depends(get_user)):
     """Create a new node"""
     if node.parent:
         parent = await db.find_by_id(Node, node.parent)
@@ -357,6 +366,9 @@ async def post_node(node: Node, token: str = Depends(get_user)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Parent not found with id: {node.parent}"
             )
+
+    await _verify_user_group_existence(node.user_groups)
+    node.owner = current_user.username
     obj = await db.create(node)
     data = _get_node_event_data('created', obj)
     await pubsub.publish_cloudevent('node', data)
