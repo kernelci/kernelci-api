@@ -168,6 +168,13 @@ async def get_user_groups(request: Request):
     return paginated_resp
 
 
+@app.get('/group/{group_id}', response_model=UserGroup,
+         response_model_by_alias=False)
+async def get_group(group_id: str):
+    """Get user group information from the provided group id"""
+    return await db.find_by_id(UserGroup, group_id)
+
+
 @app.get('/')
 async def root():
     """Root endpoint handler"""
