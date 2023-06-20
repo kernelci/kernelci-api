@@ -124,10 +124,6 @@ class User(DatabaseModel):
         default=True,
         description="To check if user is active or not"
     )
-    is_admin: bool = Field(
-        default=False,
-        description="True if superuser otherwise False"
-    )
     groups: List[UserGroup] = Field(
         default=[],
         description="A list of groups that user belongs to"
