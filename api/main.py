@@ -120,7 +120,7 @@ async def get_user(user: User = Depends(get_current_user)):
 @app.post('/user/{username}', response_model=User,
           response_model_by_alias=False)
 async def post_user(
-        username: str, password: Password, is_admin: bool = False,
+        username: str, password: Password,
         groups: List[str] = Query([]),
         current_user: User = Security(get_user, scopes=["admin"])):
     """Create new user"""
@@ -140,7 +140,6 @@ async def post_user(
         obj = await db.create(User(
                                 username=username,
                                 hashed_password=hashed_password,
-                                is_admin=is_admin,
                                 groups=group_obj
                                 ))
     except DuplicateKeyError as error:
