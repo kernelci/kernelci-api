@@ -214,7 +214,8 @@ async def login_for_access_token(
             )
 
     if 'admin' in form_data.scopes:
-        if user.is_admin is not True:
+        if not user.groups or not any(
+                group.name == 'admin' for group in user.groups):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Not allowed to use admin scope"
