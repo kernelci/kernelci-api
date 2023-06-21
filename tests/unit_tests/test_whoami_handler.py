@@ -18,7 +18,7 @@ def test_whoami_endpoint(mock_get_current_user, mock_init_sub_id, test_client):
     Test Case : Test KernelCI API /whoami endpoint
     Expected Result :
         HTTP Response Code 200 OK
-        JSON with '_id', 'username', 'hashed_password'
+        JSON with 'id', 'username', 'hashed_password'
         and 'active' keys
     """
     response = test_client.get(
@@ -29,5 +29,5 @@ def test_whoami_endpoint(mock_get_current_user, mock_init_sub_id, test_client):
         },
     )
     assert response.status_code == 200
-    assert ('_id', 'username', 'hashed_password', 'active',
+    assert ('id', 'username', 'hashed_password', 'active',
             'groups') == tuple(response.json().keys())

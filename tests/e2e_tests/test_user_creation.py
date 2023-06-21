@@ -107,7 +107,7 @@ def test_whoami(test_client):
     Test Case : Test KernelCI API /whoami endpoint
     Expected Result :
         HTTP Response Code 200 OK
-        JSON with '_id', 'username', 'hashed_password'
+        JSON with 'id', 'username', 'hashed_password'
         and 'active' keys
     """
     response = test_client.get(
@@ -118,7 +118,7 @@ def test_whoami(test_client):
         },
     )
     assert response.status_code == 200
-    assert ('_id', 'username', 'hashed_password', 'active',
+    assert ('id', 'username', 'hashed_password', 'active',
             'groups') == tuple(response.json().keys())
     assert response.json()['username'] == 'test_user'
 
