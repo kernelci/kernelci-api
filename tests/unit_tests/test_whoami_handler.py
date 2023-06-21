@@ -30,4 +30,4 @@ def test_whoami_endpoint(mock_get_current_user, mock_init_sub_id, test_client):
     )
     assert response.status_code == 200
     assert ('_id', 'username', 'hashed_password', 'active',
-            'is_admin', 'groups') == tuple(response.json().keys())
+            'groups') == tuple(response.json().keys())
