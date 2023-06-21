@@ -24,8 +24,8 @@ def test_create_regular_user(mock_init_sub_id, mock_get_current_admin_user,
     when requested with admin user's bearer token
     Expected Result :
         HTTP Response Code 200 OK
-        JSON with 'id', 'username', 'hashed_password'
-        'active', and 'is_admin' keys
+        JSON with 'id', 'username', 'hashed_password', and
+        'active' keys
     """
     user = User(username='test', hashed_password="$2b$12$Whi.dpTC.\
 HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True)
@@ -42,7 +42,7 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True)
     print(response.json())
     assert response.status_code == 200
     assert ('id', 'username', 'hashed_password', 'active',
-            'is_admin', 'groups') == tuple(response.json().keys())
+            'groups') == tuple(response.json().keys())
 
 
 def test_create_admin_user(  # pylint: disable=too-many-arguments
@@ -55,17 +55,17 @@ def test_create_admin_user(  # pylint: disable=too-many-arguments
     when requested with admin user's bearer token
     Expected Result :
         HTTP Response Code 200 OK
-        JSON with 'id', 'username', 'hashed_password'
-        'active', and 'is_admin' keys
+        JSON with 'id', 'username', 'hashed_password', and
+        'active' keys
     """
     user = User(username='test_admin', hashed_password="$2b$12$Whi.dpTC.\
-HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True,
+HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True,
                 groups=[UserGroup(name='admin')])
     mock_db_create.return_value = user
     mock_db_find_one.return_value = UserGroup(name='admin')
 
     response = test_client.post(
-        "user/test_admin?groups=admin&is_admin=1",
+        "user/test_admin?groups=admin",
         headers={
             "Accept": "application/json",
             "Authorization": ADMIN_BEARER_TOKEN
@@ -75,7 +75,7 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True,
     print(response.json())
     assert response.status_code == 200
     assert ('id', 'username', 'hashed_password', 'active',
-            'is_admin', 'groups') == tuple(response.json().keys())
+            'groups') == tuple(response.json().keys())
 
 
 def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
@@ -113,7 +113,7 @@ def test_create_user_with_group(  # pylint: disable=too-many-arguments
     Expected Result :
         HTTP Response Code 200 OK
         JSON with 'id', 'username', 'hashed_password'
-        'active', 'groups' and 'is_admin' keys
+        'active', and 'groups' keys
     """
     user = User(username='test_admin', hashed_password="$2b$12$Whi.dpTC.\
 HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True,
@@ -132,4 +132,4 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True,
     print(response.json())
     assert response.status_code == 200
     assert ('id', 'username', 'hashed_password', 'active',
-            'is_admin', 'groups') == tuple(response.json().keys())
+            'groups') == tuple(response.json().keys())

@@ -79,7 +79,7 @@ def test_token_endpoint_admin_user(mock_db_find_one, mock_init_sub_id,
     user = User(username='test_admin',
                 hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                                 'xCZGmM8jWXUXJZ4K',
-                active=True, is_admin=True, groups=[UserGroup(name='admin')])
+                active=True, groups=[UserGroup(name='admin')])
     mock_db_find_one.return_value = user
     response = test_client.post(
         "token",
