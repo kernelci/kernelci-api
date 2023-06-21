@@ -100,3 +100,36 @@ def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
     print(response.json())
     assert response.status_code == 401
     assert response.json() == {'detail': 'Access denied'}
+
+
+def test_create_user_with_group(  # pylint: disable=too-many-arguments
+                           mock_init_sub_id,
+                           mock_get_current_admin_user,
+                           mock_db_create, mock_publish_cloudevent,
+                           test_client, mock_db_find_one):
+    """
+    Test Case : Test KernelCI API /user endpoint to create a user with a
+    user group
+    Expected Result :
+        HTTP Response Code 200 OK
+        JSON with 'id', 'username', 'hashed_password'
+        'active', 'groups' and 'is_admin' keys
+    """
+    user = User(username='test_admin', hashed_password="$2b$12$Whi.dpTC.\
+HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True,
+                groups=[UserGroup(name='kernelci')])
+    mock_db_create.return_value = user
+    mock_db_find_one.return_value = UserGroup(name='kernelci')
+
+    response = test_client.post(
+        "user/test_admin?groups=kernelci",
+        headers={
+            "Accept": "application/json",
+            "Authorization": ADMIN_BEARER_TOKEN
+        },
+        data=json.dumps({"password": "test"})
+    )
+    print(response.json())
+    assert response.status_code == 200
+    assert ('id', 'username', 'hashed_password', 'active',
+            'is_admin', 'groups') == tuple(response.json().keys())
