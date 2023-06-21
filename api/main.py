@@ -173,6 +173,26 @@ async def post_user(
     return obj
 
 
+@app.get('/users/profile', response_model=PageModel,
+         response_model_include={"items": {"__all__": {"profile": {
+                                    "username", "groups"}}},
+                                 "total": {"__all__"},
+                                 "limit": {"__all__"},
+                                 "offset": {"__all__"},
+                                 })
+async def get_users_profile(request: Request):
+    """Get profile of all the users if no request parameters have passed.
+       Get the matching user profile otherwise."""
+    query_params = dict(request.query_params)
+    # Drop pagination parameters from query as they're already in arguments
+    for pg_key in ['limit', 'offset']:
+        query_params.pop(pg_key, None)
+    paginated_resp = await db.find_by_attributes(User, query_params)
+    paginated_resp.items = serialize_paginated_data(
+        User, paginated_resp.items)
+    return paginated_resp
+
+
 @app.post('/group', response_model=UserGroup, response_model_by_alias=False)
 async def post_user_group(
         group: UserGroup,
