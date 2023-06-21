@@ -40,7 +40,6 @@ async def test_create_admin_user(test_async_client):
         User(
             username=username,
             hashed_password=hashed_password,
-            is_admin=1,
             groups=[UserGroup(name="admin")]
         ))
     assert obj is not None
@@ -84,7 +83,7 @@ async def test_create_regular_user(test_async_client):
     )
     assert response.status_code == 200
     assert ('id', 'username', 'hashed_password', 'active',
-            'is_admin', 'groups') == tuple(response.json().keys())
+            'groups') == tuple(response.json().keys())
 
     response = await test_async_client.post(
         "token",
@@ -120,7 +119,7 @@ def test_whoami(test_client):
     )
     assert response.status_code == 200
     assert ('_id', 'username', 'hashed_password', 'active',
-            'is_admin', 'groups') == tuple(response.json().keys())
+            'groups') == tuple(response.json().keys())
     assert response.json()['username'] == 'test_user'
 
 
