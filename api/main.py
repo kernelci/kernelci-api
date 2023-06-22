@@ -162,6 +162,11 @@ async def get_user_groups(request: Request):
     """Get all the user groups if no request parameters have passed.
        Get all the matching user groups otherwise."""
     query_params = dict(request.query_params)
+
+    # Drop pagination parameters from query as they're already in arguments
+    for pg_key in ['limit', 'offset']:
+        query_params.pop(pg_key, None)
+
     paginated_resp = await db.find_by_attributes(UserGroup, query_params)
     paginated_resp.items = serialize_paginated_data(
         UserGroup, paginated_resp.items)
