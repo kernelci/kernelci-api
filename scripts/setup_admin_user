@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -e
+
+docker-compose run api python3 -m api.admin $*
+
+exit 0
