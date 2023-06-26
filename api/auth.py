@@ -39,8 +39,9 @@ class Authentication:
     should be a db.Database object.
     """
 
+    CRYPT_CTX = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
     def __init__(self, database: Database, token_url: str, user_scopes: dict):
-        self._pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
         self._db = database
         self._settings = Settings()
         self._user_scopes = user_scopes
@@ -54,9 +55,15 @@ class Authentication:
         """Get authentication scheme"""
         return self._oauth2_scheme
 
-    def get_password_hash(self, password):
+    @classmethod
+    def get_password_hash(cls, password):
         """Get a password hash for a given clear text password string"""
-        return self._pwd_context.hash(password)
+        return cls.CRYPT_CTX.hash(password)
+
+    @classmethod
+    def verify_password(cls, password_hash, user):
+        """Verify that the password hash matches the user's password"""
+        return cls.CRYPT_CTX.verify(password_hash, user.hashed_password)
 
     async def authenticate_user(self, username: str, password: str):
         """Authenticate a username / password pair
@@ -68,7 +75,7 @@ class Authentication:
         user = await self._db.find_one(User, username=username)
         if not user:
             return False
-        if not self._pwd_context.verify(password, user.hashed_password):
+        if not self.verify_password(password, user):
             return False
         return user
 
