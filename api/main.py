@@ -8,6 +8,7 @@
 
 """KernelCI API main module"""
 
+import os
 from typing import List, Union
 from fastapi import (
     Depends,
@@ -42,7 +43,7 @@ from .paginator_models import PageModel
 from .pubsub import PubSub, Subscription
 
 app = FastAPI()
-db = Database()
+db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
 auth = Authentication(db, token_url='token',
                       user_scopes={"admin": "Superusers",
                                    "users": "Regular users"})
