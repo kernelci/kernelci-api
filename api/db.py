@@ -34,8 +34,8 @@ class Database:
         'gte': '$gte',
     }
 
-    def __init__(self, host='db', db_name='kernelci'):
-        self._motor = motor_asyncio.AsyncIOMotorClient(host=host)
+    def __init__(self, service='mongodb://db:27017', db_name='kernelci'):
+        self._motor = motor_asyncio.AsyncIOMotorClient(service)
         self._db = self._motor[db_name]
 
     def _get_collection(self, model):
