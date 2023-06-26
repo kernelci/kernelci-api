@@ -24,6 +24,8 @@ services:
   db:
     container_name: 'kernelci-api-db'
     image: 'mongo:5.0'
+    ports:
+      - '${MONGO_HOST_PORT:-8017}:27017'
     volumes:
       - 'mongodata:/data/db'
 
