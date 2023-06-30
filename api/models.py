@@ -21,6 +21,7 @@ from pydantic import (
     Field,
     FileUrl,
     SecretStr,
+    conlist,
 )
 
 
@@ -124,7 +125,7 @@ class User(DatabaseModel):
         default=True,
         description="To check if user is active or not"
     )
-    groups: List[UserGroup] = Field(
+    groups: conlist(UserGroup, unique_items=True) = Field(
         default=[],
         description="A list of groups that user belongs to"
     )
