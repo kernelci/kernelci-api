@@ -37,6 +37,7 @@ async def create_regression(test_async_client, regression_node):
             'holdoff',
             'kind',
             'name',
+            'owner',
             'path',
             'parent',
             'result',
@@ -45,6 +46,7 @@ async def create_regression(test_async_client, regression_node):
             'state',
             'timeout',
             'updated',
+            'user_groups',
         }
 
 
