@@ -35,6 +35,7 @@ async def create_node(test_async_client, node):
             'holdoff',
             'kind',
             'name',
+            'owner',
             'path',
             'parent',
             'result',
@@ -42,6 +43,7 @@ async def create_node(test_async_client, node):
             'state',
             'timeout',
             'updated',
+            'user_groups',
         }
     return response
 
@@ -70,6 +72,7 @@ async def get_node_by_id(test_async_client, node_id):
             'holdoff',
             'kind',
             'name',
+            'owner',
             'path',
             'parent',
             'result',
@@ -77,6 +80,7 @@ async def get_node_by_id(test_async_client, node_id):
             'state',
             'timeout',
             'updated',
+            'user_groups',
         }
     return response
 
@@ -133,6 +137,7 @@ async def update_node(test_async_client, node):
             'holdoff',
             'kind',
             'name',
+            'owner',
             'path',
             'parent',
             'result',
@@ -140,4 +145,5 @@ async def update_node(test_async_client, node):
             'state',
             'timeout',
             'updated',
+            'user_groups',
         }
