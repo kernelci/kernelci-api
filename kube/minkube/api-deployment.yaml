@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2023 KernelCI Authors.
+# Author: Sanskar Bhushan <sbdtu5498@gmail.com>
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kernelci-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kernelci-api
+  template:
+    metadata:
+      labels:
+        app: kernelci-api
+    spec:
+      containers:
+      - name: api
+        image: sbdtu5498/kernelci-api:api
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8000
+        env:
+          - name: SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kernelci-api-secret
+                key: secret-key
+          - name: REDIS_HOST
+            value: "kernelci-api-redis.default.svc.cluster.local"
+        volumeMounts:
+          - name: api-volume
+            mountPath: /home/kernelci/api
+          - name: tests-volume
+            mountPath: /home/kernelci/tests
+          - name: migrations-volume
+            mountPath: /home/kernelci/migrations
+        # Resource limits needs to be discussed.
+        resources:
+      volumes:
+        - name: api-volume
+          hostPath:
+            path: /home/docker/kernelci-api/api
+        - name: tests-volume
+          hostPath:
+            path: /home/docker/kernelci-api/tests
+        - name: migrations-volume
+          hostPath:
+            path: /home/docker/kernelci-api/migrations

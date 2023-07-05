@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2023 KernelCI Authors.
+# Author: Sanskar Bhushan <sbdtu5498@gmail.com>
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kernelci-api-storage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kernelci-api-storage
+  template:
+    metadata:
+      labels:
+        app: kernelci-api-storage
+    spec:
+      containers:
+        - name: kernelci-api-storage
+          image: nginx:1.21.3
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: storage-data
+              mountPath: /usr/share/nginx/html
+            - name: storage-config
+              mountPath: /etc/nginx/conf.d/default.conf
+          # Resource limits needs to be discussed.
+          resources:
+      volumes:
+        - name: storage-data
+          hostPath:
+            path: /home/docker/kernelci-api/docker/storage/data
+        - name: storage-config
+          hostPath:
+            path: /home/docker/kernelci-api/docker/storage/config/default.conf

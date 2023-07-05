@@ -1,0 +1,33 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2023 KernelCI Authors.
+# Author: Sanskar Bhushan <sbdtu5498@gmail.com>
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kernelci-api-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kernelci-api-db
+  template:
+    metadata:
+      labels:
+        app: kernelci-api-db
+    spec:
+      containers:
+        - name: kernelci-api-db
+          image: mongo:5.0
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+          # Resource limits need to be discussed.
+          resources:
+          ports:
+            - containerPort: 27017  # Expose MongoDB standard port
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongo-data-pvc
