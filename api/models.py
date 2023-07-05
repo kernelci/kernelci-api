@@ -117,23 +117,31 @@ class UserGroup(DatabaseModel):
         collection.create_index("name", unique=True)
 
 
-class User(DatabaseModel):
-    """API user model"""
+class UserProfile(BaseModel):
+    """API user profile model"""
     username: str
     hashed_password: str = Field(description="Hash of the plaintext password")
-    active: bool = Field(
-        default=True,
-        description="To check if user is active or not"
-    )
     groups: conlist(UserGroup, unique_items=True) = Field(
         default=[],
         description="A list of groups that user belongs to"
     )
 
+
+class User(DatabaseModel):
+    """API user model
+    The model will be accessible by admin users only"""
+    active: bool = Field(
+        default=True,
+        description="To check if user is active or not"
+    )
+    profile: UserProfile = Field(
+        description="User profile details accessible by all users"
+    )
+
     @classmethod
     def create_indexes(cls, collection):
         """Create an index to bind unique constraint to username"""
-        collection.create_index("username", unique=True)
+        collection.create_index("profile.username", unique=True)
 
 
 class KernelVersion(BaseModel):
