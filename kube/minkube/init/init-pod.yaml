@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2023 KernelCI Authors.
+# Author: Sanskar Bhushan <sbdtu5498@gmail.com>
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: git-clone-pod
+spec:
+  containers:
+  - name: git-clone-container
+    image: alpine/git:latest
+    command: ["sh", "-c", "git clone https://github.com/kernelci/kernelci-api.git /data && tail -f /dev/null"]
+    volumeMounts:
+    - name: data-volume
+      mountPath: /data
+    # resource limits needs to be discussed
+    resources: 
+  volumes:
+  - name: data-volume
+    hostPath:
+      path: /home/docker/kernelci-api
+

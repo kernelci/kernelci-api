@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2023 KernelCI Authors.
+# Author: Sanskar Bhushan <sbdtu5498@gmail.com>
+
+# This deployment may need some security checks.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kernelci-api-ssh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kernelci-api-ssh
+  template:
+    metadata:
+      labels:
+        app: kernelci-api-ssh
+    spec:
+      containers:
+      - name: build
+        image: sbdtu5498/kernelci-api:ssh
+        ports:
+          - containerPort: 22
+        volumeMounts:
+          - name: user-data
+            mountPath: /home/kernelci/.ssh
+          - name: storage-data
+            mountPath: /home/kernelci/data
+        # Resource limits needs to be discussed.
+        resources:
+      volumes:
+        - name: user-data
+          hostPath:
+            path: /home/docker/kernelci-api/docker/ssh/user-data
+        - name: storage-data
+          hostPath:
+            path: /home/docker/kernelci-api/docker/storage/data
