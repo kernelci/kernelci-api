@@ -68,16 +68,17 @@ class Authentication:
     async def authenticate_user(self, username: str, password: str):
         """Authenticate a username / password pair
 
-        Look up a `User` in the database with the provided `username` and check
-        whether the provided clear text `password` matches the hash associated
-        with it.
+        Look up a `User` in the database with the provided `username`
+        and check whether the provided clear text `password` matches the hash
+        associated with it.
         """
-        user = await self._db.find_one(User, username=username)
+        user = await self._db.find_one_by_attributes(
+            User, {'profile.username': username})
         if not user:
             return False
-        if not self.verify_password(password, user):
+        if not self.verify_password(password, user.profile):
             return False
-        return user
+        return user.profile
 
     def create_access_token(self, data: dict):
         """Create a JWT access token using the provided arbitrary `data`"""
@@ -114,7 +115,8 @@ class Authentication:
         except JWTError as error:
             return None, str(error)
 
-        user = await self._db.find_one(User, username=username)
+        user = await self._db.find_one_by_attributes(
+            User, {'profile.username': username})
         return user, None
 
     async def validate_scopes(self, requested_scopes):
