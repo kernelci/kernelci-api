@@ -58,6 +58,16 @@ class Database:
         obj = await col.find_one(kwargs)
         return model(**obj) if obj else None
 
+    async def find_one_by_attributes(self, model, attributes):
+        """Find one object with matching attributes without pagination
+
+        The attributes dictionary provides key/value pairs used to find an
+        object with matching attributes.
+        """
+        col = self._get_collection(model)
+        obj = await col.find_one(attributes)
+        return model(**obj) if obj else None
+
     async def find_by_id(self, model, obj_id):
         """Find one object with a given id"""
         col = self._get_collection(model)
