@@ -36,6 +36,7 @@ from .models import (
     Regression,
     User,
     UserGroup,
+    UserProfile,
     Password,
     get_model_from_kind
 )
@@ -157,11 +158,11 @@ async def post_user(
                         detail=f"User group does not exist with name: \
 {group_name}")
                 group_obj.append(group)
-        obj = await db.create(User(
-                                username=username,
-                                hashed_password=hashed_password,
-                                groups=group_obj
-                                ))
+        profile = UserProfile(
+                    username=username,
+                    hashed_password=hashed_password,
+                    groups=group_obj)
+        obj = await db.create(User(profile=profile))
     except DuplicateKeyError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
