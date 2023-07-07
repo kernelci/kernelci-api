@@ -193,6 +193,24 @@ async def get_users_profile(request: Request):
     return paginated_resp
 
 
+@app.get('/users', response_model=PageModel,
+         response_model_exclude={"items": {"__all__": {"profile": {
+                                    "hashed_password"}}}})
+async def get_users(
+        request: Request,
+        current_user: User = Security(get_user, scopes=["admin"])):
+    """Get all the users if no request parameters have passed.
+       Get the matching users otherwise."""
+    query_params = dict(request.query_params)
+    # Drop pagination parameters from query as they're already in arguments
+    for pg_key in ['limit', 'offset']:
+        query_params.pop(pg_key, None)
+    paginated_resp = await db.find_by_attributes(User, query_params)
+    paginated_resp.items = serialize_paginated_data(
+        User, paginated_resp.items)
+    return paginated_resp
+
+
 @app.post('/group', response_model=UserGroup, response_model_by_alias=False)
 async def post_user_group(
         group: UserGroup,
