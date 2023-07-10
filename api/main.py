@@ -221,6 +221,48 @@ async def get_user_by_id(
     return await db.find_by_id(User, user_id)
 
 
+@app.put('/user/profile/{username}', response_model=User,
+         response_model_include={"profile"},
+         response_model_by_alias=False)
+async def put_user(
+        username: str,
+        password: Password,
+        groups: List[str] = Query([]),
+        current_user: User = Depends(get_user)):
+    """Update user"""
+    if str(current_user.profile.username) != username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unauthorized to update user with provided username")
+
+    hashed_password = auth.get_password_hash(
+                            password.password.get_secret_value())
+    group_obj = []
+    if groups:
+        for group_name in groups:
+            group = await db.find_one(UserGroup, name=group_name)
+            if not group:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"User group does not exist with name: \
+{group_name}")
+            if group_name == 'admin':
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Unauthorized to add user to 'admin' group")
+            group_obj.append(group)
+    obj = await db.update(User(
+            id=current_user.id,
+            profile=UserProfile(
+                username=username,
+                hashed_password=hashed_password,
+                groups=group_obj if group_obj else current_user.profile.groups
+            )))
+    await pubsub.publish_cloudevent('user', {'op': 'updated',
+                                             'id': str(obj.id)})
+    return obj
+
+
 @app.post('/group', response_model=UserGroup, response_model_by_alias=False)
 async def post_user_group(
         group: UserGroup,
