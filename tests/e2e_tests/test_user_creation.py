@@ -8,7 +8,7 @@
 import json
 import pytest
 
-from api.models import User, UserGroup
+from api.models import User, UserGroup, UserProfile
 from api.db import Database
 from e2e_tests.conftest import db_create
 
@@ -35,13 +35,15 @@ async def test_create_admin_user(test_async_client):
     hashed_password = response.json()
     assert response.status_code == 200
 
+    profile = UserProfile(
+        username=username,
+        hashed_password=hashed_password,
+        groups=[UserGroup(name="admin")]
+    )
     obj = await db_create(
-        Database.COLLECTIONS[User],
-        User(
-            username=username,
-            hashed_password=hashed_password,
-            groups=[UserGroup(name="admin")]
-        ))
+            Database.COLLECTIONS[User],
+            User(profile=profile)
+        )
     assert obj is not None
 
     response = await test_async_client.post(
@@ -82,8 +84,10 @@ async def test_create_regular_user(test_async_client):
         data=json.dumps({'password': password})
     )
     assert response.status_code == 200
-    assert ('id', 'username', 'hashed_password', 'active',
-            'groups') == tuple(response.json().keys())
+    assert ('id', 'active',
+            'profile') == tuple(response.json().keys())
+    assert ('username', 'hashed_password',
+            'groups') == tuple(response.json()['profile'].keys())
 
     response = await test_async_client.post(
         "token",
@@ -118,9 +122,11 @@ def test_whoami(test_client):
         },
     )
     assert response.status_code == 200
-    assert ('id', 'username', 'hashed_password', 'active',
-            'groups') == tuple(response.json().keys())
-    assert response.json()['username'] == 'test_user'
+    assert ('id', 'active',
+            'profile') == tuple(response.json().keys())
+    assert ('username', 'hashed_password',
+            'groups') == tuple(response.json()['profile'].keys())
+    assert response.json()['profile']['username'] == 'test_user'
 
 
 @pytest.mark.dependency(depends=["test_create_regular_user"])
