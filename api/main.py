@@ -388,7 +388,7 @@ async def post_node(node: Node, current_user: str = Depends(get_user)):
             )
 
     await _verify_user_group_existence(node.user_groups)
-    node.owner = current_user.username
+    node.owner = current_user.profile.username
     obj = await db.create(node)
     data = _get_node_event_data('created', obj)
     await pubsub.publish_cloudevent('node', data)
