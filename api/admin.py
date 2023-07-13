@@ -17,7 +17,7 @@ import getpass
 
 from .auth import Authentication
 from .db import Database
-from .models import User, UserGroup
+from .models import User, UserGroup, UserProfile
 
 
 async def setup_admin_group(db):
@@ -29,7 +29,8 @@ async def setup_admin_group(db):
 
 
 async def setup_admin_user(db, username, admin_group):
-    user_obj = await db.find_one(User, username=username)
+    user_obj = await db.find_one_by_attributes(User,
+                                               {'profile.username': username})
     if user_obj:
         print(f"User {username} already exists, aborting.")
         print(user_obj.json())
@@ -37,10 +38,13 @@ async def setup_admin_user(db, username, admin_group):
     password = getpass.getpass(f"Password for user '{args.username}': ")
     hashed_password = Authentication.get_password_hash(password)
     print(f"Creating {username} user...")
-    return await db.create(User(
+    profile = UserProfile(
         username=username,
         hashed_password=hashed_password,
         groups=[admin_group]
+    )
+    return await db.create(User(
+        profile=profile
     ))
 
 
