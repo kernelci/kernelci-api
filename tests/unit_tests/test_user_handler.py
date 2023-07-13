@@ -13,7 +13,7 @@ from tests.unit_tests.conftest import (
     ADMIN_BEARER_TOKEN,
     BEARER_TOKEN,
 )
-from api.models import User, UserGroup
+from api.models import User, UserGroup, UserProfile
 
 
 def test_create_regular_user(mock_init_sub_id, mock_get_current_admin_user,
@@ -27,8 +27,9 @@ def test_create_regular_user(mock_init_sub_id, mock_get_current_admin_user,
         JSON with 'id', 'username', 'hashed_password', and
         'active' keys
     """
-    user = User(username='test', hashed_password="$2b$12$Whi.dpTC.\
-HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True)
+    profile = UserProfile(username='test', hashed_password="$2b$12$Whi.dpTC.\
+HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i")
+    user = User(profile=profile, active=True)
     mock_db_create.return_value = user
 
     response = test_client.post(
@@ -41,8 +42,9 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True)
     )
     print(response.json())
     assert response.status_code == 200
-    assert ('id', 'username', 'hashed_password', 'active',
-            'groups') == tuple(response.json().keys())
+    assert ('id', 'active', 'profile') == tuple(response.json().keys())
+    assert ('username', 'hashed_password',
+            'groups') == tuple(response.json()['profile'].keys())
 
 
 def test_create_admin_user(  # pylint: disable=too-many-arguments
@@ -58,9 +60,12 @@ def test_create_admin_user(  # pylint: disable=too-many-arguments
         JSON with 'id', 'username', 'hashed_password', and
         'active' keys
     """
-    user = User(username='test_admin', hashed_password="$2b$12$Whi.dpTC.\
-HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True,
-                groups=[UserGroup(name='admin')])
+    profile = UserProfile(
+        username='test_admin',
+        hashed_password="$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08o\
+W7ogYqyiNziZYNdUHs8i",
+        groups=[UserGroup(name='admin')])
+    user = User(profile=profile, active=True)
     mock_db_create.return_value = user
     mock_db_find_one.return_value = UserGroup(name='admin')
 
@@ -74,8 +79,9 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True,
     )
     print(response.json())
     assert response.status_code == 200
-    assert ('id', 'username', 'hashed_password', 'active',
-            'groups') == tuple(response.json().keys())
+    assert ('id', 'active', 'profile') == tuple(response.json().keys())
+    assert ('username', 'hashed_password',
+            'groups') == tuple(response.json()['profile'].keys())
 
 
 def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
@@ -115,9 +121,12 @@ def test_create_user_with_group(  # pylint: disable=too-many-arguments
         JSON with 'id', 'username', 'hashed_password'
         'active', and 'groups' keys
     """
-    user = User(username='test_admin', hashed_password="$2b$12$Whi.dpTC.\
-HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True,
-                groups=[UserGroup(name='kernelci')])
+    profile = UserProfile(
+        username='test_admin',
+        hashed_password="$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7\
+ogYqyiNziZYNdUHs8i",
+        groups=[UserGroup(name='kernelci')])
+    user = User(profile=profile, active=True)
     mock_db_create.return_value = user
     mock_db_find_one.return_value = UserGroup(name='kernelci')
 
@@ -131,5 +140,6 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", active=True, is_admin=True,
     )
     print(response.json())
     assert response.status_code == 200
-    assert ('id', 'username', 'hashed_password', 'active',
-            'groups') == tuple(response.json().keys())
+    assert ('id', 'active', 'profile') == tuple(response.json().keys())
+    assert ('username', 'hashed_password',
+            'groups') == tuple(response.json()['profile'].keys())

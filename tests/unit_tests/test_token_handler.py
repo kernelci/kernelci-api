@@ -10,21 +10,25 @@
 
 """Unit test function for KernelCI API token handler"""
 
-from api.models import User, UserGroup
+from api.models import User, UserGroup, UserProfile
 
 
-def test_token_endpoint(mock_db_find_one, mock_init_sub_id, test_client):
+def test_token_endpoint(mock_db_find_one_by_attributes,
+                        mock_init_sub_id, test_client):
     """
     Test Case : Test KernelCI API token endpoint
     Expected Result :
         HTTP Response Code 200 OK
         JSON with 'access_token' and 'token_type' key
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True, groups=[])
-    mock_db_find_one.return_value = user
+    profile = UserProfile(
+        username='bob',
+        hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                        'xCZGmM8jWXUXJZ4K',
+        groups=[]
+    )
+    user = User(profile=profile, active=True)
+    mock_db_find_one_by_attributes.return_value = user
     response = test_client.post(
         "token",
         headers={
@@ -38,7 +42,8 @@ def test_token_endpoint(mock_db_find_one, mock_init_sub_id, test_client):
     assert ('access_token', 'token_type') == tuple(response.json().keys())
 
 
-def test_token_endpoint_incorrect_password(mock_db_find_one, mock_init_sub_id,
+def test_token_endpoint_incorrect_password(mock_db_find_one_by_attributes,
+                                           mock_init_sub_id,
                                            test_client):
     """
     Test Case : Test KernelCI API token endpoint for negative path
@@ -48,11 +53,13 @@ def test_token_endpoint_incorrect_password(mock_db_find_one, mock_init_sub_id,
         HTTP Response Code 401 Unauthorized
         JSON with 'detail' key
     """
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True, groups=[])
-    mock_db_find_one.return_value = user
+    profile = UserProfile(
+        username='bob',
+        hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                        'xCZGmM8jWXUXJZ4K',
+        groups=[])
+    user = User(profile=profile, active=True)
+    mock_db_find_one_by_attributes.return_value = user
 
     # Pass incorrect password
     response = test_client.post(
@@ -68,7 +75,8 @@ def test_token_endpoint_incorrect_password(mock_db_find_one, mock_init_sub_id,
     assert response.json() == {'detail': 'Incorrect username or password'}
 
 
-def test_token_endpoint_admin_user(mock_db_find_one, mock_init_sub_id,
+def test_token_endpoint_admin_user(mock_db_find_one_by_attributes,
+                                   mock_init_sub_id,
                                    test_client):
     """
     Test Case : Test KernelCI API token endpoint for admin user
@@ -76,11 +84,13 @@ def test_token_endpoint_admin_user(mock_db_find_one, mock_init_sub_id,
         HTTP Response Code 200 OK
         JSON with 'access_token' and 'token_type' key
     """
-    user = User(username='test_admin',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True, groups=[UserGroup(name='admin')])
-    mock_db_find_one.return_value = user
+    profile = UserProfile(
+        username='test_admin',
+        hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                        'xCZGmM8jWXUXJZ4K',
+        groups=[UserGroup(name='admin')])
+    user = User(profile=profile, active=True)
+    mock_db_find_one_by_attributes.return_value = user
     response = test_client.post(
         "token",
         headers={
