@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 import pytest
 
 from api.main import app
-from api.models import User, UserGroup
+from api.models import User, UserGroup, UserProfile
 from api.pubsub import PubSub
 
 BEARER_TOKEN = "Bearer \
@@ -106,16 +106,30 @@ def mock_db_find_one(mocker):
 
 
 @pytest.fixture
+def mock_db_find_one_by_attributes(mocker):
+    """
+    Mocks async call to Database class method
+    used to find an object with matching attributes
+    """
+    async_mock = AsyncMock()
+    mocker.patch('api.db.Database.find_one_by_attributes',
+                 side_effect=async_mock)
+    return async_mock
+
+
+@pytest.fixture
 def mock_get_current_user(mocker):
     """
     Mocks async call to Authentication class method
     used to get current user
     """
     async_mock = AsyncMock()
-    user = User(username='bob',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True)
+    profile = UserProfile(
+        username='bob',
+        hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                        'xCZGmM8jWXUXJZ4K',
+    )
+    user = User(profile=profile, active=True)
     mocker.patch('api.auth.Authentication.get_current_user',
                  side_effect=async_mock)
     async_mock.return_value = user, None
@@ -129,10 +143,14 @@ def mock_get_current_admin_user(mocker):
     used to get current user
     """
     async_mock = AsyncMock()
-    user = User(username='admin',
-                hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                                'xCZGmM8jWXUXJZ4K',
-                active=True, groups=[UserGroup(name='admin')])
+    profile = UserProfile(
+        username='admin',
+        hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
+                        'xCZGmM8jWXUXJZ4K',
+        groups=[UserGroup(name='admin')])
+    user = User(
+        profile=profile,
+        active=True)
     mocker.patch('api.auth.Authentication.get_current_user',
                  side_effect=async_mock)
     async_mock.return_value = user, None
