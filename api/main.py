@@ -424,12 +424,22 @@ async def put_node(node_id: str, node: Node,
     return obj
 
 
+async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy):
+    """Set node ownership information for a hierarchy of nodes"""
+    if not hierarchy.node.owner:
+        hierarchy.node.owner = user.profile.username
+    for node in hierarchy.child_nodes:
+        await _set_node_ownership_recursively(user, node)
+
+
 @app.put('/nodes/{node_id}', response_model=List[Node],
          response_model_by_alias=False)
 async def put_nodes(
-        node_id: str, nodes: Hierarchy, token: str = Depends(get_user)):
+        node_id: str, nodes: Hierarchy,
+        user: str = Depends(authorize_user)):
     """Add a hierarchy of nodes to an existing root node"""
     nodes.node.id = ObjectId(node_id)
+    await _set_node_ownership_recursively(user, nodes)
     obj_list = await db.create_hierarchy(nodes, Node)
     data = _get_node_event_data('updated', obj_list[0])
     await pubsub.publish_cloudevent('node', data)
