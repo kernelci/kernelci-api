@@ -352,6 +352,28 @@ async def whoami(current_user: User = Depends(get_user)):
     return current_user
 
 
+@app.post('/password')
+async def reset_password(
+        username: str, current_password: Password, new_password: Password):
+    """Set a new password for an authenticated user"""
+    authenticated = await auth.authenticate_user(
+        username, current_password.password.get_secret_value())
+    if not authenticated:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+
+    user = await db.find_one_by_attributes(
+            User, {'profile.username': username})
+    user.profile.hashed_password = auth.get_password_hash(
+                                new_password.password.get_secret_value())
+    obj = await db.update(user)
+    await pubsub.publish_cloudevent('user', {'op': 'updated',
+                                             'id': str(obj.id)})
+    return obj
+
+
 @app.post('/hash')
 def get_password_hash(password: Password):
     """Get a password hash from the provided string password"""
