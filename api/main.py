@@ -291,7 +291,7 @@ async def translate_null_query_params(query_params: dict):
     return translated
 
 
-@app.get('/node/{node_id}', response_model=Union[Regression, Node],
+@app.get('/node/{node_id}', response_model=Union[Regression, Node, None],
          response_model_by_alias=False)
 async def get_node(node_id: str, kind: str = "node"):
     """Get node information from the provided node id"""
