@@ -9,18 +9,19 @@
 import pytest
 
 
+@pytest.mark.asyncio
 @pytest.mark.dependency(
     depends=[
         'e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel'],
     scope='session')
 @pytest.mark.order("last")
-def test_unsubscribe_node_channel(test_client):
+async def test_unsubscribe_node_channel(test_async_client):
     """
     Test Case : Test KernelCI API '/unsubscribe' endpoint with 'node' channel
     Expected Result :
         HTTP Response Code 200 OK
     """
-    response = test_client.post(
+    response = await test_async_client.post(
         f"unsubscribe/{pytest.node_channel_subscription_id}",
         headers={
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
@@ -29,18 +30,19 @@ def test_unsubscribe_node_channel(test_client):
     assert response.status_code == 200
 
 
+@pytest.mark.asyncio
 @pytest.mark.dependency(
     depends=[
         'e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel'],
     scope='session')
 @pytest.mark.order("last")
-def test_unsubscribe_test_channel(test_client):
+async def test_unsubscribe_test_channel(test_async_client):
     """
     Test Case : Test KernelCI API '/unsubscribe' endpoint with 'test_channel'
     Expected Result :
         HTTP Response Code 200 OK
     """
-    response = test_client.post(
+    response = await test_async_client.post(
         f"unsubscribe/{pytest.test_channel_subscription_id}",
         headers={
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"

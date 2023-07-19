@@ -105,8 +105,9 @@ async def test_create_regular_user(test_async_client):
     pytest.BEARER_TOKEN = response.json()['access_token']
 
 
+@pytest.mark.asyncio
 @pytest.mark.dependency(depends=["test_create_regular_user"])
-def test_whoami(test_client):
+async def test_whoami(test_async_client):
     """
     Test Case : Test KernelCI API /whoami endpoint
     Expected Result :
@@ -114,7 +115,7 @@ def test_whoami(test_client):
         JSON with 'id', 'username', 'hashed_password'
         and 'active' keys
     """
-    response = test_client.get(
+    response = await test_async_client.get(
         "whoami",
         headers={
             "Accept": "application/json",
@@ -129,8 +130,9 @@ def test_whoami(test_client):
     assert response.json()['profile']['username'] == 'test_user'
 
 
+@pytest.mark.asyncio
 @pytest.mark.dependency(depends=["test_create_regular_user"])
-def test_create_user_negative(test_client):
+async def test_create_user_negative(test_async_client):
     """
     Test Case : Test KernelCI API /user endpoint when requested
     with regular user's bearer token.
@@ -138,7 +140,7 @@ def test_create_user_negative(test_client):
         HTTP Response Code 401 Unauthorized
         JSON with 'detail' key denoting 'Access denied' error
     """
-    response = test_client.post(
+    response = await test_async_client.post(
         "user/test",
         headers={
                 "Accept": "application/json",

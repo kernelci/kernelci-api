@@ -10,8 +10,6 @@ import pytest
 from httpx import AsyncClient
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from fastapi.testclient import TestClient
-
 from api.main import app
 
 BASE_URL = 'http://api:8000/latest/'
@@ -20,13 +18,6 @@ DB_NAME = 'kernelci'
 
 db_client = AsyncIOMotorClient(DB_URL)
 db = db_client[DB_NAME]
-
-
-@pytest.fixture(scope='session')
-def test_client():
-    """Fixture to get FastAPI Test client instance"""
-    with TestClient(app=app, base_url=BASE_URL) as client:
-        yield client
 
 
 @pytest.fixture(scope='session')
