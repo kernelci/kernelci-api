@@ -8,4 +8,5 @@ python-jose[cryptography]==3.3.0
 uvicorn[standard]==0.13.4
 motor==2.5.1
 pymongo-migrate==0.11.0
+pyyaml==5.3.1
 fastapi-versioning==0.10.0
