@@ -20,11 +20,11 @@ from .db import Database
 from .models import User, UserGroup, UserProfile
 
 
-async def setup_admin_group(db):
-    group_obj = await db.find_one(UserGroup, name='admin')
+async def setup_admin_group(db, admin_group):
+    group_obj = await db.find_one(UserGroup, name=admin_group)
     if group_obj is None:
-        print("Creating admin group...")
-        group_obj = await db.create(UserGroup(name='admin'))
+        print(f"Creating {admin_group} group...")
+        group_obj = await db.create(UserGroup(name=admin_group))
     return group_obj
 
 
@@ -50,7 +50,7 @@ async def setup_admin_user(db, username, admin_group):
 
 async def main(args):
     db = Database(args.mongo, args.database)
-    group = await setup_admin_group(db)
+    group = await setup_admin_group(db, args.admin_group)
     user = await setup_admin_user(db, args.username, group)
     return True
 
@@ -61,6 +61,8 @@ if __name__ == '__main__':
                         help="Mongo server connection string")
     parser.add_argument('--username', default='admin',
                         help="Admin username")
+    parser.add_argument('--admin-group', default='admin',
+                        help="Admin group name")
     parser.add_argument('--database', default='kernelci',
                         help="KernelCI database name")
     args = parser.parse_args()
