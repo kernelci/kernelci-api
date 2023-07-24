@@ -23,6 +23,8 @@ clients are then handled using Docker images.
 
 This section covers how to set up a local API instance using the default
 self-contained configuration.  It doesn't rely on any external services.
+Commands from the sections below should be run within a directory containing
+[`kernelci-api`](https://github.com/kernelci/kernelci-api.git) repository.
 
 ### Create the environment file
 
@@ -196,6 +198,10 @@ environments such as Kubernetes LAVA, KCIDB credentials to send data etc.  On
 this page, we'll focus on the simple case with just a `docker-compose` API
 instance as described in the previous section and one instance for the
 pipeline.
+
+Commands from the sections below should be run within a directory containing
+[`kernelci-pipeline`](https://github.com/kernelci/kernelci-pipeline.git)
+repository.
 
 ### Configure the API token
 
