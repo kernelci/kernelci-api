@@ -1,6 +1,6 @@
 ---
 title: "Getting Started"
-date: 2022-03-18
+date: 2023-07-24
 description: "Setting up a local instance"
 weight: 1
 ---
@@ -74,26 +74,26 @@ above with the root `/` endpoint and most `GET` requests to retrieve data.
 However, sending data with `POST` and `PUT` requests can typically only be done
 by authenticated users.  This will be required to run a full pipeline or to
 subscribe to the pub/sub interface.  Then some users have administrator rights,
-which enables them to create new user accounts using the
-[kci_data](/docs/core/kci_data#creating-new-api-user-experimental) command line
-tool.
+which enables them to create new user accounts.
 
 So let's start by creating the initial admin user account.  This can be done
 with the
-[`create_admin_user`](https://github.com/kernelci/kernelci-api/blob/main/create_admin_user)
-tool provided in the `kernelci-api` repository.  Call it with the name of the
-admin user you want to create such as `admin`, then enter the admin password
-when prompted:
+[`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
+tool provided in the `kernelci-api` repository which has a wrapper script
+`setup_admin_user`.  It can be called with the name of the admin user you want
+to create such as `admin`, then enter the admin password when prompted:
 
 ```
-$ ./create_admin_user admin
-Password:
-MongoDB shell version v5.0.12
-connecting to: mongodb://127.0.0.1:27017/kernelci?compressors=disabled&gssapiServiceName=mongodb
-Implicit session: session { "id" : UUID("789ad3c5-0caa-45a9-a514-efeec763dfeb") }
-MongoDB server version: 5.0.12
-WriteResult({ "nInserted" : 1 })
+$ ./scripts/setup_admin_user
+Creating kernelci-api_api_run ... done
+Creating admin group...
+Password for user 'admin':
+Creating admin user...
 ```
+
+> **Note** Strictly speaking, only the `db` service needs to be running in
+> order to use this tool.  In fact it can also be used with any other MongoDB
+> instance such as an Atlas account using the `--mongo` command line argument.
 
 > **Note** For more details about how to create users via the raw API, see the
 > [API documentation](/docs/api/api-details/#users)
