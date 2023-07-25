@@ -129,7 +129,7 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
     node_from_id = await db.find_by_id(Node, node_id)
     if not user.profile.username == node_from_id.owner:
         if not any(group.name in node_from_id.user_groups
-                   for group in user.groups):
+                   for group in user.profile.groups):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Unauthorized to complete the operation"
