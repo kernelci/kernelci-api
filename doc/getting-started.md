@@ -213,6 +213,11 @@ file which provides environment variables for the Docker containers:
 echo "KCI_API_TOKEN=<your token>" >> .env
 ```
 
+> **Note** Admin API token created in the previous section can be used for
+> initial Pipeline instance testing. In production environment the best
+> practice would be to create a separate (non-admin) user with required scopes
+> and generate a new API token for that user.
+
 ### Start docker-compose
 
 Then the pipeline can simply be started with docker-compose:
