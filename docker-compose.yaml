@@ -35,24 +35,24 @@ services:
     volumes:
       - './docker/redis/data:/data'
 
-  storage:
-    container_name: 'kernelci-api-storage'
-    image: 'nginx:1.21.3'
-    volumes:
-      - './docker/storage/data:/usr/share/nginx/html'
-      - './docker/storage/config/default.conf:/etc/nginx/conf.d/default.conf'
-    ports:
-      - ${STORAGE_HOST_PORT:-8002}:80
+#  storage:
+#    container_name: 'kernelci-api-storage'
+#    image: 'nginx:1.21.3'
+#    volumes:
+#      - './docker/storage/data:/usr/share/nginx/html'
+#      - './docker/storage/config/default.conf:/etc/nginx/conf.d/default.conf'
+#    ports:
+#      - ${STORAGE_HOST_PORT:-8002}:80
 
-  ssh:
-    container_name: 'kernelci-api-ssh'
-    build:
-      context: 'docker/ssh'
-    volumes:
-      - './docker/storage/data:/home/kernelci/data'
-      - './docker/ssh/user-data:/home/kernelci/.ssh'
-    ports:
-      - '${SSH_HOST_PORT:-8022}:22'
+#  ssh:
+#    container_name: 'kernelci-api-ssh'
+#    build:
+#      context: 'docker/ssh'
+#    volumes:
+#      - './docker/storage/data:/home/kernelci/data'
+#      - './docker/ssh/user-data:/home/kernelci/.ssh'
+#    ports:
+#      - '${SSH_HOST_PORT:-8022}:22'
 
 volumes:
   mongodata:
