@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     cloud_events_source: str = "https://api.kernelci.org/"
     redis_host: str = "redis"
     redis_db_number: int = 1
-    keep_alive_period: int = 0
+    keep_alive_period: int = 45
 
 
 class Subscription(BaseModel):
