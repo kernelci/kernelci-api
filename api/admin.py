@@ -28,7 +28,7 @@ async def setup_admin_group(db, admin_group):
     return group_obj
 
 
-async def setup_admin_user(db, username, admin_group):
+async def setup_admin_user(db, username, email, admin_group):
     user_obj = await db.find_one_by_attributes(User,
                                                {'profile.username': username})
     if user_obj:
@@ -41,6 +41,7 @@ async def setup_admin_user(db, username, admin_group):
     profile = UserProfile(
         username=username,
         hashed_password=hashed_password,
+        email=email,
         groups=[admin_group]
     )
     return await db.create(User(
@@ -51,7 +52,7 @@ async def setup_admin_user(db, username, admin_group):
 async def main(args):
     db = Database(args.mongo, args.database)
     group = await setup_admin_group(db, args.admin_group)
-    user = await setup_admin_user(db, args.username, group)
+    user = await setup_admin_user(db, args.username, args.email, group)
     return True
 
 
@@ -65,5 +66,7 @@ if __name__ == '__main__':
                         help="Admin group name")
     parser.add_argument('--database', default='kernelci',
                         help="KernelCI database name")
+    parser.add_argument('--email', required=True,
+                        help="Admin user email address")
     args = parser.parse_args()
     sys.exit(0 if asyncio.run(main(args)) else 1)
