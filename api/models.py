@@ -18,10 +18,11 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
+    conlist,
+    EmailStr,
     Field,
     FileUrl,
     SecretStr,
-    conlist,
 )
 
 
@@ -124,6 +125,9 @@ class UserProfile(BaseModel):
     groups: conlist(UserGroup, unique_items=True) = Field(
         default=[],
         description="A list of groups that user belongs to"
+    )
+    email: EmailStr = Field(
+        description="User email address"
     )
 
 
