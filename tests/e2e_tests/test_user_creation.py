@@ -38,6 +38,7 @@ async def test_create_admin_user(test_async_client):
     profile = UserProfile(
         username=username,
         hashed_password=hashed_password,
+        email='test-admin@kernelci.org',
         groups=[UserGroup(name="admin")]
     )
     obj = await db_create(
@@ -75,8 +76,9 @@ async def test_create_regular_user(test_async_client):
     """
     username = 'test_user'
     password = 'test'
+    email = 'test@kernelci.org'
     response = await test_async_client.post(
-        f"user/{username}",
+        f"user/{username}?email={email}",
         headers={
                 "Accept": "application/json",
                 "Authorization": f"Bearer {pytest.ADMIN_BEARER_TOKEN}"
@@ -87,7 +89,7 @@ async def test_create_regular_user(test_async_client):
     assert ('id', 'active',
             'profile') == tuple(response.json().keys())
     assert ('username', 'hashed_password',
-            'groups') == tuple(response.json()['profile'].keys())
+            'groups', 'email') == tuple(response.json()['profile'].keys())
 
     response = await test_async_client.post(
         "token",
@@ -125,7 +127,7 @@ def test_whoami(test_client):
     assert ('id', 'active',
             'profile') == tuple(response.json().keys())
     assert ('username', 'hashed_password',
-            'groups') == tuple(response.json()['profile'].keys())
+            'groups', 'email') == tuple(response.json()['profile'].keys())
     assert response.json()['profile']['username'] == 'test_user'
 
 
