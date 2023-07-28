@@ -140,7 +140,7 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
 @app.post('/user/{username}', response_model=User,
           response_model_by_alias=False)
 async def post_user(
-        username: str, password: Password,
+        username: str, password: Password, email: str,
         groups: List[str] = Query([]),
         current_user: User = Security(get_user, scopes=["admin"])):
     """Create new user"""
@@ -160,7 +160,8 @@ async def post_user(
         profile = UserProfile(
                     username=username,
                     hashed_password=hashed_password,
-                    groups=group_obj)
+                    groups=group_obj,
+                    email=email)
         obj = await db.create(User(profile=profile))
     except DuplicateKeyError as error:
         raise HTTPException(
@@ -174,7 +175,7 @@ async def post_user(
 
 @app.get('/users/profile', response_model=PageModel,
          response_model_include={"items": {"__all__": {"profile": {
-                                    "username", "groups"}}},
+                                    "username", "groups", "email"}}},
                                  "total": {"__all__"},
                                  "limit": {"__all__"},
                                  "offset": {"__all__"},
@@ -226,6 +227,7 @@ async def get_user_by_id(
 async def put_user(
         username: str,
         password: Password,
+        email: str,
         groups: List[str] = Query([]),
         current_user: User = Depends(get_user)):
     """Update user"""
@@ -255,6 +257,7 @@ async def put_user(
             profile=UserProfile(
                 username=username,
                 hashed_password=hashed_password,
+                email=email,
                 groups=group_obj if group_obj else current_user.profile.groups
             )))
     await pubsub.publish_cloudevent('user', {'op': 'updated',
