@@ -128,6 +128,7 @@ def mock_get_current_user(mocker):
         username='bob',
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
+        email='bob@kernelci.org'
     )
     user = User(profile=profile, active=True)
     mocker.patch('api.auth.Authentication.get_current_user',
@@ -147,6 +148,7 @@ def mock_get_current_admin_user(mocker):
         username='admin',
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
+        email='admin@kernelci.org',
         groups=[UserGroup(name='admin')])
     user = User(
         profile=profile,

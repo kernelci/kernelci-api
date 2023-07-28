@@ -28,12 +28,12 @@ def test_create_regular_user(mock_init_sub_id, mock_get_current_admin_user,
         'active' keys
     """
     profile = UserProfile(username='test', hashed_password="$2b$12$Whi.dpTC.\
-HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i")
+HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", email='test@kernelci.org')
     user = User(profile=profile, active=True)
     mock_db_create.return_value = user
 
     response = test_client.post(
-        "user/test",
+        "user/test?email=test@kernelci.org",
         headers={
             "Accept": "application/json",
             "Authorization": ADMIN_BEARER_TOKEN
@@ -44,7 +44,7 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i")
     assert response.status_code == 200
     assert ('id', 'active', 'profile') == tuple(response.json().keys())
     assert ('username', 'hashed_password',
-            'groups') == tuple(response.json()['profile'].keys())
+            'groups', 'email') == tuple(response.json()['profile'].keys())
 
 
 def test_create_admin_user(  # pylint: disable=too-many-arguments
@@ -64,13 +64,14 @@ def test_create_admin_user(  # pylint: disable=too-many-arguments
         username='test_admin',
         hashed_password="$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08o\
 W7ogYqyiNziZYNdUHs8i",
+        email='test-admin@kernelci.org',
         groups=[UserGroup(name='admin')])
     user = User(profile=profile, active=True)
     mock_db_create.return_value = user
     mock_db_find_one.return_value = UserGroup(name='admin')
 
     response = test_client.post(
-        "user/test_admin?groups=admin",
+        "user/test_admin?groups=admin&email=test-admin@kernelci.org",
         headers={
             "Accept": "application/json",
             "Authorization": ADMIN_BEARER_TOKEN
@@ -81,7 +82,7 @@ W7ogYqyiNziZYNdUHs8i",
     assert response.status_code == 200
     assert ('id', 'active', 'profile') == tuple(response.json().keys())
     assert ('username', 'hashed_password',
-            'groups') == tuple(response.json()['profile'].keys())
+            'groups', 'email') == tuple(response.json()['profile'].keys())
 
 
 def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
@@ -125,13 +126,14 @@ def test_create_user_with_group(  # pylint: disable=too-many-arguments
         username='test_admin',
         hashed_password="$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7\
 ogYqyiNziZYNdUHs8i",
+        email='test-admin@kernelci.org',
         groups=[UserGroup(name='kernelci')])
     user = User(profile=profile, active=True)
     mock_db_create.return_value = user
     mock_db_find_one.return_value = UserGroup(name='kernelci')
 
     response = test_client.post(
-        "user/test_admin?groups=kernelci",
+        "user/test_admin?groups=kernelci&email=test-admin@kernelci.org",
         headers={
             "Accept": "application/json",
             "Authorization": ADMIN_BEARER_TOKEN
@@ -142,4 +144,4 @@ ogYqyiNziZYNdUHs8i",
     assert response.status_code == 200
     assert ('id', 'active', 'profile') == tuple(response.json().keys())
     assert ('username', 'hashed_password',
-            'groups') == tuple(response.json()['profile'].keys())
+            'groups', 'email') == tuple(response.json()['profile'].keys())

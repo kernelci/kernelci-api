@@ -25,6 +25,7 @@ def test_token_endpoint(mock_db_find_one_by_attributes,
         username='bob',
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
+        email='bob@kernelci.org',
         groups=[]
     )
     user = User(profile=profile, active=True)
@@ -57,6 +58,7 @@ def test_token_endpoint_incorrect_password(mock_db_find_one_by_attributes,
         username='bob',
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
+        email='bob@kernelci.org',
         groups=[])
     user = User(profile=profile, active=True)
     mock_db_find_one_by_attributes.return_value = user
@@ -88,6 +90,7 @@ def test_token_endpoint_admin_user(mock_db_find_one_by_attributes,
         username='test_admin',
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
+        email='test-admin@kernelci.org',
         groups=[UserGroup(name='admin')])
     user = User(profile=profile, active=True)
     mock_db_find_one_by_attributes.return_value = user
