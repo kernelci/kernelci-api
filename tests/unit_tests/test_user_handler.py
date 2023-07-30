@@ -145,3 +145,37 @@ ogYqyiNziZYNdUHs8i",
     assert ('id', 'active', 'profile') == tuple(response.json().keys())
     assert ('username', 'hashed_password',
             'groups', 'email') == tuple(response.json()['profile'].keys())
+
+
+def test_get_user_by_id_endpoint(mock_get_current_admin_user, mock_db_find_by_id,
+                                 mock_init_sub_id, test_client):
+    """
+    Test Case : Test KernelCI API GET /user/{user_id} endpoint with admin
+    token
+    Expected Result :
+        HTTP Response Code 200 OK
+        JSON with User object attributes
+    """
+    user_obj = User(
+            id='61bda8f2eb1a63d2b7152418',
+            profile=UserProfile(username='test', hashed_password="$2b$12$Whi.dpTC.\
+HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", email='test@kernelci.org'),
+            active=True
+        )
+    mock_db_find_by_id.return_value = user_obj
+
+    response = test_client.get(
+        "user/61bda8f2eb1a63d2b7152418",
+        headers={
+            "Accept": "application/json",
+            "Authorization": ADMIN_BEARER_TOKEN
+        })
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json().keys() == {
+        'id',
+        'active',
+        'profile'
+    }
+    assert ('username', 'groups',
+            'email') == tuple(response.json()['profile'].keys())
