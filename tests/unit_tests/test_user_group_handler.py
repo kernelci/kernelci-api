@@ -14,6 +14,7 @@ from tests.unit_tests.conftest import (
     BEARER_TOKEN,
 )
 from api.models import UserGroup
+from api.paginator_models import PageModel
 
 
 def test_create_user_group(mock_init_sub_id, mock_get_current_admin_user,
@@ -67,3 +68,30 @@ def test_create_group_endpoint_negative(mock_init_sub_id,
     print(response.json())
     assert response.status_code == 401
     assert response.json() == {'detail': 'Access denied'}
+
+
+def test_get_groups(mock_init_sub_id, mock_db_find_by_attributes,
+                    test_client):
+    """
+    Test Case : Test KernelCI API GET /groups endpoint
+    Expected Result :
+        HTTP Response Code 200 OK
+        List of all the user group objects
+    """
+    user_group_1 = {
+        "id": "61bda8f2eb1a63d2b7152421",
+        "name": "admin"}
+    user_group_2 = {
+        "id": "61bda8f2eb1a63d2b7152422",
+        "name": "kernelci"}
+    mock_db_find_by_attributes.return_value = PageModel(
+        items=[user_group_1, user_group_2],
+        total=2,
+        limit=50,
+        offset=0
+    )
+    response = test_client.get("groups")
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert ('items', 'total', 'limit',
+            'offset') == tuple(response.json().keys())
