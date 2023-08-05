@@ -30,4 +30,4 @@ spec:
       volumes:
         - name: redis-data
           hostPath:
-            path: /home/docker/kernelci-api/redis/data
+            path: /home/docker/kernelci-api/docker/redis/data
