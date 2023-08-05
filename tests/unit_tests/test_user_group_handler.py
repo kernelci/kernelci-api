@@ -95,3 +95,20 @@ def test_get_groups(mock_init_sub_id, mock_db_find_by_attributes,
     assert response.status_code == 200
     assert ('items', 'total', 'limit',
             'offset') == tuple(response.json().keys())
+
+
+def test_get_group_by_id(mock_init_sub_id, mock_db_find_by_id,
+                         test_client):
+    """
+    Test Case : Test KernelCI API GET /group/{group_id} endpoint
+    Expected Result :
+        HTTP Response Code 200 OK
+        JSON with UserGroup object
+    """
+    mock_db_find_by_id.return_value = UserGroup(id='61bda8f2eb1a63d2b7152422',
+                                                name='kernelci')
+
+    response = test_client.get("group/61bda8f2eb1a63d2b7152422")
+    print("response.json()", response.json())
+    assert response.status_code == 200
+    assert response.json().keys() == {'id', 'name'}
