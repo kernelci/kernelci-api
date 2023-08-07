@@ -3,7 +3,7 @@
 # Copyright (C) 2023 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
-"""End-to-end test functions for KernelCI API user group creation"""
+"""End-to-end test functions for KernelCI API user group handler"""
 
 import pytest
 
