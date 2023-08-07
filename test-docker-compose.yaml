@@ -61,3 +61,5 @@ services:
       - api
     env_file:
       - '.env'
+    environment:
+      - 'KEEP_ALIVE_PERIOD=0'
