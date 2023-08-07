@@ -53,3 +53,27 @@ def test_subscribe_test_channel(test_client):
     assert response.status_code == 200
     assert ('id', 'channel') == tuple(response.json().keys())
     assert response.json().get('channel') == 'test_channel'
+
+
+@pytest.mark.dependency(
+    depends=['e2e_tests/test_user_creation.py::test_create_regular_user'],
+    scope='session')
+@pytest.mark.order(4)
+def test_subscribe_user_group_channel(test_client):
+    """
+    Test Case : Test KernelCI API '/subscribe' endpoint with 'user_group'
+    channel
+    Expected Result :
+        HTTP Response Code 200 OK
+        JSON with subscription 'id' and 'channel' keys
+    """
+    response = test_client.post(
+        "subscribe/user_group",
+        headers={
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
+        },
+    )
+    pytest.user_group_channel_subscription_id = response.json()['id']
+    assert response.status_code == 200
+    assert ('id', 'channel') == tuple(response.json().keys())
+    assert response.json().get('channel') == 'user_group'
