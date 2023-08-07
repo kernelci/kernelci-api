@@ -51,5 +51,6 @@ async def test_pubsub_handler(test_async_client):
         'type',
     }
     event_data = from_json(task_listen.result().json().get('data')).data
+    assert event_data != 'BEEP'
     assert ('message',) == tuple(event_data.keys())
     assert event_data.get('message') == 'Test message'
