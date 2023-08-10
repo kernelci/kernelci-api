@@ -26,6 +26,14 @@ default to None.  If a user wants to change any of the above variables, they
 should be added to the .env file.
 
 
+### Configure Redis and Mongo
+
+By default, API uses Redis and Database services specified in [`docker-compose.yaml`](https://github.com/kernelci/kernelci-api/blob/main/docker-compose.yaml).
+API is configured to use redis hostname `redis` and database service
+URL `mongodb://db:27017` at the moment.
+In case of using different services or configurations, `REDIS_HOST` and `MONGO_SERVICE` variables should be added to .env file.
+
+
 ## Users
 
 `User` model objects can be created from a terminal or using `/user` endpoint.
