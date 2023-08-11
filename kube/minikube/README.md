@@ -132,7 +132,7 @@ kubectl logs <pod-name>
 
 As kernelci-api relies on other deployments, it is important to get them up and running first and get kernelci-api up and running afterwards. Thus after completing all the above steps, you can apply ```api-deployment.yaml``` file that is present in the root of kube/minikube folder. To apply the YAML file in the minikube cluster, simply run
 ```
-kubectly apply -f api-deployment.yaml
+kubectl apply -f api-deployment.yaml
 ```
 
 ## Cleaning up everything afterwards
