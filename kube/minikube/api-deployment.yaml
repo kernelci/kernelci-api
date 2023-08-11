@@ -29,9 +29,15 @@ spec:
                 name: kernelci-api-secret
                 key: secret-key
           - name: REDIS_HOST
-            value: "kernelci-api-redis.default.svc.cluster.local"
+            valueFrom:
+              configMapKeyRef:
+                name: kernelci-api-config
+                key: redis_host
           - name: MONGO_SERVICE
-            value: "mongodb://kernelci-api-db.default.svc.cluster.local:27017"
+            valueFrom:
+              configMapKeyRef:
+                name: kernelci-api-config
+                key: mongo_service
         volumeMounts:
           - name: api-volume
             mountPath: /home/kernelci/api
