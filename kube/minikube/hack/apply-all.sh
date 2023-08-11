@@ -86,6 +86,10 @@ check_job_completed "github-cloning-job"
 kubectl create secret generic kernelci-api-secret --from-literal=secret-key=$(openssl rand -hex 32)
 check_resource_exist "Secret" "kernelci-api-secret"
 
+# Generate configmap
+kubectl create -f ../configmap/api-configmap.yaml
+check_resource_exist "configmaps" "kernelci-api-config"
+
 # Set up persistent volume claim
 kubectl apply -f ../pvc/db-pvc.yaml
 check_pvc_bound "mongo-data-pvc"
