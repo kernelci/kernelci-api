@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2023 Collabora Limited
+# Author: Guillaume Tucker <guillaume.tucker@collabora.com>
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: kernelci-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - name: api
+        image: kernelci/api
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        command: ["uvicorn"]
+        args: ["api.main:app", "--port", "8000", "--host", "0.0.0.0"]
+        env:
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: kernelci-api-secret-key
+              key: secret-key
+        - name: MONGO_SERVICE
+          valueFrom:
+            secretKeyRef:
+              name: kernelci-api-mongo-service
+              key: mongo-service
+        - name: REDIS_HOST
+          value: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: kernelci-api
+spec:
+  ports:
+  - port: 80
+    targetPort: 8000
+  selector:
+    app: api
