@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Run the clean-all.sh script
-source clean-all.sh
-
 # Function to check if a resource exists
 check_resource_exist() {
   local kind=$1
@@ -21,9 +18,17 @@ check_resource_exist() {
 check_pvc_bound() {
   local name=$1
 
-  # Wait for the PVC to be bound
-  while [[ "$(kubectl get pvc $name -o 'jsonpath={.status.phase}')" != "Bound" ]]; do
-    echo "Waiting for PVC $name to be bound..."
+  while true; do
+    STATUS=$(kubectl get pvc $name -o 'jsonpath={.status.phase}')
+    if [[ "$STATUS" == "Bound" ]]; then
+      break
+    fi
+    # Pending is also means ready (it might be waiting first consumer)
+    # Example: Normal  WaitForFirstConsumer  12s (x3 over 29s)  persistentvolume-controller  waiting for first consumer to be created before binding
+    if [[ "$STATUS" == "Pending" ]]; then
+      break
+    fi
+    echo "Waiting for PVC $name to be bound..., current status: $STATUS"
     sleep 5
   done
 
@@ -48,8 +53,20 @@ check_job_completed() {
   local name=$1
 
   # Wait for the Job to be completed
-  while [[ "$(kubectl get job $name -o 'jsonpath={.status.conditions[?(@.type=="Complete")].status}')" != "True" ]]; do
-    echo "Waiting for Job $name to be completed..."
+  while true; do
+    STATUS=$(kubectl get job $name -o 'jsonpath={.status.conditions[].type}')
+    if [[ "$STATUS" == "Complete" ]]; then
+      break
+    fi
+
+    # If error occurs, exit (Failed/Error)
+    if [[ "$STATUS" == "Failed" || "$STATUS" == "Error" ]]; then
+      echo "Job $name failed! Status is $STATUS, exiting..."
+      echo "You can review the logs of the Job $name using the following command:"
+      echo "kubectl logs job/$name"
+      exit 1
+    fi
+    echo "Waiting for Job $name to be completed..., current status: $STATUS"
     sleep 5
   done
 
@@ -77,6 +94,10 @@ apply_and_check_resource() {
       ;;
   esac
 }
+
+# Run the clean-all.sh script
+source clean-all.sh
+check_job_completed "delete-dir-job"
 
 # Fork GitHub repository in Minikube node
 kubectl apply -f ../init/init-job.yaml

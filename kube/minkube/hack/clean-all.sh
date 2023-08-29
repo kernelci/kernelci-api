@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Clean up the existing /home/docker/kernelci-api directory in Minikube node
-minikube ssh -- sudo rm -rf /home/docker/kernelci-api
+# Clean up the existing /home/docker/kernelci-api directory
+kubectl apply -f deleterepo.yaml
 
 # Delete Deployments
 kubectl delete -f ../api-deployment.yaml --ignore-not-found

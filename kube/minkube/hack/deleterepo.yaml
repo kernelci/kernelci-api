@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: delete-dir-job
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    spec:
+      containers:
+        - name: delete-dir
+          image: busybox
+          command: ["/bin/sh", "-c"]
+          # By some reason rm -rf /home/kernelci-api or rm -rf /home/kernelci-api/* doesn't work
+          args:
+            - |
+              id;
+              find /home/kernelci-api -exec rm -rf {} \;
+              ls -la /home/kernelci-api;
+          volumeMounts:
+            - name: github-repo
+              mountPath: /home/kernelci-api
+      restartPolicy: Never
+      volumes:
+        - name: github-repo
+          hostPath:
+            path: /home/docker/kernelci-api
+            type: DirectoryOrCreate
+  backoffLimit: 1
