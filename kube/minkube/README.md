@@ -3,6 +3,11 @@ Getting Started with KernelCI API in Minikube
 
 ## Forking GitHub Repository in the Minikube node
 
+You can fork github repository using job or pod. We have provided two yaml files for this purpose. One is ```init-job.yaml``` and the other is ```init-pod.yaml```. Both of these yaml files are present in the root of the kube/minikube/init folder. The difference between these two yaml files is that init-job.yaml is a job based way and init-pod.yaml is a pod based way.
+The difference between a job and a pod is that a job is a task that ends at certain point and a pod is a task that keeps on running.
+Thus init-job.yaml is preferred over init-pod.yaml as it is more resource efficient and is more suitable for the task at hand.
+As third way we provide way of manually forking the github repository in the minikube node without using pods or jobs.
+
 ### init/init-job.yaml
 
 Simply run the following from the root of the kube/minikube folder and it will run a Kubernetes job that will fork the kernelci-api official github repository and will use hostPath based volume persisting mechanism to persist the job-based pod data on the Minikube node.
