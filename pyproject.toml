@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2023 Collabora Limited
+# Author: Guillaume Tucker <guillaume.tucker@collabora.com>
+# Author: Nikolay Yurin <yurinnick@meta.com>
+
+[project]
+name = "kernelci-api"
+version = "0.1.0"
+description = "KernelCI API"
+readme = "README.md"
+requires-python = ">=3.10"
+# Disabled due to https://github.com/pypa/pip/issues/12251
+# license = {file = "COPYING"}
+dependencies = [
+  "aioredis[hiredis] ~= 2.0.0",
+  "cloudevents ~= 1.9.0",
+  "fastapi[all] ~= 0.68.1",
+  "fastapi-pagination ~= 0.9.3",
+  "passlib ~= 1.7.4",
+  "pydantic ~= 1.10.5",
+  "python-jose[cryptography] ~= 3.3.0",
+  "uvicorn[standard] ~= 0.13.4",
+  "motor ~= 2.5.1",
+  "pymongo-migrate ~= 0.11.0",
+  "pyyaml ~= 5.3.1",
+  "fastapi-versioning ~= 0.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pycodestyle ~= 2.8.0",
+  "pylint ~= 2.12.2"
+]
+test = [
+  "fakeredis ~= 1.7.0",
+  "pytest ~= 6.2.5",
+  "pytest-asyncio ~= 0.16.0",
+  "pytest-dependency ~= 0.5.1",
+  "pytest-mock ~= 3.6.1",
+  "pytest-order ~= 1.0.1",
+  "httpx ~= 0.23.3",
+]
+
+[project.urls]
+Homepage = "https://kernelci.org"
+Documentation = "https://kernelci.org/docs"
+Repository = "https://github.com/kernelci/kernelci-api"
+
+[tool.setuptools]
+packages = ["api"]
