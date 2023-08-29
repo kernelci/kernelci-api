@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2023 KernelCI Authors.
-# Author: Sanskar Bhushan <sbdtu5498@gmail.com>
+# Copyright (C) 2023 Sanskar Bhushan <sbdtu5498@gmail.com>
 
 apiVersion: batch/v1
 kind: Job
