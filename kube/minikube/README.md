@@ -137,14 +137,14 @@ kubectl apply -f api-deployment.yaml
 
 ## Cleaning up everything afterwards
 
-To clean up everything simply use the ```clean-all.sh``` script provided in the root of the kube/minikube/hack folder by running
+To clean up everything simply use the ```clean-all.sh``` script provided in the root of the kube/minikube/scripts folder by running
 ```
 ./clean-all.sh
 ```
 
 ## Deploying all the resources at once
 
-To apply all the resources at once, you can use the ```apply-all.sh``` script provided in the root of the kube/minikube/hack folder by running
+To apply all the resources at once, you can use the ```apply-all.sh``` script provided in the root of the kube/minikube/scripts folder by running
 ```
 ./apply-all.sh
 ```
