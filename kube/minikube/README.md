@@ -144,8 +144,8 @@ To clean up everything simply use the ```clean-all.sh``` script provided in the 
 
 ## Deploying all the resources at once
 
-To apply all the resources at once, you can use the ```apply-all.sh``` script provided in the root of the kube/minikube/scripts folder by running
+To apply all the resources at once, you can use the ```deploy.sh``` script provided in the root of the kube/minikube/scripts folder by running
 ```
-./apply-all.sh
+./deploy.sh
 ```
 This script would also do the clean up and will deploy everything afresh. But it can be time-consuming to deploy everything afresh, so if you want to reconfigure some deployment maybe because the image is updated, just reapply that deployment or do the rolling update instead of running this script.
