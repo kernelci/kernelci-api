@@ -18,24 +18,21 @@ graph TD
   db(MongoDB) --- models
 
   storage(Storage)
-  storage --- ssh(SSH)
-  storage --- http(HTTP)
 
   api --> client
-  ssh --> client
-  http --> client
+  storage --> client
 ```
 
-The `client` component can be a number of things.  Each service in the pipeline
-is a client, and there could be extra standalone ones too.  They interact via
-the API and the storage services separately.  By default, storage is provided
-by SSH for uploads and HTTP for downloads.  Production deployments may use
-alternative solutions, as long as all the binaries are accessible via direct
-HTTP URLs.
+The `client` component can be a number of things.  Each pipeline step is a
+client, and there could be extra standalone ones too.  They interact via the
+API and the storage services separately.  By default, storage is provided by
+SSH for uploads and HTTP for downloads for standalone deployments using
+`docker-compose`.  Production deployments may use alternative solutions as
+long as all the binaries are accessible via direct HTTP URLs.
 
 ## Why a new API?
 
-The new KernelCI API is a work-in-progress to replace the current
+The new KernelCI API is a complete redesign to replace the legacy
 [backend](https://api.kernelci.org/) used in production, which has several
 limitations.  In particular, the [**previous backend
 API**](https://github.com/kernelci/kernelci-backend):
@@ -62,11 +59,11 @@ characteristics:
   recreate a full modular pipeline with no additional framework
 * [CloudEvent](https://cloudevents.io/) for the formatting of Pub/Sub events
 * is written for [Python 3.10](https://www.python.org/downloads/release/python-3100/)
-* relies on [JWT](https://jwt.io/) authentication for inter-operability with
-  other services
+* relies on [JWT](https://jwt.io/) and [OAuth 2.0](https://oauth.net/2/)
+  authentication for inter-operability with other services
 * treats storage entirely separately from the API which purely handles data.
-  An initial storage solution is provided using SSH for sending files and HTTP
-  for serving them.
+  Several storage solutions can be supported, such as SSH for self-contained
+  systems, AzureFiles, and S3 for Cloud deployments etc.
 
 A few things **aren't changing**:
 
@@ -79,89 +76,103 @@ A few things **aren't changing**:
 
 ## Pipeline design
 
-The pipeline currently has the following steps:
+Here's a simplified view of the current pipeline:
 
 ```mermaid
 graph LR
   trigger(Trigger) --> new{New <br /> kernel?}
   new --> |yes| tarball(Tarball)
   new -.-> |no| trigger
-  tarball --> |event: <br /> new revision| runner(Test <br /> Runner)
-  runner --> |event: <br /> test running| runtime(Runtime <br /> Environment)
-  runtime --> |event: <br /> test complete| email(Email <br /> Generator)
+  tarball --> |event: <br /> new revision| scheduler(Test <br /> Scheduler)
+  scheduler --> |event: <br /> test running| runtime(Runtime <br /> Environment)
+  runtime --> |event: <br /> test complete| email(Email <br /> Report)
 ```
 
-Each step is a client for the API and associated storage.  Apart from the
-runtime environment, They are all implemented in Python, rely on the [KernelCI
-Core](/docs/core) tools and run in a separate `docker-compose` container.
-Here's a summary of each step:
+Each step is a client for the API and related storage solutions.  They are all
+implemented in Python, rely on the [KernelCI Core](/docs/core) tools and run in
+a separate `docker-compose` container.  Here's a summary of each step:
 
 ### Trigger
 
 The Trigger step periodically checks whether a new kernel revision has appeared
-on a git branch.  It first gets the revision checksum from the top of the
-branch from the git repo and then queries the API to check whether it has
-already been covered.  If there's no revision entry with this checksum in the
-API, it then pushes one with "available" state.
+on a number of git branches.  It first gets the revision checksum (SHA-1) from
+the top of the branch from the remote git repo and then queries the API to
+check whether it has already been covered.  If there's no revision entry with
+this checksum in the API, it then pushes a new `checkout` one with "running"
+state.
 
 ### Tarball
 
-The Tarball step listens for pub/sub events about new revisions.  When one is
-received, typically because the trigger pushed a new revision to the API, it
-then updates a local git checkout of the full kernel source tree.  Then it
-makes a tarball with the source code and pushes it to the storage.  Finally,
-the URL of the tarball is added to the revision data, the status is set to
-"complete" and an update is sent to the API.
+The Tarball step listens for pub/sub events about new revisions or `checkout`
+nodes.  When one is received, typically because the trigger pushed a new one to
+the API, it then updates a local git checkout of the full kernel source tree.
+Then it makes a tarball with the source code and pushes it to the storage.
+Finally, it sends an update to the `checkout` node to the API with the URL of
+the tarball added to the list of artifacts and the status set to "available".
 
-### Test Runner
+### Scheduler
 
-The Runner step listens for pub/sub events about completed revisions, typically
-following the tarball step.  It will then schedule some tests to be run in
-various runtime environments as defined in the pipeline YAML configuration from
-the Core tools.  A node entry is sent to the API for each test submitted with
-"running" state.  It's then up to the test in the runtime environment to send
-its results to the API and set the final status.
+The Scheduler step listens for a variety of pub/sub events and then looks for
+matches in the `scheduler` [YAML
+configuration](https://github.com/kernelci/kernelci-pipeline/blob/main/config/pipeline.yaml#L144).
+Every time an event matches an entry in the config, it will send a new node
+with the "running" state to the API and submit a job in the designated runtime
+environment.
+
+> **Note**: It's then up to the job itself to send the results to the API and
+> any files to storage.  The scheduler doesn't track the status of submitted
+> jobs, however the system's timeout feature will update the status of nodes
+> that reach their timeout value.
 
 ### Runtime Environment
 
-This could be anything from a local shell (currently the only supported one),
-to Kubernetes, LAVA or any arbitrary system.  Tests can be any actual work
-scheduled by the Runner step such as building a kernel, running some test,
-performing some static analysis etc.  Each environment needs to have its own
-API token set up locally to be able to submit the results.
+Jobs are all the concrete parts of the actual pipeline payload: preparing some
+source files, running static checks, building the kernel, running functional
+tests on real hardware, checking regressions, post-processing the test results
+etc.  They get run in Runtime environments.
+
+Runtime environments could be anything that can run a job.  Currently, it can
+be a local shell, a local Docker container, a
+[Kubernetes](https://kubernetes.io/) cluster or a
+[LAVA](https://www.lavasoftware.org/) lab.  Additional Runtime implementations
+could be on-demand [VMs in GCE](https://cloud.google.com/compute),
+[LabGrid](https://www.pengutronix.de/en/software/labgrid.html) and maybe SSH.
+It's of course possible to create custom ones for particular use-cases.
 
 ### Email Report
 
-The Email Report in its current status listens for events once a build and its revisions'
-tests are completed and renders an email message using a jinja template. In the rendered
-message you can see relevant information about a build or revision. When the message is ready
-the application opens a connection to an STMP server and sends the report to a user or a list of
-recipients that are waiting for the report with the build information after executing tests and
-possible regressions. With the report, it is possible to see the number of tests that have failed or passed,
-as seen in the example below:
+The current implementation for email reports is very minimalist.  This pipeline
+step just listens for events about kernel revisions being done, then sends an
+email to a fixed recipient with the top-level results and details about any
+test failures.  Here's an example (you'll notice a few inconsistencies, work in
+progress...):
 
 ```
-testing/master v5.18-rc4-31-g2a987e65025e: 5 runs 3 fails (check-describe)
+[STAGING] mainline/master v6.5-11329-g708283abf896: 4 runs 0 failures
 
-Tests Summary
--------------
+Summary
+=======
 
-Build details:
-
-Tree:     testing
+Tree:     mainline
 Branch:   master
-Describe: v5.18-rc4-31-g2a987e65025e
+Describe: v6.5-11329-g708283abf896
 URL:      https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
-SHA1:     babf0bb978e3c9fce6c4eba6b744c8754fd43d8e
+SHA1:     708283abf896dd4853e673cc8cba70acaf9bf4ea
+
+Name              | Result   | Total    | Failures
+------------------+----------+----------+---------
+kver              | pass     |        0 |        0
+kbuild-gcc-10-x86 | pass     |        5 |        0
+kunit             | None     |        0 |        0
+kunit-x86_64      | pass     |      104 |        2
 
 
-Revision details:
+Failing tests
+=============
 
-test           | result
----------------+-------
-check-describe | fail
-check-describe | fail
-check-describe | pass
-check-describe | pass
-check-describe | fail
+kunit-x86_64
+------------
+
+* exec.example.example_skip_test # SKIP this test should be skipped
+* exec.example.example_mark_skipped_test # SKIP this test should be skipped
 ```
