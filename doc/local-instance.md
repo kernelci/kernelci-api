@@ -1,8 +1,7 @@
 ---
-title: "Getting Started"
-date: 2023-07-24
-description: "Setting up a local instance"
-weight: 1
+title: "Local instance"
+date: 2023-09-01
+description: "Setting up a local KernelCI instance"
 ---
 
 This guide should provide all the basic information to set up a local
