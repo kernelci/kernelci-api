@@ -1,9 +1,8 @@
 ---
-title: "Overview"
-date: 2022-03-10
-draft: true
-description: "KernelCI API and Pipeline Overview"
-weight: 2
+title: "Design"
+date: 2023-09-01
+description: "Overall API & Pipeline design"
+weight: 1
 ---
 
 ## API architecture
