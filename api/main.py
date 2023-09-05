@@ -393,6 +393,7 @@ def _get_node_event_data(operation, node):
         'state': node.state,
         'result': node.result,
         'revision': node.revision.dict(),
+        'owner': node.owner,
     }
 
 
