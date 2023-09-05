@@ -81,11 +81,10 @@ So let's start by creating the initial admin user account.  This can be done
 with the
 [`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
 tool provided in the `kernelci-api` repository which has a wrapper script
-`setup_admin_user`.  It can be called with the name of the admin user you want
-to create such as `admin`, then enter the admin password when prompted:
+`setup_admin_user`.  It can be called with the name of the admin user you want to create such as `admin`, then enter the admin password when prompted. Also, provide email address for the user account in the command line argument.
 
 ```
-$ ./scripts/setup_admin_user
+$ ./scripts/setup_admin_user --email EMAIL
 Creating kernelci-api_api_run ... done
 Creating admin group...
 Password for user 'admin':
@@ -127,7 +126,7 @@ $ curl -X 'GET' \
   'http://localhost:8001/latest/whoami' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4'
-{"id":"615f30020eb7c3c6616e5ac3","username":"bob","hashed_password":"$2b$12$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.","active":true}
+{"id":"615f30020eb7c3c6616e5ac3","profile": {"username":"admin","hashed_password":"$2b$12$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.", "groups": "admin", "email": "admin@kernelci.org"},"active":true}
 ```
 
 ### Setup SSH keys
