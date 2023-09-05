@@ -36,30 +36,23 @@ In case of using different services or configurations, `REDIS_HOST` and `MONGO_S
 
 ## Users
 
-`User` model objects can be created from a terminal or using `/user` endpoint.
+`User` model objects can be created using `/user` endpoint. Only admin
+users are allowed to create user accounts.
 
 ### Create an admin user
 
-The very first admin user needs to be created from terminal.  To create an
-admin user from a terminal, provide `is_admin: 1` to the request:
-
-```
-sudo docker-compose exec db /bin/mongo kernelci --eval   "db.user.insert({username: 'admin', hashed_password: '\$2b\$12\$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.', active: true, is_admin: 1})"
-MongoDB shell version v5.0.8
-connecting to: mongodb://127.0.0.1:27017/kernelci?compressors=disabled&gssapiServiceName=mongodb
-Implicit session: session { "id" : UUID("03737b4c-7528-43ae-9cb8-8f345748267f") }
-MongoDB server version: 5.0.8
-WriteResult({ "nInserted" : 1 })
-```
-
-Regular users can also be created this way without the `is_admin` attribute.
+The very first admin user needs to be created with [`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
+tool provided in the `kernelci-api` repository.
+[Here](docs/api/local-instance/#create-an-admin-user-account) is a guide
+to setup an admin user. We can use this admin user to create other user accounts.
 
 
 ### Create an API token with security scopes
 
-We can associate available security scopes with an API token. Currently
-available scopes are 'admin' (admin user permissions) and 'users' (regular user
-permissions).
+Once a user account has been setup, we can create API tokens associated
+with the account. We can associate available security scopes with an API token.
+Currently available scopes are 'admin' (admin user permissions) and
+'users' (regular user permissions).
 
 To get a token with desired user scope, provide `scope` to request data
 dictionary along with the username and password.  Multiple scopes can be
@@ -82,30 +75,28 @@ Now, we can use above created admin user to create regular users and other
 admin users using `/user` API endpoint.  We need to provide token (retrieved
 with scope admin) to the endpoint for the authorization.
 
-To create a regular user, provide a username to request query parameter and
-password to request data dictionary.
+To create a regular user, provide username and email address to request query parameter and password to request data dictionary.
 
 ```
 $ curl -X 'POST'
-  'http://localhost:8001/latest/user/test' \
+  'http://localhost:8001/latest/user/test?test@kernelci.org' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' \
   -d '{"password": "test"}'
-{'_id': '615f30020eb7c3c6616e5ac3', 'username': 'test', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'active': True, 'is_admin': False}
+{'_id': '615f30020eb7c3c6616e5ac3', 'profile': {'username': 'test', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'groups': [], 'email': 'test@kernelci.org'}, 'active': True}
 ```
 
-To create an admin user, provide a username, and `is_admin` flag to request
-query parameter and password to request data dictionary.
+An user accout can be added to multiple user groups by providing user group names to request query parameter. All the admin users
+should be added to `admin` group by default.
+To create an admin user, provide username, email, and `groups=admin` to request query parameter and password to request data dictionary.
 
 ```
-$ curl -X 'POST' 'http://localhost:8001/latest/user/test_admin?is_admin=1' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"password": "admin"}'
-{'_id': '615f30020eb7c3c6616e5ac6', 'username': 'test_admin', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'active': True, 'is_admin': True}
+$ curl -X 'POST' 'http://localhost:8001/latest/user/test_admin?groups=admin&email=test-admin@kernelci.org' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"password": "admin"}'
+{'_id': '615f30020eb7c3c6616e5ac6', 'profile': {'username': 'test_admin', 'hashed_password': '$2b$12$Whi.dpTC.HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i', 'groups': 'admin', 'email': 'test-admin@kernelci.org'}, 'active': True}
 ```
 
-Another way of creating users is to use `kci_data` from kernelci-core. The
-instructions are described
-[here](https://kernelci.org/docs/core/kci_data/#creating-user).
+Another way of creating users is to use `kci user add` tool from kernelci-core.
 
 
 ## Nodes
