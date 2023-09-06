@@ -94,14 +94,14 @@ Password:
 api_config = "early-access"
 indent = 4
 
-[api.early_access]
-api_token = "<your-api-token-here">
+[api.early-access]
+api_token = "<your-api-token-here>"
 ```
 
 * To verify things are set up correctly:
 
 ```sh
-$ kcu user whoami
+$ kci user whoami
 {
     "id": "64f4a0978326c545a780bffc",
     "active": true,
