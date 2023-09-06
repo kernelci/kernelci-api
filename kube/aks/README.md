@@ -251,7 +251,7 @@ cert-manager v1.8.0 has been deployed successfully!
 
 ## Set up the ingress
 
-Once the Kubernetes packages have been installed, the actuall ingress
+Once the Kubernetes packages have been installed, the actual ingress
 definition can be applied.  Still within the same container, run this command:
 
 ```
