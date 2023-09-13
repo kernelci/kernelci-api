@@ -36,6 +36,10 @@ async def setup_admin_user(db, username, email, admin_group):
         print(user_obj.json())
         return None
     password = getpass.getpass(f"Password for user '{args.username}': ")
+    retyped = getpass.getpass(f"Retype password for user '{args.username}': ")
+    if password != retyped:
+        print("Sorry, passwords do not match, aborting.")
+        return None
     hashed_password = Authentication.get_password_hash(password)
     print(f"Creating {username} user...")
     profile = UserProfile(
