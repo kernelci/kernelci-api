@@ -272,6 +272,45 @@ async def put_user_profile(
     return obj
 
 
+@app.put('/user/{username}', response_model=User,
+         response_model_by_alias=False)
+async def put_user(
+        username: str,
+        email: str = None,
+        groups: List[str] = Query([]),
+        current_user: User = Security(get_user, scopes=["admin"])):
+    """Update user model
+    Allow admin users to update all user fields except password"""
+    user = await db.find_one_by_attributes(
+            User, {'profile.username': username})
+    if not user:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User not found with username: {username}"
+            )
+    group_obj = []
+    if groups:
+        for group_name in groups:
+            group = await db.find_one(UserGroup, name=group_name)
+            if not group:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"User group does not exist with name: \
+{group_name}")
+            group_obj.append(group)
+    obj = await db.update(User(
+            id=user.id,
+            profile=UserProfile(
+                username=username,
+                hashed_password=user.profile.hashed_password,
+                email=email if email else user.profile.email,
+                groups=group_obj if group_obj else user.profile.groups
+            )))
+    await pubsub.publish_cloudevent('user', {'op': 'updated',
+                                             'id': str(obj.id)})
+    return obj
+
+
 @app.post('/group', response_model=UserGroup, response_model_by_alias=False)
 async def post_user_group(
         group: UserGroup,
