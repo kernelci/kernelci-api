@@ -229,13 +229,15 @@ async def get_user_by_id(
 @app.put('/user/profile/{username}', response_model=User,
          response_model_include={"profile"},
          response_model_by_alias=False)
-async def put_user(
+async def put_user_profile(
         username: str,
         password: Password,
-        email: str,
+        email: str = None,
         groups: List[str] = Query([]),
         current_user: User = Depends(get_user)):
-    """Update user"""
+    """Update own user profile
+    The handler will only allow users to update its own profile.
+    Adding itself to 'admin' group is not allowed."""
     if str(current_user.profile.username) != username:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -262,7 +264,7 @@ async def put_user(
             profile=UserProfile(
                 username=username,
                 hashed_password=hashed_password,
-                email=email,
+                email=email if email else current_user.profile.email,
                 groups=group_obj if group_obj else current_user.profile.groups
             )))
     await pubsub.publish_cloudevent('user', {'op': 'updated',
