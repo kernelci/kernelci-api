@@ -278,9 +278,9 @@ class Node(DatabaseModel):
     def _translate_operators(cls, params):
         """Translate fields with an operator
 
-        The request query parameters can be provided with operators such `lt`,
-        `gt`, `lte`, and `gte` with `param__operator=value` format. This method
-        will generate translated parameters of the form:
+        The request query parameters can be provided with operators such `ne`,
+        `lt`, `gt`, `lte`, and `gte` with `param__operator=value` format.
+        This method will generate translated parameters of the form:
 
           `parameter, (operator, value)`
 

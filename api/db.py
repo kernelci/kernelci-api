@@ -32,6 +32,7 @@ class Database:
         'lte': '$lte',
         'gt': '$gt',
         'gte': '$gte',
+        'ne': '$ne',
     }
 
     def __init__(self, service='mongodb://db:27017', db_name='kernelci'):
