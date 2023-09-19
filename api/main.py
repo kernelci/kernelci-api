@@ -127,6 +127,11 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
     # Only the user that created the node or any other user from the permitted
     # user groups will be allowed to update the node
     node_from_id = await db.find_by_id(Node, node_id)
+    if not node_from_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Node not found with id: {node_id}"
+        )
     if not user.profile.username == node_from_id.owner:
         if not any(group.name in node_from_id.user_groups
                    for group in user.profile.groups):
