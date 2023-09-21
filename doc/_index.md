@@ -17,8 +17,7 @@ quick look at how this all fits together.
 All the data managed by KernelCI is stored in a MongoDB database using node
 objects.  These can contain data about any part of the testing hierarchy such
 as a kernel revision, a build, static test results, runtime functional tests,
-regressions etc.  Each node has a parent so they form a tree
-([DAG](https://en.wikipedia.org/wiki/Directed_acyclic_graph)).  There is
+regressions etc.  Each node has a parent so they form a simple tree.  There is
 typically one root node for each kernel revision with lots of child nodes
 containing all the test data that relates to it.
 
