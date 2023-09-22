@@ -9,6 +9,8 @@
 """KernelCI API main module"""
 
 import os
+import random
+import string
 from typing import List, Union
 from fastapi import (
     Depends,
@@ -137,6 +139,67 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
     return user
 
 
+# get_random_password()
+def get_random_password():
+    """Generate a random password"""
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(random.choice(alphabet) for i in range(16))
+    return password
+
+
+# send_recovery_email()
+def send_recovery_email(dst_email: str, dst_username: str,
+                        random_password: str):
+    """Send recovery email to the user"""
+    import smtplib
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    # create message object instance
+    msg = MIMEMultipart()
+
+    # verify if all the required environment variables are set
+    if not all([os.getenv('SMTP_SERVER'), os.getenv('SMTP_PORT')]):
+        print("SMTP environment variables are not set. \
+Please set them to send recovery email.")
+        return
+
+    # setup the parameters of the message
+    password = os.getenv('SMTP_PASSWORD')
+    msg['From'] = os.getenv('SMTP_USERNAME')
+    msg['To'] = dst_email
+    msg['Subject'] = "KernelCI Password Recovery"
+
+    # add in the message body
+    message = f"Hello {dst_username},\n\nYour new password is: \
+{random_password}\n\nPlease change your password after logging in.\n\n\
+Regards,\nKernelCI Team"
+    msg.attach(MIMEText(message, 'plain'))
+
+    # create server
+    server = smtplib.SMTP(os.getenv('SMTP_SERVER'))
+    server.connect(os.getenv('SMTP_SERVER'), os.getenv('SMTP_PORT'))
+    server.starttls()
+    # Login Credentials for sending the mail
+    if password:
+        server.login(msg['From'], password)
+    # send the message via the server.
+    server.sendmail(msg['From'], msg['To'], msg.as_string())
+    server.quit()
+    print("Sent recovery email to %s:" % (msg['To']))
+    return
+
+
+async def password_recovery(user: User):
+    """Generate a random password, set in db and send recovery email to user"""
+    dst_email = user.profile.email
+    dst_username = user.profile.username
+    random_password = get_random_password()
+    user.profile.hashed_password = auth.get_password_hash(random_password)
+    await db.update(user)
+    return send_recovery_email(dst_email, dst_username, random_password)
+
+
 @app.post('/user/{username}', response_model=User,
           response_model_by_alias=False)
 async def post_user(
@@ -263,6 +326,30 @@ async def put_user(
     await pubsub.publish_cloudevent('user', {'op': 'updated',
                                              'id': str(obj.id)})
     return obj
+
+
+@app.get('/user/recovery/{username}', response_model=User,
+         response_model_by_alias=False)
+async def get_user_recovery(username: str,
+                            current_user:
+                            User = Security(get_user, scopes=["admin"])):
+    """Send recovery email to the user"""
+    user = await db.find_one_by_attributes(
+            User, {'profile.username': username})
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found with username: {username}"
+        )
+    ret = await send_recovery_email(user.profile.email,
+                                    user.profile.username,
+                                    get_random_password())
+    if ret:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error sending recovery email to user: {username}"
+        )
+    return user
 
 
 @app.post('/group', response_model=UserGroup, response_model_by_alias=False)
