@@ -124,9 +124,7 @@ also use SSH or soon any S3-compatible storage.  There is a quota, currently
 so please don't rely on it for any persistent storage.
 
 The token from your confirmation email should also be stored in `kernelci.toml`
-as `storage_cred` in order to make use of it, and it's convenient to also add a
-`storage_config` entry in the default section to avoid having to specify it all
-the time on the command line.  For example:
+in order to make use of it, for example:
 
 ```toml
 [DEFAULT]
