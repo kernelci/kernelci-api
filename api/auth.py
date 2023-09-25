@@ -195,3 +195,8 @@ auth_backend = AuthenticationBackend(
     transport=bearer_transport,
     get_strategy=get_jwt_strategy,
 )
+
+fastapi_users_instance = FastAPIUsers[TestUser, PydanticObjectId](
+    get_user_manager,
+    [auth_backend],
+)
