@@ -12,6 +12,12 @@ from passlib.context import CryptContext
 from pydantic import BaseModel, BaseSettings, Field
 from .db import Database
 from .models import User
+from fastapi_users.db import BeanieUserDatabase, ObjectIDIDMixin
+from fastapi_users import BaseUserManager
+from typing import Optional, Any, Dict
+from .models import TestUser
+from beanie import PydanticObjectId
+from fastapi import Depends, Request, Response
 
 
 class Token(BaseModel):
@@ -125,3 +131,55 @@ class Authentication:
             if scope not in self._user_scopes:
                 return False, scope
         return True, None
+
+
+SECRET = "SECRET"
+
+class UserManager(ObjectIDIDMixin, BaseUserManager[TestUser, PydanticObjectId]):
+    reset_password_token_secret = SECRET
+    verification_token_secret = SECRET
+
+    async def on_after_register(self, user: TestUser, request: Optional[Request] = None):
+        print(f"User {user.id} has registered.")
+
+    async def on_after_login(
+        self,
+        user: TestUser,
+        request: Optional[Request] = None,
+        response: Optional[Response] = None,
+    ):
+        print(f"User {user.id} logged in.")
+
+    async def on_after_forgot_password(
+        self, user: TestUser, token: str, request: Optional[Request] = None
+    ):
+        print(f"User {user.id} has forgot their password. Reset token: {token}")
+
+    async def on_after_request_verify(
+        self, user: TestUser, token: str, request: Optional[Request] = None
+    ):
+        print(f"Verification requested for user {user.id}. Verification token: {token}")
+        return {"token": token}
+
+    async def on_after_verify(
+        self, user: TestUser, request: Optional[Request] = None
+    ):
+        print(f"Verification successful for user {user.id}")
+
+    async def on_after_update(
+        self,
+        user: TestUser,
+        update_dict: Dict[str, Any],
+        request: Optional[Request] = None,
+    ):
+        print(f"User {user.id} has been updated with {update_dict}.")
+
+    async def on_before_delete(self, user: TestUser, request: Optional[Request] = None):
+        print(f"User {user.id} is going to be deleted")
+
+async def get_user_db():
+        """Database adapter for fastapi-users"""
+        yield BeanieUserDatabase(TestUser)
+
+async def get_user_manager(user_db: BeanieUserDatabase = Depends(get_user_db)):
+    yield UserManager(user_db)
