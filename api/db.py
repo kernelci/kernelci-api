@@ -9,7 +9,8 @@
 from bson import ObjectId
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
-from .models import Hierarchy, Node, User, Regression, UserGroup
+from .models import Hierarchy, Node, User, Regression, UserGroup, TestUser
+from fastapi_users.db import BeanieUserDatabase
 
 
 class Database:
@@ -37,6 +38,10 @@ class Database:
     def __init__(self, service='mongodb://db:27017', db_name='kernelci'):
         self._motor = motor_asyncio.AsyncIOMotorClient(service)
         self._db = self._motor[db_name]
+
+    @property
+    def db(self):
+        return self._db
 
     def _get_collection(self, model):
         col = self.COLLECTIONS[model]
