@@ -38,12 +38,17 @@ from .models import (
     UserGroup,
     UserProfile,
     TestUser,
+    UserCreate,
+    UserRead,
+    UserUpdate,
     Password,
     get_model_from_kind
 )
 from .paginator_models import PageModel
 from .pubsub import PubSub, Subscription
 from beanie import init_beanie
+from .auth import fastapi_users_instance, auth_backend
+
 
 app = FastAPI()
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
@@ -640,6 +645,38 @@ async def put_regression(regression_id: str, regression: Regression,
                                                    'id': str(obj.id)})
     return obj
 
+
+app.include_router(
+    fastapi_users_instance.get_auth_router(auth_backend, requires_verification=True),
+    prefix="/auth/jwt",
+    tags=["auth"]
+)
+app.include_router(
+    fastapi_users_instance.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users_instance.get_reset_password_router(),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users_instance.get_verify_router(UserRead),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users_instance.get_users_router(UserRead, UserUpdate, requires_verification=True),
+    prefix="/users",
+    tags=["users"],
+)
+
+current_active_user = fastapi_users_instance.current_user(active=True)
+
+@app.get("/authenticated-route")
+async def authenticated_route(user: TestUser = Depends(current_active_user)):
+    return {"message": f"Hello {user.username}!"}
 
 app = VersionedFastAPI(
         app,
