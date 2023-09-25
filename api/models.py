@@ -158,6 +158,19 @@ class TestUser(BeanieBaseUser, Document):
     username: Indexed(str, unique=True)
 
 
+class UserRead(schemas.BaseUser[PydanticObjectId]):
+    username: Indexed(str, unique=True)
+
+
+class UserCreate(schemas.BaseUserCreate):
+    username: Indexed(str, unique=True)
+
+
+class UserUpdate(schemas.BaseUserUpdate):
+    username: Optional[Indexed(str, unique=True)]
+
+
+
 class KernelVersion(BaseModel):
     """Linux kernel version model"""
     version: int = Field(
