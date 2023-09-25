@@ -13,11 +13,12 @@ from pydantic import BaseModel, BaseSettings, Field
 from .db import Database
 from .models import User
 from fastapi_users.db import BeanieUserDatabase, ObjectIDIDMixin
-from fastapi_users import BaseUserManager
+from fastapi_users import BaseUserManager, FastAPIUsers
 from typing import Optional, Any, Dict
 from .models import TestUser
 from beanie import PydanticObjectId
 from fastapi import Depends, Request, Response
+from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 
 
 class Token(BaseModel):
@@ -183,3 +184,14 @@ async def get_user_db():
 
 async def get_user_manager(user_db: BeanieUserDatabase = Depends(get_user_db)):
     yield UserManager(user_db)
+
+bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
+
+def get_jwt_strategy() -> JWTStrategy:
+    return JWTStrategy(secret=SECRET, lifetime_seconds=3600)
+
+auth_backend = AuthenticationBackend(
+    name="jwt",
+    transport=bearer_transport,
+    get_strategy=get_jwt_strategy,
+)
