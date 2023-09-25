@@ -37,11 +37,13 @@ from .models import (
     User,
     UserGroup,
     UserProfile,
+    TestUser,
     Password,
     get_model_from_kind
 )
 from .paginator_models import PageModel
 from .pubsub import PubSub, Subscription
+from beanie import init_beanie
 
 app = FastAPI()
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
@@ -63,6 +65,15 @@ async def create_indexes():
     """Startup event handler to create database indexes"""
     await db.create_indexes()
 
+@app.on_event('startup')
+async def fastapi_users_beanie_init():
+    """Startup event handler for beanie"""
+    await init_beanie(
+        database=db.db,  
+        document_models=[
+            TestUser,  
+        ],
+    )
 
 @app.exception_handler(ValueError)
 async def value_error_exception_handler(request: Request, exc: ValueError):
@@ -639,6 +650,7 @@ app = VersionedFastAPI(
         on_startup=[
             pubsub_startup,
             create_indexes,
+            fastapi_users_beanie_init,
         ]
     )
 
