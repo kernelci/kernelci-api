@@ -24,6 +24,11 @@ from pydantic import (
     FileUrl,
     SecretStr,
 )
+from beanie import Indexed, Document
+from fastapi_users.db import BeanieBaseUser
+from fastapi_users import schemas
+from beanie import PydanticObjectId, Indexed
+from typing import Optional
 
 
 class PyObjectId(ObjectId):
@@ -146,6 +151,11 @@ class User(DatabaseModel):
     def create_indexes(cls, collection):
         """Create an index to bind unique constraint to username"""
         collection.create_index("profile.username", unique=True)
+
+
+class TestUser(BeanieBaseUser, Document):
+    """Test user"""
+    username: Indexed(str, unique=True)
 
 
 class KernelVersion(BaseModel):
