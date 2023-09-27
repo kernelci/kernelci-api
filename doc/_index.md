@@ -1,6 +1,6 @@
 ---
 title: "API & Pipeline"
-date: 2023-09-01
+date: 2023-09-27
 description: "KernelCI API and Pipeline"
 weight: 2
 ---
@@ -69,24 +69,37 @@ kernel build provided by KernelCI.
 
 ## Pipeline
 
-The Pipeline is all the client-side services which are running the actual
-workload (builds, tests etc.).  It's orchestrated based on events from the
-Pub/Sub interface and all the data is managed via the API.  Pipeline services
-are also responsible for uploading any artifacts to some independent storage
-services and provide public URLs to access them.
-
-A standard set of services is run directly by KernelCI alongside the API to
-automate the main part of the pipeline: detecting new kernel revision,
-scheduling builds and tests, sending email reports, detecting regressions.
+The Pipeline is made up of all the client-side services that run the actual
+workloads that produces data and artifacts.  It's orchestrated based on events
+from the Pub/Sub interface and all the data is managed via the API.  For
+example, the pipeline is responsible for detecting new kernel revision,
+scheduling builds and tests, sending email reports and detecting regressions.
 However, any other service which has an API token is in fact part of the
 extended pipeline too.
 
-Their respective GitHub repositories are
-[`kernelci-api`](https://github.com/kernelci/kernelci-api.git) and
-[`kernelci-pipeline`](https://github.com/kernelci/kernelci-pipeline.git).
+Pipeline services are also responsible for uploading various kinds of artifacts
+to some independent storage services and provide public URLs to access them.
+Artifacts typically include kernel source code tarballs, build artifacts, logs
+and test results in some raw format before they were submitted to the API.
 
-An instance has been set up on `staging.kernelci.org`.  The Docker logs are
-available in real-time via a [web
+## Instances
+
+### Staging
+
+An instance has been set up on `staging.kernelci.org` for testing all pending
+changes.  The Docker logs are available in real-time via a [web
 interface](https://staging.kernelci.org:9088/) for both the API and the
 pipeline.  It also provides some [interactive API
-documentation](https://staging.kernelci.org:9000/latest/docs).
+documentation](https://staging.kernelci.org:9000/latest/docs).  This instance
+is not stable, it's redeployed periodically with all open pull requests from
+GitHub merged together on a test integration branch.
+
+### Early Access
+
+In preparation for a full production roll-out, an [Early
+Access](/docs/api/early-access) instance has been deployed in the Cloud (AKS)
+on `kernelci-api.eastus.cloudapp.azure.com`.  This is stable enough to let
+users give it a try as some form of beta-testing and is used as a candidate
+solution for an initial production deployment in the coming months.  Like
+staging, it has an auto-generated [interactive API
+documentation](https://kernelci-api.eastus.cloudapp.azure.com/latest/docs).
