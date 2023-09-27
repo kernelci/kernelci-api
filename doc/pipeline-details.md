@@ -1,11 +1,12 @@
 ---
 title: "Pipeline details"
-date: 2022-09-30
+date: 2023-09-27
 description: "KernelCI Pipeline design details"
 weight: 4
 ---
 
-## Pipeline detailed design
+GitHub repository:
+[`kernelci-pipeline`](https://github.com/kernelci/kernelci-pipeline.git)
 
 Below is the detailed pipeline flow diagram with associated node and pub/sub event:
 
@@ -29,7 +30,7 @@ flowchart
         runner_node --> runtime[Runtime Environment]
         runtime --> set_available[Update node<br />state=available, result=None, set holdoff]
         set_available --> run_job[Run build/test job]
-        run_job --> job_done{Job done?}       
+        run_job --> job_done{Job done?}
         job_done --> |Yes| pass_runner_node[Update node<br />state=done, result=pass/fail/skip]
         job_done --> |No| run_job
     end

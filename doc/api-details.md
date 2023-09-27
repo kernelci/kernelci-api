@@ -1,9 +1,12 @@
 ---
 title: "API details"
-date: 2022-11-25
+date: 2023-09-27
 description: "KernelCI API building blocks"
 weight: 3
 ---
+
+GitHub repository:
+[`kernelci-api`](https://github.com/kernelci/kernelci-api.git)
 
 This guide describes the KernelCI API components such as data models and the
 Pub/Sub interface in detail.  It also explains how to use the API directly for
@@ -153,7 +156,7 @@ $ curl 'http://localhost:8001/latest/nodes?name=checkout&revision.tree=mainline'
 [{"_id":"61b052199bca2a448fe49673","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-01T11:23:03.157648", "updated":"2022-02-02T11:23:03.157648"}]
 ```
 
-Attributes along with comparison operators are also supported for the 
+Attributes along with comparison operators are also supported for the
 `/nodes` endpoint. The attribute name and operator should be separated by `__` i.e. `attribute__operator`. Supported operators are `lt`(less than), `gt`(greater than), `lte`(less than or equal to), and `gte`(greater than or equal to).
 
 ```
