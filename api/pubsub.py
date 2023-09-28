@@ -7,9 +7,10 @@
 
 import asyncio
 
-import aioredis
 from cloudevents.http import CloudEvent, to_json
 from pydantic import BaseModel, BaseSettings, Field
+import redis.asyncio as redis
+import json
 
 
 class Settings(BaseSettings):
@@ -54,7 +55,7 @@ class PubSub:
             host = self._settings.redis_host
         if db_number is None:
             db_number = self._settings.redis_db_number
-        self._redis = aioredis.from_url(f'redis://{host}/{db_number}')
+        self._redis = redis.from_url(f'redis://{host}/{db_number}')
         self._subscriptions = {}
         self._channels = set()
         self._lock = asyncio.Lock()
@@ -123,20 +124,27 @@ class PubSub:
         """
         async with self._lock:
             sub = self._subscriptions[sub_id]
+            channel = list(sub.channels.keys())[0].decode()
 
         while True:
-            msg = await sub.get_message(
-                ignore_subscribe_messages=True, timeout=1.0
-            )
-            if msg is not None:
-                return msg
+            msg =  await self._redis.blpop(channel, timeout=1.0)
+            data = json.loads(msg[1].decode('utf-8')) if msg else None
+            if data is not None:
+                return data
+
+            # msg = await sub.get_message(
+            #     ignore_subscribe_messages=True, timeout=1.0
+            # )
+            # if msg is not None:
+            #     return msg
 
     async def publish(self, channel, message):
         """Publish a message on a channel
 
         Publish an arbitrary message asynchronously on a Pub/Sub channel.
         """
-        await self._redis.publish(channel, message)
+        await self._redis.rpush(channel, message)
+        # await self._redis.publish(channel, message)
 
     async def publish_cloudevent(self, channel, data, attributes=None):
         """Publish a CloudEvent on a Pub/Sub channel
