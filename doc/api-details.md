@@ -44,10 +44,11 @@ users are allowed to create user accounts.
 
 ### Create an admin user
 
-The very first admin user needs to be created with [`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
+The very first admin user needs to be created with
+[`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
 tool provided in the `kernelci-api` repository.
-[Here](docs/api/local-instance/#create-an-admin-user-account) is a guide
-to setup an admin user. We can use this admin user to create other user accounts.
+[Here](/docs/api/local-instance/#create-an-admin-user-account) is a guide to
+setup an admin user. We can use this admin user to create other user accounts.
 
 
 ### Create an API token with security scopes
