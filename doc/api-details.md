@@ -41,10 +41,11 @@ users are allowed to create user accounts.
 
 ### Create an admin user
 
-The very first admin user needs to be created with [`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
+The very first admin user needs to be created with
+[`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
 tool provided in the `kernelci-api` repository.
-[Here](docs/api/local-instance/#create-an-admin-user-account) is a guide
-to setup an admin user. We can use this admin user to create other user accounts.
+[Here](/docs/api/local-instance/#create-an-admin-user-account) is a guide to
+setup an admin user. We can use this admin user to create other user accounts.
 
 
 ### Create an API token with security scopes
@@ -153,7 +154,7 @@ $ curl 'http://localhost:8001/latest/nodes?name=checkout&revision.tree=mainline'
 [{"_id":"61b052199bca2a448fe49673","kind":"node","name":"checkout","revision":{"tree":"mainline","url":"https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git","branch":"master","commit":"2a987e65025e2b79c6d453b78cb5985ac6e5eb26","describe":"v5.16-rc4-31-g2a987e65025e"},"parent":null,"status":"pending","result":null, "created":"2022-02-01T11:23:03.157648", "updated":"2022-02-02T11:23:03.157648"}]
 ```
 
-Attributes along with comparison operators are also supported for the 
+Attributes along with comparison operators are also supported for the
 `/nodes` endpoint. The attribute name and operator should be separated by `__` i.e. `attribute__operator`. Supported operators are `lt`(less than), `gt`(greater than), `lte`(less than or equal to), and `gte`(greater than or equal to).
 
 ```
