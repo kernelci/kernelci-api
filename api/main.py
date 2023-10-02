@@ -49,6 +49,14 @@ auth = Authentication(db, token_url='token',
                       user_scopes={"admin": "Superusers",
                                    "users": "Regular users"})
 pubsub = None  # pylint: disable=invalid-name
+API_VERSIONS = []
+
+
+@app.on_event('startup')
+async def init_api_versions():
+    """Startup event handler to initialize list of API versions"""
+    global API_VERSIONS
+    API_VERSIONS = ['latest', 'v0']
 
 
 @app.on_event('startup')
@@ -685,6 +693,7 @@ app = VersionedFastAPI(
         on_startup=[
             pubsub_startup,
             create_indexes,
+            init_api_versions,
         ]
     )
 
@@ -701,3 +710,14 @@ for sub_app in app.routes:
         sub_app.app.add_exception_handler(
             errors.InvalidId, invalid_id_exception_handler
         )
+
+
+@app.middleware("http")
+async def redirect_http_requests(request: Request, call_next):
+    """Redirect request with version prefix when no version is provided"""
+    path = request.scope['path']
+    prefix = path.split('/')[1]
+    if prefix not in API_VERSIONS:
+        request.scope['path'] = '/latest' + path
+    response = await call_next(request)
+    return response
