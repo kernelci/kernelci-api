@@ -50,6 +50,8 @@ jobs:
           pylint api.main
           pylint api.models
           pylint api.pubsub
+          pylint api.user_manager
+          pylint api.user_models
           pylint tests/unit_tests
 
       - name: Export environment variables
