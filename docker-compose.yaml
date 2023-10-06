@@ -16,6 +16,7 @@ services:
       - './api:/home/kernelci/api'
       - './tests:/home/kernelci/tests'
       - './migrations:/home/kernelci/migrations'
+      - './templates:/home/kernelci/templates'
     ports:
       - '${API_HOST_PORT:-8001}:8000'
     env_file:
