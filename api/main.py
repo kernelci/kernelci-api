@@ -28,13 +28,14 @@ from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
+from fastapi_users import FastAPIUsers
+from beanie import PydanticObjectId
 from .auth import Authentication, Token
 from .db import Database
 from .models import (
     Node,
     Hierarchy,
     Regression,
-    User,
     UserGroup,
     UserProfile,
     Password,
@@ -42,6 +43,10 @@ from .models import (
 )
 from .paginator_models import PageModel
 from .pubsub import PubSub, Subscription
+from .user_manager import get_user_manager
+from .user_models import (
+    User,
+)
 
 app = FastAPI()
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
@@ -57,6 +62,12 @@ async def init_api_versions():
     """Startup event handler to initialize list of API versions"""
     global API_VERSIONS
     API_VERSIONS = ['latest', 'v0']
+
+auth_backend = auth.get_user_authentication_backend()
+fastapi_users_instance = FastAPIUsers[User, PydanticObjectId](
+    get_user_manager,
+    [auth_backend],
+)
 
 
 @app.on_event('startup')
