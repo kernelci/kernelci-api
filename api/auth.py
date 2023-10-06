@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2021 Collabora Limited
+# Copyright (C) 2021-2023 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 """User authentication utilities"""
 
@@ -10,6 +11,11 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, BaseSettings, Field
+from fastapi_users.authentication import (
+    AuthenticationBackend,
+    BearerTransport,
+    JWTStrategy,
+)
 from .db import Database
 from .models import User
 
@@ -125,3 +131,26 @@ class Authentication:
             if scope not in self._user_scopes:
                 return False, scope
         return True, None
+
+    def get_jwt_strategy(self) -> JWTStrategy:
+        """Get JWT strategy for authentication backend"""
+        return JWTStrategy(
+            secret=self._settings.secret_key,
+            lifetime_seconds=self._settings.access_token_expire_minutes
+        )
+
+    def get_user_authentication_backend(self):
+        """Authentication backend for user management
+
+        Authentication backend for `fastapi-users` is composed of two
+        parts: Transaport and Strategy.
+        Transport is a mechanism for token transmisson i.e. bearer or cookie.
+        Strategy is a method to generate and secure tokens. It can be JWT,
+        database or Redis.
+        """
+        bearer_transport = BearerTransport(tokenUrl="user/login")
+        return AuthenticationBackend(
+            name="jwt",
+            transport=bearer_transport,
+            get_strategy=self.get_jwt_strategy,
+        )
