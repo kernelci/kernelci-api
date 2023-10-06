@@ -47,6 +47,9 @@ from .pubsub import PubSub, Subscription
 from .user_manager import get_user_manager
 from .user_models import (
     User,
+    UserRead,
+    UserCreate,
+    UserUpdate,
 )
 
 # List of all the supported API versions.  This is a placeholder until the API
@@ -697,6 +700,38 @@ async def put_regression(regression_id: str, regression: Regression,
     await pubsub.publish_cloudevent('regression', {'op': operation,
                                                    'id': str(obj.id)})
     return obj
+
+
+# -----------------------------------------------------------------------------
+# Users
+
+app.include_router(
+    fastapi_users_instance.get_auth_router(auth_backend,
+                                           requires_verification=True),
+    prefix="/user",
+    tags=["user"]
+)
+app.include_router(
+    fastapi_users_instance.get_register_router(UserRead, UserCreate),
+    prefix="/user",
+    tags=["user"],
+)
+app.include_router(
+    fastapi_users_instance.get_reset_password_router(),
+    prefix="/user",
+    tags=["user"],
+)
+app.include_router(
+    fastapi_users_instance.get_verify_router(UserRead),
+    prefix="/user",
+    tags=["user"],
+)
+app.include_router(
+    fastapi_users_instance.get_users_router(UserRead, UserUpdate,
+                                            requires_verification=True),
+    prefix="/user",
+    tags=["user"],
+)
 
 
 app = VersionedFastAPI(
