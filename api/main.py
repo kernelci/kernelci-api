@@ -70,6 +70,12 @@ async def create_indexes():
     await db.create_indexes()
 
 
+@app.on_event('startup')
+async def initialize_beanie():
+    """Startup event handler to initialize Beanie"""
+    await db.initialize_beanie()
+
+
 @app.exception_handler(ValueError)
 async def value_error_exception_handler(request: Request, exc: ValueError):
     """Global exception handler for 'ValueError'"""
@@ -691,6 +697,7 @@ app = VersionedFastAPI(
         on_startup=[
             pubsub_startup,
             create_indexes,
+            initialize_beanie,
         ]
     )
 
