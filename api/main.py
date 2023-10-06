@@ -29,13 +29,14 @@ from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
+from fastapi_users import FastAPIUsers
+from beanie import PydanticObjectId
 from .auth import Authentication, Token
 from .db import Database
 from .models import (
     Node,
     Hierarchy,
     Regression,
-    User,
     UserGroup,
     UserProfile,
     Password,
@@ -43,6 +44,10 @@ from .models import (
 )
 from .paginator_models import PageModel
 from .pubsub import PubSub, Subscription
+from .user_manager import get_user_manager
+from .user_models import (
+    User,
+)
 
 # List of all the supported API versions.  This is a placeholder until the API
 # actually supports multiple versions with different sets of endpoints and
@@ -55,6 +60,12 @@ auth = Authentication(db, token_url='token',
                       user_scopes={"admin": "Superusers",
                                    "users": "Regular users"})
 pubsub = None  # pylint: disable=invalid-name
+
+auth_backend = auth.get_user_authentication_backend()
+fastapi_users_instance = FastAPIUsers[User, PydanticObjectId](
+    get_user_manager,
+    [auth_backend],
+)
 
 
 @app.on_event('startup')
