@@ -7,9 +7,11 @@
 """Database abstraction"""
 
 from bson import ObjectId
+from beanie import init_beanie
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
-from .models import Hierarchy, Node, User, Regression, UserGroup
+from .models import Hierarchy, Node, Regression, UserGroup
+from .user_models import User
 
 
 class Database:
@@ -38,6 +40,15 @@ class Database:
     def __init__(self, service='mongodb://db:27017', db_name='kernelci'):
         self._motor = motor_asyncio.AsyncIOMotorClient(service)
         self._db = self._motor[db_name]
+
+    async def initialize_beanie(self):
+        """Initialize Beanie ODM to use `fastapi-users` tools for MongoDB"""
+        await init_beanie(
+            database=self._db,
+            document_models=[
+                User,
+            ],
+        )
 
     def _get_collection(self, model):
         col = self.COLLECTIONS[model]
