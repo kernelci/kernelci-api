@@ -220,16 +220,6 @@ async def get_users(request: Request):
     return paginated_resp
 
 
-@app.get('/user/{user_id}', response_model=User,
-         response_model_by_alias=False,
-         response_model_exclude={"profile": {"hashed_password"}})
-async def get_user_by_id(
-        user_id: str,
-        current_user: User = Security(get_user, scopes=["admin"])):
-    """Get user matching provided user id"""
-    return await db.find_by_id(User, user_id)
-
-
 @app.put('/user/profile/{username}', response_model=User,
          response_model_include={"profile"},
          response_model_by_alias=False)
