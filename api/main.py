@@ -29,6 +29,7 @@ from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
 from fastapi_users import FastAPIUsers
+from fastapi_users.db import BeanieUserDatabase
 from beanie import PydanticObjectId
 from .auth import Authentication, Token
 from .db import Database
@@ -50,6 +51,8 @@ from .user_models import (
     UserCreate,
     UserUpdate,
 )
+from .user_manager import UserManager
+
 
 app = FastAPI()
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
@@ -168,42 +171,6 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
                 detail="Unauthorized to complete the operation"
             )
     return user
-
-
-@app.post('/user/{username}', response_model=User,
-          response_model_by_alias=False)
-async def post_user(
-        username: str, password: Password, email: str,
-        groups: List[str] = Query([]),
-        current_user: User = Security(get_user, scopes=["admin"])):
-    """Create new user"""
-    try:
-        hashed_password = auth.get_password_hash(
-                                password.password.get_secret_value())
-        group_obj = []
-        if groups:
-            for group_name in groups:
-                group = await db.find_one(UserGroup, name=group_name)
-                if not group:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"User group does not exist with name: \
-{group_name}")
-                group_obj.append(group)
-        profile = UserProfile(
-                    username=username,
-                    hashed_password=hashed_password,
-                    groups=group_obj,
-                    email=email)
-        obj = await db.create(User(profile=profile))
-    except DuplicateKeyError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{username} is already taken. Try with different username."
-        ) from error
-    await pubsub.publish_cloudevent('user', {'op': 'created',
-                                             'id': str(obj.id)})
-    return obj
 
 
 @app.get('/users', response_model=PageModel,
@@ -681,11 +648,49 @@ app.include_router(
     prefix="/user",
     tags=["user"]
 )
-app.include_router(
-    fastapi_users_instance.get_register_router(UserRead, UserCreate),
-    prefix="/user",
-    tags=["user"],
-)
+
+register_router = fastapi_users_instance.get_register_router(
+    UserRead, UserCreate)
+
+
+@app.post("/user/register", response_model=UserRead, tags=["user"],
+          response_model_by_alias=False)
+async def register(request: Request, user: UserCreate):
+    """User registration route
+
+    Custom user registration router to ensure unique username.
+    `user` from request has a list of user group name strings.
+    This handler will convert them to `UserGroup` objects and
+    insert user object to database.
+    """
+    existing_user = await db.find_one(User, username=user.username)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists",
+        )
+    groups = []
+    if user.groups:
+        for group_name in user.groups:
+            group = await db.find_one(UserGroup, name=group_name)
+            if not group:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"User group does not exist with name: \
+    {group_name}")
+            groups.append(group)
+    user.groups = groups
+    created_user = await register_router.routes[0].endpoint(
+        request, user, UserManager(BeanieUserDatabase(User)))
+    # Update user to be an admin user explicitly if requested as
+    # `fastapi-users` register route does not allow it
+    if user.is_superuser:
+        user_from_id = await db.find_by_id(User, created_user.id)
+        user_from_id.is_superuser = True
+        created_user = await db.update(user_from_id)
+    return created_user
+
+
 app.include_router(
     fastapi_users_instance.get_reset_password_router(),
     prefix="/user",
