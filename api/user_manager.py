@@ -6,7 +6,9 @@
 """User Manager"""
 
 from typing import Optional, Any, Dict
-from fastapi_users import BaseUserManager
+from fastapi import Depends, Request
+from fastapi.security import OAuth2PasswordRequestForm
+from fastapi_users import BaseUserManager, exceptions
 from fastapi_users.db import (
     BaseUserDatabase,
     BeanieUserDatabase,
@@ -14,7 +16,6 @@ from fastapi_users.db import (
 )
 from fastapi_users.password import PasswordHelperProtocol
 from beanie import PydanticObjectId
-from fastapi import Depends, Request
 import jinja2
 from .user_models import User
 from .auth import Settings
@@ -104,6 +105,35 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
                               request: Optional[Request] = None):
         """Handler to execute after user delete."""
         print(f"User {user.id} is successfully deleted")
+
+    async def authenticate(
+        self, credentials: OAuth2PasswordRequestForm
+    ) -> User | None:
+        """
+        Overload user authentication method `BaseUserManager.authenticate`.
+        This is to fix login endpoint to receive `username` instead of `email`.
+        """
+        try:
+            user = await User.find_one(User.username == credentials.username)
+        except exceptions.UserNotExists:
+            # Run the hasher to mitigate timing attack
+            # Inspired from Django: https://code.djangoproject.com/ticket/20760
+            self.password_helper.hash(credentials.password)
+            return None
+
+        verified, updated_password_hash = \
+            self.password_helper.verify_and_update(
+                credentials.password, user.hashed_password
+            )
+        if not verified:
+            return None
+        # Update password hash to a more robust one if needed
+        if updated_password_hash is not None:
+            await self.user_db.update(
+                user, {"hashed_password": updated_password_hash}
+            )
+
+        return user
 
 
 async def get_user_db():
