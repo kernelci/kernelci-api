@@ -114,6 +114,8 @@ async def invalid_id_exception_handler(
     )
 
 current_active_user = fastapi_users_instance.current_user(active=True)
+current_active_superuser = fastapi_users_instance.current_user(active=True,
+                                                               superuser=True)
 
 
 async def get_current_user(
@@ -277,7 +279,7 @@ async def put_user(
 @app.post('/group', response_model=UserGroup, response_model_by_alias=False)
 async def post_user_group(
         group: UserGroup,
-        current_user: User = Security(get_user, scopes=["admin"])):
+        current_user: User = Depends(current_active_superuser)):
     """Create new user group"""
     try:
         obj = await db.create(group)
@@ -657,7 +659,8 @@ register_router = fastapi_users_instance.get_register_router(
 
 @app.post("/user/register", response_model=UserRead, tags=["user"],
           response_model_by_alias=False)
-async def register(request: Request, user: UserCreate):
+async def register(request: Request, user: UserCreate,
+                   current_user: str = Depends(current_active_superuser)):
     """User registration route
 
     Custom user registration router to ensure unique username.
