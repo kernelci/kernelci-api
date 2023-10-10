@@ -115,6 +115,8 @@ async def invalid_id_exception_handler(
         content={"detail": str(exc)},
     )
 
+current_active_user = fastapi_users_instance.current_user(active=True)
+
 
 async def get_current_user(
         security_scopes: SecurityScopes,
@@ -356,7 +358,7 @@ async def login_for_access_token(
 
 
 @app.get('/whoami', response_model=User, response_model_by_alias=False)
-async def whoami(current_user: User = Depends(get_user)):
+async def whoami(current_user: User = Depends(current_active_user)):
     """Get current user information"""
     return current_user
 
@@ -501,7 +503,8 @@ async def _verify_user_group_existence(user_groups: List[str]):
 
 
 @app.post('/node', response_model=Node, response_model_by_alias=False)
-async def post_node(node: Node, current_user: str = Depends(get_user)):
+async def post_node(node: Node,
+                    current_user: str = Depends(current_active_user)):
     """Create a new node"""
     if node.parent:
         parent = await db.find_by_id(Node, node.parent)
@@ -512,7 +515,7 @@ async def post_node(node: Node, current_user: str = Depends(get_user)):
             )
 
     await _verify_user_group_existence(node.user_groups)
-    node.owner = current_user.profile.username
+    node.owner = current_user.username
     obj = await db.create(node)
     data = _get_node_event_data('created', obj)
     await pubsub.publish_cloudevent('node', data)
@@ -574,13 +577,13 @@ async def put_nodes(
 # Pub/Sub
 
 @app.post('/subscribe/{channel}', response_model=Subscription)
-async def subscribe(channel: str, user: User = Depends(get_user)):
+async def subscribe(channel: str, user: User = Depends(current_active_user)):
     """Subscribe handler for Pub/Sub channel"""
     return await pubsub.subscribe(channel)
 
 
 @app.post('/unsubscribe/{sub_id}')
-async def unsubscribe(sub_id: int, user: User = Depends(get_user)):
+async def unsubscribe(sub_id: int, user: User = Depends(current_active_user)):
     """Unsubscribe handler for Pub/Sub channel"""
     try:
         await pubsub.unsubscribe(sub_id)
@@ -592,7 +595,7 @@ async def unsubscribe(sub_id: int, user: User = Depends(get_user)):
 
 
 @app.get('/listen/{sub_id}')
-async def listen(sub_id: int, user: User = Depends(get_user)):
+async def listen(sub_id: int, user: User = Depends(current_active_user)):
     """Listen messages from a subscribed Pub/Sub channel"""
     try:
         return await pubsub.listen(sub_id)
@@ -604,7 +607,8 @@ async def listen(sub_id: int, user: User = Depends(get_user)):
 
 
 @app.post('/publish/{channel}')
-async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
+async def publish(raw: dict, channel: str,
+                  user: User = Depends(current_active_user)):
     """Publish a message on the provided Pub/Sub channel"""
     attributes = dict(raw)
     data = attributes.pop('data')
@@ -617,7 +621,7 @@ async def publish(raw: dict, channel: str, user: User = Depends(get_user)):
 @app.post('/regression', response_model=Regression,
           response_model_by_alias=False)
 async def post_regression(regression: Regression,
-                          token: str = Depends(get_user)):
+                          user: str = Depends(current_active_user)):
     """Create a new regression"""
     obj = await db.create(regression)
     operation = 'created'
@@ -629,7 +633,7 @@ async def post_regression(regression: Regression,
 @app.put('/regression/{regression_id}', response_model=Regression,
          response_model_by_alias=False)
 async def put_regression(regression_id: str, regression: Regression,
-                         token: str = Depends(get_user)):
+                         user: str = Depends(current_active_user)):
     """Update an already added regression"""
     regression.id = ObjectId(regression_id)
     obj = await db.update(regression)
