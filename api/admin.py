@@ -17,7 +17,8 @@ import getpass
 
 from .auth import Authentication
 from .db import Database
-from .models import User, UserGroup, UserProfile
+from .models import UserGroup
+from .user_models import User
 
 
 async def setup_admin_group(db, admin_group):
@@ -42,19 +43,18 @@ async def setup_admin_user(db, username, email, admin_group):
         return None
     hashed_password = Authentication.get_password_hash(password)
     print(f"Creating {username} user...")
-    profile = UserProfile(
+    return await db.create(User(
         username=username,
         hashed_password=hashed_password,
         email=email,
-        groups=[admin_group]
-    )
-    return await db.create(User(
-        profile=profile
+        groups=[admin_group],
+        is_superuser=1
     ))
 
 
 async def main(args):
     db = Database(args.mongo, args.database)
+    await db.initialize_beanie()
     group = await setup_admin_group(db, args.admin_group)
     user = await setup_admin_user(db, args.username, args.email, group)
     return True
