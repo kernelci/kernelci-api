@@ -187,6 +187,9 @@ class Revision(BaseModel):
     version: Optional[KernelVersion] = Field(
         description="Kernel version"
     )
+    patchset: Optional[str] = Field(
+        description="Patchset hash"
+    )
 
 
 class DefaultTimeout:
