@@ -17,14 +17,8 @@ from fastapi import (
     HTTPException,
     status,
     Request,
-    Security,
-    Query,
 )
 from fastapi.responses import JSONResponse, PlainTextResponse
-from fastapi.security import (
-    OAuth2PasswordRequestForm,
-    SecurityScopes
-)
 from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
@@ -32,15 +26,13 @@ from pymongo.errors import DuplicateKeyError
 from fastapi_users import FastAPIUsers
 from fastapi_users.db import BeanieUserDatabase
 from beanie import PydanticObjectId
-from .auth import Authentication, Token
+from .auth import Authentication
 from .db import Database
 from .models import (
     Node,
     Hierarchy,
     Regression,
     UserGroup,
-    UserProfile,
-    Password,
     get_model_from_kind
 )
 from .paginator_models import PageModel
@@ -113,49 +105,195 @@ async def invalid_id_exception_handler(
         content={"detail": str(exc)},
     )
 
-current_active_user = fastapi_users_instance.current_user(active=True)
-current_active_superuser = fastapi_users_instance.current_user(active=True,
-                                                               superuser=True)
+
+@app.get('/')
+async def root():
+    """Root endpoint handler"""
+    return {"message": "KernelCI API"}
+
+# -----------------------------------------------------------------------------
+# Users
 
 
-async def get_current_user(
-        security_scopes: SecurityScopes,
-        token: str = Depends(auth.oauth2_scheme)):
-    """Return the user if authenticated successfully based on the provided
-    token"""
-
-    if security_scopes.scopes:
-        authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
-    else:
-        authenticate_value = "Bearer"
-
-    if token == 'None':
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing credentials",
-            headers={"WWW-Authenticate": authenticate_value},
-        )
-    user, message = await auth.get_current_user(token, security_scopes.scopes)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=message,
-            headers={"WWW-Authenticate": authenticate_value},
-        )
+def get_current_user(user: User = Depends(
+        fastapi_users_instance.current_user(active=True))):
+    """Get current active user"""
     return user
 
 
-async def get_user(user: User = Depends(get_current_user)):
-    """Return the user if active and authenticated"""
-    if not user.active:
-        raise HTTPException(status_code=400, detail="Inactive user")
+def get_current_superuser(user: User = Depends(
+        fastapi_users_instance.current_user(active=True, superuser=True))):
+    """Get current active superuser"""
     return user
 
 
-async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
+app.include_router(
+    fastapi_users_instance.get_auth_router(auth_backend,
+                                           requires_verification=True),
+    prefix="/user",
+    tags=["user"]
+)
+
+register_router = fastapi_users_instance.get_register_router(
+    UserRead, UserCreate)
+
+
+@app.post("/user/register", response_model=UserRead, tags=["user"],
+          response_model_by_alias=False)
+async def register(request: Request, user: UserCreate,
+                   current_user: User = Depends(get_current_superuser)):
+    """User registration route
+
+    Custom user registration router to ensure unique username.
+    `user` from request has a list of user group name strings.
+    This handler will convert them to `UserGroup` objects and
+    insert user object to database.
+    """
+    existing_user = await db.find_one(User, username=user.username)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists",
+        )
+    groups = []
+    if user.groups:
+        for group_name in user.groups:
+            group = await db.find_one(UserGroup, name=group_name)
+            if not group:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"User group does not exist with name: \
+    {group_name}")
+            groups.append(group)
+    user.groups = groups
+    created_user = await register_router.routes[0].endpoint(
+        request, user, UserManager(BeanieUserDatabase(User)))
+    # Update user to be an admin user explicitly if requested as
+    # `fastapi-users` register route does not allow it
+    if user.is_superuser:
+        user_from_id = await db.find_by_id(User, created_user.id)
+        user_from_id.is_superuser = True
+        created_user = await db.update(user_from_id)
+    return created_user
+
+
+app.include_router(
+    fastapi_users_instance.get_reset_password_router(),
+    prefix="/user",
+    tags=["user"],
+)
+app.include_router(
+    fastapi_users_instance.get_verify_router(UserRead),
+    prefix="/user",
+    tags=["user"],
+)
+
+users_router = fastapi_users_instance.get_users_router(
+    UserRead, UserUpdate, requires_verification=True)
+
+app.add_api_route(
+    path="/whoami",
+    tags=["user"],
+    methods=["GET"],
+    description="Get current user information",
+    endpoint=users_router.routes[0].endpoint)
+app.add_api_route(
+    path="/user/{id}",
+    tags=["user"],
+    methods=["GET"],
+    description="Get user information by ID",
+    endpoint=users_router.routes[2].endpoint)
+app.add_api_route(
+    path="/user/{id}",
+    tags=["user"],
+    methods=["DELETE"],
+    description="Delete user by ID",
+    dependencies=[Depends(get_current_superuser)],
+    endpoint=users_router.routes[4].endpoint)
+
+
+@app.patch("/user/me", response_model=UserRead, tags=["user"],
+           response_model_by_alias=False)
+async def update_me(request: Request, user: UserUpdate,
+                    current_user: User = Depends(get_current_user)):
+    """User update route
+
+    Custom user update router handler will only allow users to update
+    its own profile. Adding itself to 'admin' group is not allowed.
+    """
+    existing_user = await db.find_one(User, username=user.username)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists",
+        )
+    groups = []
+    if user.groups:
+        for group_name in user.groups:
+            if group_name == "admin":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Unauthorized to add user to 'admin' group")
+            group = await db.find_one(UserGroup, name=group_name)
+            if not group:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"User group does not exist with name: \
+    {group_name}")
+            groups.append(group)
+    if groups:
+        user.groups = groups
+    return await users_router.routes[1].endpoint(
+        request, user, current_user, UserManager(BeanieUserDatabase(User)))
+
+
+@app.patch("/user/{user_id}", response_model=UserRead, tags=["user"],
+           response_model_by_alias=False)
+async def update_user(user_id: str, request: Request, user: UserUpdate,
+                      current_user: User = Depends(get_current_superuser)):
+    """Router to allow admin users to update other user account"""
+
+    user_from_id = await db.find_by_id(User, user_id)
+    if not user_from_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User not found with id: {user_id}",
+        )
+
+    existing_user = await db.find_one(User, username=user.username)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists",
+        )
+
+    groups = []
+    if user.groups:
+        for group_name in user.groups:
+            group = await db.find_one(UserGroup, name=group_name)
+            if not group:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"User group does not exist with name: \
+    {group_name}")
+            groups.append(group)
+    if groups:
+        user.groups = groups
+
+    updated_user = await users_router.routes[3].endpoint(
+        user, request, user_from_id, UserManager(BeanieUserDatabase(User)))
+    # Update user to be an admin user explicitly if requested as
+    # `fastapi-users` user update route does not allow it
+    if user.is_superuser:
+        user_from_id = await db.find_by_id(User, updated_user.id)
+        user_from_id.is_superuser = True
+        updated_user = await db.update(user_from_id)
+    return updated_user
+
+
+async def authorize_user(node_id: str,
+                         user: User = Depends(get_current_user)):
     """Return the user if active, authenticated, and authorized"""
-    if not user.active:
-        raise HTTPException(status_code=400, detail="Inactive user")
 
     # Only the user that created the node or any other user from the permitted
     # user groups will be allowed to update the node
@@ -165,9 +303,9 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Node not found with id: {node_id}"
         )
-    if not user.profile.username == node_from_id.owner:
+    if not user.username == node_from_id.owner:
         if not any(group.name in node_from_id.user_groups
-                   for group in user.profile.groups):
+                   for group in user.groups):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Unauthorized to complete the operation"
@@ -175,7 +313,7 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
     return user
 
 
-@app.get('/users', response_model=PageModel,
+@app.get('/users', response_model=PageModel, tags=["user"],
          response_model_exclude={"items": {"__all__": {
                                     "hashed_password"}}})
 async def get_users(request: Request):
@@ -191,95 +329,14 @@ async def get_users(request: Request):
     return paginated_resp
 
 
-@app.put('/user/profile/{username}', response_model=User,
-         response_model_include={"profile"},
-         response_model_by_alias=False)
-async def put_user_profile(
-        username: str,
-        password: Password,
-        email: str = None,
-        groups: List[str] = Query([]),
-        current_user: User = Depends(get_user)):
-    """Update own user profile
-    The handler will only allow users to update its own profile.
-    Adding itself to 'admin' group is not allowed."""
-    if str(current_user.profile.username) != username:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unauthorized to update user with provided username")
-
-    hashed_password = auth.get_password_hash(
-                            password.password.get_secret_value())
-    group_obj = []
-    if groups:
-        for group_name in groups:
-            group = await db.find_one(UserGroup, name=group_name)
-            if not group:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"User group does not exist with name: \
-{group_name}")
-            if group_name == 'admin':
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Unauthorized to add user to 'admin' group")
-            group_obj.append(group)
-    obj = await db.update(User(
-            id=current_user.id,
-            profile=UserProfile(
-                username=username,
-                hashed_password=hashed_password,
-                email=email if email else current_user.profile.email,
-                groups=group_obj if group_obj else current_user.profile.groups
-            )))
-    await pubsub.publish_cloudevent('user', {'op': 'updated',
-                                             'id': str(obj.id)})
-    return obj
-
-
-@app.put('/user/{username}', response_model=User,
-         response_model_by_alias=False)
-async def put_user(
-        username: str,
-        email: str = None,
-        groups: List[str] = Query([]),
-        current_user: User = Security(get_user, scopes=["admin"])):
-    """Update user model
-    Allow admin users to update all user fields except password"""
-    user = await db.find_one_by_attributes(
-            User, {'profile.username': username})
-    if not user:
-        raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"User not found with username: {username}"
-            )
-    group_obj = []
-    if groups:
-        for group_name in groups:
-            group = await db.find_one(UserGroup, name=group_name)
-            if not group:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"User group does not exist with name: \
-{group_name}")
-            group_obj.append(group)
-    obj = await db.update(User(
-            id=user.id,
-            profile=UserProfile(
-                username=username,
-                hashed_password=user.profile.hashed_password,
-                email=email if email else user.profile.email,
-                groups=group_obj if group_obj else user.profile.groups
-            )))
-    await pubsub.publish_cloudevent('user', {'op': 'updated',
-                                             'id': str(obj.id)})
-    return obj
+# -----------------------------------------------------------------------------
+# User groups
 
 
 @app.post('/group', response_model=UserGroup, response_model_by_alias=False)
 async def post_user_group(
         group: UserGroup,
-        current_user: User = Depends(current_active_superuser)):
+        current_user: User = Depends(get_current_superuser)):
     """Create new user group"""
     try:
         obj = await db.create(group)
@@ -315,80 +372,6 @@ async def get_user_groups(request: Request):
 async def get_group(group_id: str):
     """Get user group information from the provided group id"""
     return await db.find_by_id(UserGroup, group_id)
-
-
-@app.get('/')
-async def root():
-    """Root endpoint handler"""
-    return {"message": "KernelCI API"}
-
-
-@app.post('/token', response_model=Token)
-async def login_for_access_token(
-        form_data: OAuth2PasswordRequestForm = Depends()):
-    """Get a bearer token for an authenticated user"""
-    user = await auth.authenticate_user(form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    is_valid, scope = await auth.validate_scopes(form_data.scopes)
-    if not is_valid:
-        raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid scope: {scope}"
-            )
-
-    if 'admin' in form_data.scopes:
-        if not user.groups or not any(
-                group.name == 'admin' for group in user.groups):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Not allowed to use admin scope"
-            )
-
-    access_token = auth.create_access_token(data={
-        "sub": user.username,
-        "scopes": form_data.scopes}
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-
-@app.get('/whoami', response_model=User, response_model_by_alias=False)
-async def whoami(current_user: User = Depends(current_active_user)):
-    """Get current user information"""
-    return current_user
-
-
-@app.post('/password')
-async def reset_password(
-        username: str, current_password: Password, new_password: Password):
-    """Set a new password for an authenticated user"""
-    authenticated = await auth.authenticate_user(
-        username, current_password.password.get_secret_value())
-    if not authenticated:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-        )
-
-    user = await db.find_one_by_attributes(
-            User, {'profile.username': username})
-    user.profile.hashed_password = auth.get_password_hash(
-                                new_password.password.get_secret_value())
-    obj = await db.update(user)
-    await pubsub.publish_cloudevent('user', {'op': 'updated',
-                                             'id': str(obj.id)})
-    return obj
-
-
-@app.post('/hash')
-def get_password_hash(password: Password):
-    """Get a password hash from the provided string password"""
-    return auth.get_password_hash(password.password.get_secret_value())
 
 
 # -----------------------------------------------------------------------------
@@ -504,7 +487,7 @@ async def _verify_user_group_existence(user_groups: List[str]):
 
 @app.post('/node', response_model=Node, response_model_by_alias=False)
 async def post_node(node: Node,
-                    current_user: str = Depends(current_active_user)):
+                    current_user: User = Depends(get_current_user)):
     """Create a new node"""
     if node.parent:
         parent = await db.find_by_id(Node, node.parent)
@@ -577,13 +560,13 @@ async def put_nodes(
 # Pub/Sub
 
 @app.post('/subscribe/{channel}', response_model=Subscription)
-async def subscribe(channel: str, user: User = Depends(current_active_user)):
+async def subscribe(channel: str, user: User = Depends(get_current_user)):
     """Subscribe handler for Pub/Sub channel"""
     return await pubsub.subscribe(channel)
 
 
 @app.post('/unsubscribe/{sub_id}')
-async def unsubscribe(sub_id: int, user: User = Depends(current_active_user)):
+async def unsubscribe(sub_id: int, user: User = Depends(get_current_user)):
     """Unsubscribe handler for Pub/Sub channel"""
     try:
         await pubsub.unsubscribe(sub_id)
@@ -595,7 +578,7 @@ async def unsubscribe(sub_id: int, user: User = Depends(current_active_user)):
 
 
 @app.get('/listen/{sub_id}')
-async def listen(sub_id: int, user: User = Depends(current_active_user)):
+async def listen(sub_id: int, user: User = Depends(get_current_user)):
     """Listen messages from a subscribed Pub/Sub channel"""
     try:
         return await pubsub.listen(sub_id)
@@ -608,7 +591,7 @@ async def listen(sub_id: int, user: User = Depends(current_active_user)):
 
 @app.post('/publish/{channel}')
 async def publish(raw: dict, channel: str,
-                  user: User = Depends(current_active_user)):
+                  user: User = Depends(get_current_user)):
     """Publish a message on the provided Pub/Sub channel"""
     attributes = dict(raw)
     data = attributes.pop('data')
@@ -621,7 +604,7 @@ async def publish(raw: dict, channel: str,
 @app.post('/regression', response_model=Regression,
           response_model_by_alias=False)
 async def post_regression(regression: Regression,
-                          user: str = Depends(current_active_user)):
+                          user: str = Depends(get_current_user)):
     """Create a new regression"""
     obj = await db.create(regression)
     operation = 'created'
@@ -633,7 +616,7 @@ async def post_regression(regression: Regression,
 @app.put('/regression/{regression_id}', response_model=Regression,
          response_model_by_alias=False)
 async def put_regression(regression_id: str, regression: Regression,
-                         user: str = Depends(current_active_user)):
+                         user: str = Depends(get_current_user)):
     """Update an already added regression"""
     regression.id = ObjectId(regression_id)
     obj = await db.update(regression)
@@ -641,77 +624,6 @@ async def put_regression(regression_id: str, regression: Regression,
     await pubsub.publish_cloudevent('regression', {'op': operation,
                                                    'id': str(obj.id)})
     return obj
-
-
-# -----------------------------------------------------------------------------
-# Users
-
-app.include_router(
-    fastapi_users_instance.get_auth_router(auth_backend,
-                                           requires_verification=True),
-    prefix="/user",
-    tags=["user"]
-)
-
-register_router = fastapi_users_instance.get_register_router(
-    UserRead, UserCreate)
-
-
-@app.post("/user/register", response_model=UserRead, tags=["user"],
-          response_model_by_alias=False)
-async def register(request: Request, user: UserCreate,
-                   current_user: str = Depends(current_active_superuser)):
-    """User registration route
-
-    Custom user registration router to ensure unique username.
-    `user` from request has a list of user group name strings.
-    This handler will convert them to `UserGroup` objects and
-    insert user object to database.
-    """
-    existing_user = await db.find_one(User, username=user.username)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists",
-        )
-    groups = []
-    if user.groups:
-        for group_name in user.groups:
-            group = await db.find_one(UserGroup, name=group_name)
-            if not group:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"User group does not exist with name: \
-    {group_name}")
-            groups.append(group)
-    user.groups = groups
-    created_user = await register_router.routes[0].endpoint(
-        request, user, UserManager(BeanieUserDatabase(User)))
-    # Update user to be an admin user explicitly if requested as
-    # `fastapi-users` register route does not allow it
-    if user.is_superuser:
-        user_from_id = await db.find_by_id(User, created_user.id)
-        user_from_id.is_superuser = True
-        created_user = await db.update(user_from_id)
-    return created_user
-
-
-app.include_router(
-    fastapi_users_instance.get_reset_password_router(),
-    prefix="/user",
-    tags=["user"],
-)
-app.include_router(
-    fastapi_users_instance.get_verify_router(UserRead),
-    prefix="/user",
-    tags=["user"],
-)
-app.include_router(
-    fastapi_users_instance.get_users_router(UserRead, UserUpdate,
-                                            requires_verification=True),
-    prefix="/user",
-    tags=["user"],
-)
 
 
 app = VersionedFastAPI(

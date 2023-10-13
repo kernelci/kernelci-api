@@ -18,8 +18,6 @@ from pydantic import (
     AnyHttpUrl,
     AnyUrl,
     BaseModel,
-    conlist,
-    EmailStr,
     Field,
     FileUrl,
     SecretStr,
@@ -116,36 +114,6 @@ class UserGroup(DatabaseModel):
     def create_indexes(cls, collection):
         """Create an index to bind unique constraint to group name"""
         collection.create_index("name", unique=True)
-
-
-class UserProfile(BaseModel):
-    """API user profile model"""
-    username: str
-    hashed_password: str = Field(description="Hash of the plaintext password")
-    groups: conlist(UserGroup, unique_items=True) = Field(
-        default=[],
-        description="A list of groups that user belongs to"
-    )
-    email: EmailStr = Field(
-        description="User email address"
-    )
-
-
-class User(DatabaseModel):
-    """API user model
-    The model will be accessible by admin users only"""
-    active: bool = Field(
-        default=True,
-        description="To check if user is active or not"
-    )
-    profile: UserProfile = Field(
-        description="User profile details accessible by all users"
-    )
-
-    @classmethod
-    def create_indexes(cls, collection):
-        """Create an index to bind unique constraint to username"""
-        collection.create_index("profile.username", unique=True)
 
 
 class KernelVersion(BaseModel):
