@@ -54,9 +54,7 @@ API_VERSIONS = ['v0']
 
 app = FastAPI()
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
-auth = Authentication(db, token_url='token',
-                      user_scopes={"admin": "Superusers",
-                                   "users": "Regular users"})
+auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
 
 auth_backend = auth.get_user_authentication_backend()
