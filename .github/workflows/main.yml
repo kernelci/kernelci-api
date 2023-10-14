@@ -54,13 +54,9 @@ jobs:
           pylint api.user_models
           pylint tests/unit_tests
 
-      - name: Export environment variables
-        run: |
-          echo "SECRET_KEY=$(openssl rand -hex 32)" >> $GITHUB_ENV
-
       - name: Run pytest
         run: |
-          pytest -v tests/unit_tests
+          SECRET_KEY=$(openssl rand -hex 32) SMTP_HOST=smtp.gmail.com SMTP_PORT=465 EMAIL_SENDER=test@kernelci.org EMAIL_PASSWORD=random pytest -vs tests/unit_tests/
 
   lint:
     runs-on: ubuntu-22.04
