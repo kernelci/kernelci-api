@@ -17,8 +17,7 @@ from api.models import UserGroup
 from api.paginator_models import PageModel
 
 
-def test_create_user_group(mock_get_current_admin_user,
-                           mock_db_create, mock_publish_cloudevent,
+def test_create_user_group(mock_db_create, mock_publish_cloudevent,
                            test_client):
     """
     Test Case : Test KernelCI API /group endpoint to create user group
@@ -44,18 +43,15 @@ def test_create_user_group(mock_get_current_admin_user,
     assert ('id', 'name') == tuple(response.json().keys())
 
 
-def test_create_group_endpoint_negative(mock_get_current_user,
-                                        mock_publish_cloudevent,
+def test_create_group_endpoint_negative(mock_publish_cloudevent,
                                         test_client):
     """
     Test Case : Test KernelCI API /group endpoint when requested
     with regular user's bearer token
     Expected Result :
-        HTTP Response Code 401 Unauthorized
-        JSON with 'detail' key denoting 'Access denied' error
+        HTTP Response Code 403 Forbidden
+        JSON with 'detail' key denoting 'Forbidden' error
     """
-    mock_get_current_user.return_value = None, "Access denied"
-
     response = test_client.post(
         "group",
         headers={
@@ -65,8 +61,8 @@ def test_create_group_endpoint_negative(mock_get_current_user,
         data=json.dumps({"name": "kernelci"})
     )
     print(response.json())
-    assert response.status_code == 401
-    assert response.json() == {'detail': 'Access denied'}
+    assert response.status_code == 403
+    assert response.json() == {'detail': 'Forbidden'}
 
 
 def test_get_groups(mock_db_find_by_attributes,
