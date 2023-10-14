@@ -14,10 +14,20 @@ from unittest.mock import AsyncMock
 import asyncio
 import fakeredis.aioredis
 from fastapi.testclient import TestClient
+from fastapi import Request, HTTPException, status, APIRouter
 import pytest
+from mongomock_motor import AsyncMongoMockClient
+from beanie import init_beanie
+from httpx import AsyncClient
 
-from api.main import app
-from api.models import User, UserGroup, UserProfile
+from api.main import (
+    app,
+    versioned_app,
+    get_current_user,
+    get_current_superuser,
+)
+from api.models import UserGroup
+from api.user_models import User
 from api.pubsub import PubSub
 
 BEARER_TOKEN = "Bearer \
@@ -36,8 +46,20 @@ BASE_URL = f'http://testserver/{API_VERSION}/'
 @pytest.fixture
 def test_client():
     """Fixture to get FastAPI Test client instance"""
-    with TestClient(app=app, base_url=BASE_URL) as client:
+    # Mock dependency callables for getting current user
+    app.dependency_overrides[get_current_user] = mock_get_current_user
+    app.dependency_overrides[get_current_superuser] = mock_get_current_admin_user
+    with TestClient(app=versioned_app, base_url=BASE_URL) as client:
         return client
+
+
+@pytest.fixture
+async def test_async_client():
+    """Fixture to get Test client for asynchronous tests"""
+    async with AsyncClient(app=versioned_app, base_url=BASE_URL) as client:
+        await versioned_app.router.startup()
+        yield client
+        await versioned_app.router.shutdown()
 
 
 @pytest.fixture
@@ -117,46 +139,47 @@ def mock_db_find_one_by_attributes(mocker):
     return async_mock
 
 
-@pytest.fixture
-def mock_get_current_user(mocker):
+def mock_get_current_user(request: Request):
     """
-    Mocks async call to Authentication class method
-    used to get current user
+    Get current active user
     """
-    async_mock = AsyncMock()
-    profile = UserProfile(
+    token = request.headers.get('authorization')
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing token",
+        )
+    return User(
         username='bob',
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
-        email='bob@kernelci.org'
+        email='bob@kernelci.org',
+        is_active=True,
+        is_superuser=False,
+        is_verified=True
     )
-    user = User(profile=profile, active=True)
-    mocker.patch('api.auth.Authentication.get_current_user',
-                 side_effect=async_mock)
-    async_mock.return_value = user, None
-    return async_mock
 
 
-@pytest.fixture
-def mock_get_current_admin_user(mocker):
+def mock_get_current_admin_user(request: Request):
     """
-    Mocks async call to Authentication class method
-    used to get current user
+    Get current active admin user
     """
-    async_mock = AsyncMock()
-    profile = UserProfile(
+    token = request.headers.get('authorization')
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing token",
+        )
+    return User(
         username='admin',
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
         email='admin@kernelci.org',
-        groups=[UserGroup(name='admin')])
-    user = User(
-        profile=profile,
-        active=True)
-    mocker.patch('api.auth.Authentication.get_current_user',
-                 side_effect=async_mock)
-    async_mock.return_value = user, None
-    return async_mock
+        groups=[UserGroup(name='admin')],
+        is_active=True,
+        is_superuser=True,
+        is_verified=True
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -237,4 +260,26 @@ def mock_unsubscribe(mocker):
     async_mock = AsyncMock()
     mocker.patch('api.pubsub.PubSub.unsubscribe',
                  side_effect=async_mock)
+    return async_mock
+
+
+@pytest.fixture(autouse=True)
+async def mock_init_beanie(mocker):
+    """Mocks async call to Database method to initialize Beanie"""
+    async_mock = AsyncMock()
+    client = AsyncMongoMockClient()
+    init = await init_beanie(
+        document_models=[User], database=client.get_database(name="db"))
+    mocker.patch('api.db.Database.initialize_beanie',
+                 side_effect=async_mock, return_value=init)
+    return async_mock
+
+
+@pytest.fixture
+async def mock_users_router(mocker):
+    """Mocks async call user router from fastapi-users package"""
+    router = APIRouter()
+    async_mock = AsyncMock()
+    mocker.patch('fastapi_users.fastapi_users.FastAPIUsers.get_users_router',
+                 side_effect=async_mock, return_value=router)
     return async_mock

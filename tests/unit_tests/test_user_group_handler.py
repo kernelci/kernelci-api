@@ -17,8 +17,7 @@ from api.models import UserGroup
 from api.paginator_models import PageModel
 
 
-def test_create_user_group(mock_get_current_admin_user,
-                           mock_db_create, mock_publish_cloudevent,
+def test_create_user_group(mock_db_create, mock_publish_cloudevent,
                            test_client):
     """
     Test Case : Test KernelCI API /group endpoint to create user group

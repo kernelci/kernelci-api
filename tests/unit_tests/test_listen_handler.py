@@ -13,8 +13,7 @@
 from tests.unit_tests.conftest import BEARER_TOKEN
 
 
-def test_listen_endpoint(mock_get_current_user,
-                         mock_listen, test_client):
+def test_listen_endpoint(mock_listen, test_client):
     """
     Test Case : Test KernelCI API GET /listen endpoint for the
     positive path
@@ -33,8 +32,7 @@ def test_listen_endpoint(mock_get_current_user,
     assert response.status_code == 200
 
 
-def test_listen_endpoint_not_found(mock_get_current_user,
-                                   test_client):
+def test_listen_endpoint_not_found(test_client):
     """
     Test Case : Test KernelCI API GET /listen endpoint for the
     negative path
@@ -53,8 +51,7 @@ def test_listen_endpoint_not_found(mock_get_current_user,
     assert 'detail' in response.json()
 
 
-def test_listen_endpoint_without_token(mock_get_current_user,
-                                       test_client):
+def test_listen_endpoint_without_token(test_client):
     """
     Test Case : Test KernelCI API GET /listen endpoint for the
     negative path

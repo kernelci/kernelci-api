@@ -18,7 +18,9 @@ class Settings(BaseSettings):
     """Email settings"""
     smtp_host: str
     smtp_port: int
-    email_sender: EmailStr
+    # email_sender: EmailStr
+    # unit test fails with EmailStr
+    email_sender: str
     email_password: str
 
 

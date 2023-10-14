@@ -17,8 +17,7 @@ from api.models import Node, Revision
 from api.paginator_models import PageModel
 
 
-def test_create_node_endpoint(mock_get_current_user,
-                              mock_db_create, mock_publish_cloudevent,
+def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
                               test_client):
     """
     Test Case : Test KernelCI API /node endpoint
@@ -91,8 +90,7 @@ def test_create_node_endpoint(mock_get_current_user,
     }
 
 
-def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
-                                          mock_db_find_by_attributes,
+def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes,
                                           test_client):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
@@ -159,7 +157,6 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
 
 
 def test_get_nodes_by_attributes_endpoint_node_not_found(
-        mock_get_current_user,
         mock_db_find_by_attributes,
         test_client):
     """
@@ -190,7 +187,7 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(
     assert response.json().get('total') == 0
 
 
-def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
+def test_get_node_by_id_endpoint(mock_db_find_by_id,
                                  test_client):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
@@ -244,8 +241,7 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
     }
 
 
-def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
-                                                mock_db_find_by_id,
+def test_get_node_by_id_endpoint_empty_response(mock_db_find_by_id,
                                                 test_client):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
@@ -262,7 +258,7 @@ def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
     assert response.json() is None
 
 
-def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
+def test_get_all_nodes(mock_db_find_by_attributes,
                        test_client):
     """
     Test Case : Test KernelCI API GET /nodes endpoint for the
@@ -343,8 +339,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
     assert len(response.json()) > 0
 
 
-def test_get_all_nodes_empty_response(mock_get_current_user,
-                                      mock_db_find_by_attributes,
+def test_get_all_nodes_empty_response(mock_db_find_by_attributes,
                                       test_client):
     """
     Test Case : Test KernelCI API GET /nodes endpoint for the
