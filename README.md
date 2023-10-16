@@ -67,7 +67,7 @@ export $(cat .env)
 
 Run the below command from kernelci-api directory:
 ```
-pytest -v test/
+pytest -v tests/unit_tests/
 ```
 This will start running unit test cases from kernelci-api/test directory and display results.
 
