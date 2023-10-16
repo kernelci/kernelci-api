@@ -14,7 +14,7 @@ from api.models import User, UserGroup, UserProfile
 
 
 def test_token_endpoint(mock_db_find_one_by_attributes,
-                        mock_init_sub_id, test_client):
+                        test_client):
     """
     Test Case : Test KernelCI API token endpoint
     Expected Result :
@@ -44,7 +44,6 @@ def test_token_endpoint(mock_db_find_one_by_attributes,
 
 
 def test_token_endpoint_incorrect_password(mock_db_find_one_by_attributes,
-                                           mock_init_sub_id,
                                            test_client):
     """
     Test Case : Test KernelCI API token endpoint for negative path
@@ -78,7 +77,6 @@ def test_token_endpoint_incorrect_password(mock_db_find_one_by_attributes,
 
 
 def test_token_endpoint_admin_user(mock_db_find_one_by_attributes,
-                                   mock_init_sub_id,
                                    test_client):
     """
     Test Case : Test KernelCI API token endpoint for admin user

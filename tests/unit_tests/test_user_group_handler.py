@@ -17,7 +17,7 @@ from api.models import UserGroup
 from api.paginator_models import PageModel
 
 
-def test_create_user_group(mock_init_sub_id, mock_get_current_admin_user,
+def test_create_user_group(mock_get_current_admin_user,
                            mock_db_create, mock_publish_cloudevent,
                            test_client):
     """
@@ -44,8 +44,7 @@ def test_create_user_group(mock_init_sub_id, mock_get_current_admin_user,
     assert ('id', 'name') == tuple(response.json().keys())
 
 
-def test_create_group_endpoint_negative(mock_init_sub_id,
-                                        mock_get_current_user,
+def test_create_group_endpoint_negative(mock_get_current_user,
                                         mock_publish_cloudevent,
                                         test_client):
     """
@@ -70,7 +69,7 @@ def test_create_group_endpoint_negative(mock_init_sub_id,
     assert response.json() == {'detail': 'Access denied'}
 
 
-def test_get_groups(mock_init_sub_id, mock_db_find_by_attributes,
+def test_get_groups(mock_db_find_by_attributes,
                     test_client):
     """
     Test Case : Test KernelCI API GET /groups endpoint
@@ -97,7 +96,7 @@ def test_get_groups(mock_init_sub_id, mock_db_find_by_attributes,
             'offset') == tuple(response.json().keys())
 
 
-def test_get_group_by_id(mock_init_sub_id, mock_db_find_by_id,
+def test_get_group_by_id(mock_db_find_by_id,
                          test_client):
     """
     Test Case : Test KernelCI API GET /group/{group_id} endpoint

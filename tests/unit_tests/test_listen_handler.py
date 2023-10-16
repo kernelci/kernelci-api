@@ -55,7 +55,7 @@ def test_listen_endpoint_not_found(mock_get_current_user,
 
 
 def test_listen_endpoint_without_token(mock_get_current_user,
-                                       mock_init_sub_id, test_client):
+                                       test_client):
     """
     Test Case : Test KernelCI API GET /listen endpoint for the
     negative path

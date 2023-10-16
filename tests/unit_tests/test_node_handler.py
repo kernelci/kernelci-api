@@ -17,7 +17,7 @@ from api.models import Node, Revision
 from api.paginator_models import PageModel
 
 
-def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
+def test_create_node_endpoint(mock_get_current_user,
                               mock_db_create, mock_publish_cloudevent,
                               test_client):
     """
@@ -93,7 +93,7 @@ def test_create_node_endpoint(mock_get_current_user, mock_init_sub_id,
 
 def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
                                           mock_db_find_by_attributes,
-                                          mock_init_sub_id, test_client):
+                                          test_client):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
     endpoint for the positive path
@@ -161,7 +161,6 @@ def test_get_nodes_by_attributes_endpoint(mock_get_current_user,
 def test_get_nodes_by_attributes_endpoint_node_not_found(
         mock_get_current_user,
         mock_db_find_by_attributes,
-        mock_init_sub_id,
         test_client):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
@@ -192,7 +191,7 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(
 
 
 def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
-                                 mock_init_sub_id, test_client):
+                                 test_client):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
     for the positive path
@@ -247,7 +246,6 @@ def test_get_node_by_id_endpoint(mock_get_current_user, mock_db_find_by_id,
 
 def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
                                                 mock_db_find_by_id,
-                                                mock_init_sub_id,
                                                 test_client):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
@@ -265,7 +263,7 @@ def test_get_node_by_id_endpoint_empty_response(mock_get_current_user,
 
 
 def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
-                       mock_init_sub_id, test_client):
+                       test_client):
     """
     Test Case : Test KernelCI API GET /nodes endpoint for the
     positive path
@@ -347,7 +345,7 @@ def test_get_all_nodes(mock_get_current_user, mock_db_find_by_attributes,
 
 def test_get_all_nodes_empty_response(mock_get_current_user,
                                       mock_db_find_by_attributes,
-                                      mock_init_sub_id, test_client):
+                                      test_client):
     """
     Test Case : Test KernelCI API GET /nodes endpoint for the
     negative path

@@ -13,7 +13,7 @@
 from tests.unit_tests.conftest import BEARER_TOKEN
 
 
-def test_whoami_endpoint(mock_get_current_user, mock_init_sub_id, test_client):
+def test_whoami_endpoint(mock_get_current_user, test_client):
     """
     Test Case : Test KernelCI API /whoami endpoint
     Expected Result :
