@@ -8,7 +8,7 @@
 """Unit test function for KernelCI API root handler"""
 
 
-def test_root_endpoint(mock_init_sub_id, test_client):
+def test_root_endpoint(test_client):
     """
     Test Case : Test KernelCI API root endpoint
     Expected Result :

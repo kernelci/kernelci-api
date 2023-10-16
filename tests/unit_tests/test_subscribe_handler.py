@@ -11,7 +11,7 @@ from tests.unit_tests.conftest import BEARER_TOKEN
 from api.pubsub import Subscription
 
 
-def test_subscribe_endpoint(mock_get_current_user, mock_init_sub_id,
+def test_subscribe_endpoint(mock_get_current_user,
                             mock_subscribe, test_client):
     """
     Test Case : Test KernelCI API /subscribe endpoint

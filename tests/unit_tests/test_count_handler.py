@@ -8,7 +8,7 @@
 """Unit test functions for KernelCI API count handler"""
 
 
-def test_count_nodes(mock_db_count, mock_init_sub_id, test_client):
+def test_count_nodes(mock_db_count, test_client):
     """
     Test Case : Test KernelCI API GET /count endpoint
     Expected Result :
@@ -22,8 +22,7 @@ def test_count_nodes(mock_db_count, mock_init_sub_id, test_client):
     assert response.json() >= 0
 
 
-def test_count_nodes_matching_attributes(mock_db_count, mock_init_sub_id,
-                                         test_client):
+def test_count_nodes_matching_attributes(mock_db_count, test_client):
     """
     Test Case : Test KernelCI API GET /count endpoint with attributes
     Expected Result :

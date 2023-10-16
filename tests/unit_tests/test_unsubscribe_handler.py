@@ -11,7 +11,7 @@ from tests.unit_tests.conftest import BEARER_TOKEN
 
 
 def test_unsubscribe_endpoint(mock_get_current_user,
-                              mock_init_sub_id, mock_unsubscribe, test_client):
+                              mock_unsubscribe, test_client):
     """
     Test Case : Test KernelCI API /unsubscribe endpoint positive path
     Expected Result :
@@ -27,7 +27,7 @@ def test_unsubscribe_endpoint(mock_get_current_user,
 
 
 def test_unsubscribe_endpoint_empty_response(mock_get_current_user,
-                                             mock_init_sub_id, test_client):
+                                             test_client):
     """
     Test Case : Test KernelCI API /unsubscribe endpoint negative path
     Expected Result :

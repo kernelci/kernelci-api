@@ -159,7 +159,7 @@ def mock_get_current_admin_user(mocker):
     return async_mock
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_init_sub_id(mocker):
     """Mocks async call to PubSub method to initialize subscription id"""
     async_mock = AsyncMock()

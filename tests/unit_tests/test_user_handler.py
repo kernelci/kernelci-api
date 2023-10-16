@@ -16,7 +16,7 @@ from tests.unit_tests.conftest import (
 from api.models import User, UserGroup, UserProfile
 
 
-def test_create_regular_user(mock_init_sub_id, mock_get_current_admin_user,
+def test_create_regular_user(mock_get_current_admin_user,
                              mock_db_create, mock_publish_cloudevent,
                              test_client):
     """
@@ -48,7 +48,6 @@ HR5UHMdMFQeOe1eD4oXaP08oW7ogYqyiNziZYNdUHs8i", email='test@kernelci.org')
 
 
 def test_create_admin_user(  # pylint: disable=too-many-arguments
-                           mock_init_sub_id,
                            mock_get_current_admin_user,
                            mock_db_create, mock_publish_cloudevent,
                            test_client, mock_db_find_one):
@@ -85,7 +84,7 @@ W7ogYqyiNziZYNdUHs8i",
             'groups', 'email') == tuple(response.json()['profile'].keys())
 
 
-def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
+def test_create_user_endpoint_negative(mock_get_current_user,
                                        mock_publish_cloudevent, test_client):
     """
     Test Case : Test KernelCI API /user endpoint when requested
@@ -110,7 +109,6 @@ def test_create_user_endpoint_negative(mock_init_sub_id, mock_get_current_user,
 
 
 def test_create_user_with_group(  # pylint: disable=too-many-arguments
-                           mock_init_sub_id,
                            mock_get_current_admin_user,
                            mock_db_create, mock_publish_cloudevent,
                            test_client, mock_db_find_one):
@@ -148,7 +146,7 @@ ogYqyiNziZYNdUHs8i",
 
 
 def test_get_user_by_id_endpoint(mock_get_current_admin_user, mock_db_find_by_id,
-                                 mock_init_sub_id, test_client):
+                                 test_client):
     """
     Test Case : Test KernelCI API GET /user/{user_id} endpoint with admin
     token
