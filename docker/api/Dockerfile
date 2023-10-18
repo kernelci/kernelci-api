@@ -22,4 +22,4 @@ COPY requirements*.txt /home/kernelci/
 ARG REQUIREMENTS=requirements.txt
 RUN pip install --requirement ${REQUIREMENTS}
 
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--reload"]
+CMD ["uvicorn", "api.main:versioned_app", "--host", "0.0.0.0", "--reload"]
