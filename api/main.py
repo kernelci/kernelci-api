@@ -624,7 +624,7 @@ async def put_regression(regression_id: str, regression: Regression,
     return obj
 
 
-app = VersionedFastAPI(
+versioned_app = VersionedFastAPI(
         app,
         version_format='{major}',
         prefix_format='/v{major}',
@@ -642,7 +642,7 @@ app = VersionedFastAPI(
 The issue has already been reported here:
 https://github.com/DeanWay/fastapi-versioning/issues/30
 """
-for sub_app in app.routes:
+for sub_app in versioned_app.routes:
     if hasattr(sub_app.app, "add_exception_handler"):
         sub_app.app.add_exception_handler(
             ValueError, value_error_exception_handler
