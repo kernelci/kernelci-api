@@ -9,6 +9,7 @@
 """KernelCI API main module"""
 
 import os
+import re
 from typing import List, Union
 from fastapi import (
     Depends,
@@ -19,7 +20,7 @@ from fastapi import (
     Security,
     Query,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.security import (
     OAuth2PasswordRequestForm,
     SecurityScopes
@@ -46,7 +47,7 @@ from .pubsub import PubSub, Subscription
 # List of all the supported API versions.  This is a placeholder until the API
 # actually supports multiple versions with different sets of endpoints and
 # models etc.
-API_VERSIONS = ['latest', 'v0']
+API_VERSIONS = ['v0']
 
 app = FastAPI()
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
@@ -711,9 +712,16 @@ for sub_app in app.routes:
 @app.middleware("http")
 async def redirect_http_requests(request: Request, call_next):
     """Redirect request with version prefix when no version is provided"""
+    response = None
     path = request.scope['path']
-    prefix = path.split('/')[1]
-    if prefix not in API_VERSIONS:
+    match = re.match(r'^/(v[\d.]+)', path)
+    if match:
+        prefix = match.group(1)
+        if prefix not in API_VERSIONS:
+            response = PlainTextResponse(
+                f"Unsupported API version: {prefix}",
+                status_code=status.HTTP_400_BAD_REQUEST
+            )
+    elif not path.startswith('/latest'):
         request.scope['path'] = '/latest' + path
-    response = await call_next(request)
-    return response
+    return response or await call_next(request)
