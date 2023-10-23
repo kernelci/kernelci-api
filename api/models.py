@@ -369,6 +369,12 @@ class Hierarchy(BaseModel):
 Hierarchy.update_forward_refs()
 
 
+class RegressionData(BaseModel):
+    """Model for the data field of a Regression"""
+    node_failed: PyObjectId
+    node_passed: PyObjectId
+
+
 class Regression(Node):
     """API model for regression tracking"""
 
@@ -377,18 +383,14 @@ class Regression(Node):
         description='Type of the object',
         const=True
     )
-    regression_data: List[Node] = Field(
-        description='Regression details'
+
+    data: RegressionData = Field(
+        description="Regression details"
     )
 
     _OBJECT_ID_FIELDS = Node._OBJECT_ID_FIELDS + [
-        'regression_data.parent',
-    ]
-    _TIMESTAMP_FIELDS = Node._TIMESTAMP_FIELDS + [
-        'regression_data.created',
-        'regression_data.updated',
-        'regression_data.timeout',
-        'regression_data.holdoff',
+        'data.node_failed',
+        'data.node_passed',
     ]
 
 
