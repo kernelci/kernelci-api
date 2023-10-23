@@ -43,20 +43,17 @@ from .models import (
 from .paginator_models import PageModel
 from .pubsub import PubSub, Subscription
 
+# List of all the supported API versions.  This is a placeholder until the API
+# actually supports multiple versions with different sets of endpoints and
+# models etc.
+API_VERSIONS = ['latest', 'v0']
+
 app = FastAPI()
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
 auth = Authentication(db, token_url='token',
                       user_scopes={"admin": "Superusers",
                                    "users": "Regular users"})
 pubsub = None  # pylint: disable=invalid-name
-API_VERSIONS = []
-
-
-@app.on_event('startup')
-async def init_api_versions():
-    """Startup event handler to initialize list of API versions"""
-    global API_VERSIONS
-    API_VERSIONS = ['latest', 'v0']
 
 
 @app.on_event('startup')
@@ -693,7 +690,6 @@ app = VersionedFastAPI(
         on_startup=[
             pubsub_startup,
             create_indexes,
-            init_api_versions,
         ]
     )
 
