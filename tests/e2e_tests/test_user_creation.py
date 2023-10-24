@@ -8,9 +8,11 @@
 import json
 import pytest
 
-from api.models import User, UserGroup, UserProfile
-from api.db import Database
 from e2e_tests.conftest import db_create
+from api.models import UserGroup
+from api.user_models import User
+from api.db import Database
+from api.auth import Authentication
 
 
 @pytest.mark.dependency(
@@ -21,42 +23,36 @@ from e2e_tests.conftest import db_create
 @pytest.mark.asyncio
 async def test_create_admin_user(test_async_client):
     """
-    Test Case : Get hashed password using '/hash' endpoint to create an admin
+    Test Case : Get hashed password using authentication method to create an admin
     user. Create the admin user using database create method.
-    Request authentication token using '/token' endpoint for the user and
+    Request authentication token using '/user/login' endpoint for the user and
     store it in pytest global variable 'ADMIN_BEARER_TOKEN'.
     """
     username = 'admin'
     password = 'test'
-    response = await test_async_client.post(
-        "hash",
-        data=json.dumps({'password': password})
-    )
-    hashed_password = response.json()
-    assert response.status_code == 200
+    hashed_password = Authentication.get_password_hash(password)
 
-    profile = UserProfile(
-        username=username,
-        hashed_password=hashed_password,
-        email='test-admin@kernelci.org',
-        groups=[UserGroup(name="admin")]
-    )
     obj = await db_create(
-            Database.COLLECTIONS[User],
-            User(profile=profile)
-        )
+        Database.COLLECTIONS[User],
+        User(
+            username=username,
+            hashed_password=hashed_password,
+            email='test-admin@kernelci.org',
+            groups=[UserGroup(name="admin")],
+            is_superuser=1,
+            is_verified=1
+        ))
     assert obj is not None
 
     response = await test_async_client.post(
-        "token",
+        "user/login",
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"
         },
-        data={
-            'username': username, 'password': password, 'scope': 'admin users'
-        }
+        data=f"username={username}&password={password}"
     )
+    print("response.json()", response.json())
     assert response.status_code == 200
     assert response.json().keys() == {
         'access_token',
@@ -70,34 +66,50 @@ async def test_create_admin_user(test_async_client):
 @pytest.mark.asyncio
 async def test_create_regular_user(test_async_client):
     """
-    Test Case : Test KernelCI API '/user' endpoint to create regular user
-    when requested with admin user's bearer token. Request '/token' endpoint
-    for the user and store it in pytest global variable 'BEARER_TOKEN'.
+    Test Case : Test KernelCI API '/user/register' endpoint to create regular
+    user when requested with admin user's bearer token. Request '/user/login'
+    endpoint for the user and store it in pytest global variable 'BEARER_TOKEN'.
     """
     username = 'test_user'
     password = 'test'
     email = 'test@kernelci.org'
     response = await test_async_client.post(
-        f"user/{username}?email={email}",
+        "user/register",
         headers={
                 "Accept": "application/json",
                 "Authorization": f"Bearer {pytest.ADMIN_BEARER_TOKEN}"
             },
-        data=json.dumps({'password': password})
+        data=json.dumps({
+            'username': username,
+            'password': password,
+            'email': email
+        })
     )
     assert response.status_code == 200
-    assert ('id', 'active',
-            'profile') == tuple(response.json().keys())
-    assert ('username', 'hashed_password',
-            'groups', 'email') == tuple(response.json()['profile'].keys())
+    assert ('id', 'email', 'is_active', 'is_superuser', 'is_verified',
+            'username', 'groups') == tuple(response.json().keys())
+
+    # User needs to verified before getting access token
+    # Directly updating user to by pass user verification via email
+    user_id = response.json()['id']
+    response = await test_async_client.patch(
+        f"user/{user_id}",
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {pytest.ADMIN_BEARER_TOKEN}"
+        },
+        data=json.dumps({"is_verified": True})
+    )
+    assert response.status_code == 200
 
     response = await test_async_client.post(
-        "token",
+        "user/login",
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded"
         },
-        data={'username': username, 'password': password}
+        data=f"username={username}&password={password}"
     )
     assert response.status_code == 200
     assert response.json().keys() == {
@@ -113,8 +125,8 @@ def test_whoami(test_client):
     Test Case : Test KernelCI API /whoami endpoint
     Expected Result :
         HTTP Response Code 200 OK
-        JSON with 'id', 'username', 'hashed_password'
-        and 'active' keys
+        JSON with 'id', 'email', username', 'groups', 'is_superuser'
+        'is_verified' and 'is_active' keys
     """
     response = test_client.get(
         "whoami",
@@ -124,29 +136,31 @@ def test_whoami(test_client):
         },
     )
     assert response.status_code == 200
-    assert ('id', 'active',
-            'profile') == tuple(response.json().keys())
-    assert ('username', 'hashed_password',
-            'groups', 'email') == tuple(response.json()['profile'].keys())
-    assert response.json()['profile']['username'] == 'test_user'
+    assert ('id', 'email', 'is_active', 'is_superuser', 'is_verified',
+            'username', 'groups') == tuple(response.json().keys())
+    assert response.json()['username'] == 'test_user'
 
 
 @pytest.mark.dependency(depends=["test_create_regular_user"])
 def test_create_user_negative(test_client):
     """
-    Test Case : Test KernelCI API /user endpoint when requested
+    Test Case : Test KernelCI API /user/register endpoint when requested
     with regular user's bearer token.
     Expected Result :
-        HTTP Response Code 401 Unauthorized
-        JSON with 'detail' key denoting 'Access denied' error
+        HTTP Response Code 403 Forbidden
+        JSON with 'detail' key denoting 'Forbidden' error
     """
     response = test_client.post(
-        "user/test",
+        "user/register",
         headers={
                 "Accept": "application/json",
                 "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
             },
-        data=json.dumps({'password': 'test'})
+        data=json.dumps({
+            'username': 'test',
+            'password': 'test',
+            'email': 'test@kernelci.org'
+        })
     )
-    assert response.status_code == 401
-    assert response.json() == {'detail': 'Access denied'}
+    assert response.status_code == 403
+    assert response.json() == {'detail': 'Forbidden'}
