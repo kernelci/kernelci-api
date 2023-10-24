@@ -30,6 +30,10 @@ jobs:
       - name: Export environment variables
         run: |
           echo "SECRET_KEY=$(openssl rand -hex 32)" > .env
+          echo "SMTP_HOST=smtp.gmail.com" >> .env
+          echo "SMTP_PORT=465" >> .env
+          echo "EMAIL_SENDER=test@kernelci.org" >> .env
+          echo "EMAIL_PASSWORD=random" >> .env
 
       - name: Build docker images
         run: docker-compose -f test-docker-compose.yaml build
