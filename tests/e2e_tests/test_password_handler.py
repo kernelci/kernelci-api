@@ -2,6 +2,7 @@
 #
 # Copyright (C) 2023 Collabora Limited
 # Author: Paweł Wieczorek <pawel.wieczorek@collabora.com>
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
 """End-to-end test functions for KernelCI API password reset handler"""
 
@@ -17,17 +18,20 @@ import pytest
 @pytest.mark.asyncio
 async def test_password_endpoint(test_async_client):
     """
-    Test Case : Test KernelCI API /password endpoint to set a new password
-    when requested with current user's password
+    Test Case : Test KernelCI API /user/me endpoint to set a new password
+    when requested with current user's access token
     Expected Result :
         HTTP Response Code 200 OK
     """
-    response = await test_async_client.post(
-        "password?username=test_user",
+    response = await test_async_client.patch(
+        "user/me",
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
+        },
         data=json.dumps(
             {
-                "current_password": {"password": "test"},
-                "new_password": {"password": "foo"},
+                "password": "foo"
             }
         ),
     )
