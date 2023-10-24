@@ -12,7 +12,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 from fastapi.testclient import TestClient
 
-from api.main import app
+from api.main import versioned_app
 
 BASE_URL = 'http://api:8000/latest/'
 DB_URL = 'mongodb://db:27017'
@@ -25,17 +25,17 @@ db = db_client[DB_NAME]
 @pytest.fixture(scope='session')
 def test_client():
     """Fixture to get FastAPI Test client instance"""
-    with TestClient(app=app, base_url=BASE_URL) as client:
+    with TestClient(app=versioned_app, base_url=BASE_URL) as client:
         yield client
 
 
 @pytest.fixture(scope='session')
 async def test_async_client():
     """Fixture to get Test client for asynchronous tests"""
-    async with AsyncClient(app=app, base_url=BASE_URL) as client:
-        await app.router.startup()
+    async with AsyncClient(app=versioned_app, base_url=BASE_URL) as client:
+        await versioned_app.router.startup()
         yield client
-        await app.router.shutdown()
+        await versioned_app.router.shutdown()
 
 
 async def db_create(collection, obj):
