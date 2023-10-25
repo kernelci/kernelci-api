@@ -21,6 +21,17 @@ from mongomock_motor import AsyncMongoMockClient
 from beanie import init_beanie
 from httpx import AsyncClient
 
+os.environ.update({
+    'SECRET_KEY':  # Generated once with: openssl rand -hex 32
+        '480f95a5494ab06b842d2c801424bd18b1201ad9791869d7d5b29d9d52ea4fbb',
+    'SMTP_HOST': 'smtp.gmail.com',
+    'SMTP_PORT': '465',
+    'EMAIL_SENDER': 'test@kernelci.org',
+    'EMAIL_PASSWORD': 'random',
+})
+
+# pylint: disable=wrong-import-position
+
 from api.main import (
     app,
     versioned_app,
@@ -42,16 +53,6 @@ t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k'
 
 API_VERSION = 'latest'
 BASE_URL = f'http://testserver/{API_VERSION}/'
-
-os.environ.update({
-    'SECRET_KEY':  # Generated once with: openssl rand -hex 32
-        '480f95a5494ab06b842d2c801424bd18b1201ad9791869d7d5b29d9d52ea4fbb',
-    'SMTP_HOST': 'smtp.gmail.com',
-    'SMTP_PORT': '465',
-    'EMAIL_SENDER': 'test@kernelci.org',
-    'EMAIL_PASSWORD': 'random',
-})
-
 
 @pytest.fixture
 def test_client():
