@@ -26,10 +26,10 @@ async def test_whoami_endpoint(test_async_client, mock_users_router):
     """
     router = mock_users_router.return_value
     test_user = User(
-        username='bob',
+        username='my-user-name',
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
-        email='bob@kernelci.org',
+        email='nobody@kernelci.org',
         is_active=True,
         is_superuser=False,
         is_verified=True
