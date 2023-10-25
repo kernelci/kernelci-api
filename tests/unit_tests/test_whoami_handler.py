@@ -34,8 +34,8 @@ async def test_whoami_endpoint(test_async_client, mock_users_router):
         is_superuser=False,
         is_verified=True
     )
-    @router.get("/me", response_model=User)
-    async def me():
+    @router.get("/whoami", response_model=User)
+    async def whoami():
         return test_user
 
     response = await test_async_client.get(
