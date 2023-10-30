@@ -7,20 +7,12 @@
 """User authentication utilities"""
 
 from passlib.context import CryptContext
-from pydantic import BaseSettings
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
     JWTStrategy,
 )
-
-
-class Settings(BaseSettings):
-    """Authentication settings"""
-    secret_key: str
-    algorithm: str = "HS256"
-    # Set to None so tokens don't expire
-    access_token_expire_seconds: int = None
+from .config import AuthSettings
 
 
 class Authentication:
@@ -29,7 +21,7 @@ class Authentication:
     CRYPT_CTX = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def __init__(self, token_url: str):
-        self._settings = Settings()
+        self._settings = AuthSettings()
         self._token_url = token_url
 
     @classmethod

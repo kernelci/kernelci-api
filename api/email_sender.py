@@ -11,21 +11,13 @@ from email.mime.multipart import MIMEMultipart
 import email
 import email.mime.text
 import smtplib
-from pydantic import BaseSettings, EmailStr
-
-
-class Settings(BaseSettings):
-    """Email settings"""
-    smtp_host: str
-    smtp_port: int
-    email_sender: EmailStr
-    email_password: str
+from .config import EmailSettings
 
 
 class EmailSender:
     """Class to send email report using SMTP"""
     def __init__(self):
-        self._settings = Settings()
+        self._settings = EmailSettings()
 
     def _smtp_connect(self):
         """Method to create a connection with SMTP server"""

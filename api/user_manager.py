@@ -18,13 +18,13 @@ from fastapi_users.password import PasswordHelperProtocol
 from beanie import PydanticObjectId
 import jinja2
 from .user_models import User
-from .auth import Settings
+from .config import AuthSettings
 from .email_sender import EmailSender
 
 
 class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
     """User management logic"""
-    settings = Settings()
+    settings = AuthSettings()
     reset_password_token_secret = settings.secret_key
     verification_token_secret = settings.secret_key
 
