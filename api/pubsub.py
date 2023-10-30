@@ -9,15 +9,8 @@ import asyncio
 
 import aioredis
 from cloudevents.http import CloudEvent, to_json
-from pydantic import BaseModel, BaseSettings, Field
-
-
-class Settings(BaseSettings):
-    """Pub/Sub settings loaded from the environment"""
-    cloud_events_source: str = "https://api.kernelci.org/"
-    redis_host: str = "redis"
-    redis_db_number: int = 1
-    keep_alive_period: int = 45
+from pydantic import BaseModel, Field
+from .config import PubSubSettings
 
 
 class Subscription(BaseModel):
@@ -49,7 +42,8 @@ class PubSub:
         return pubsub
 
     def __init__(self, host=None, db_number=None):
-        self._settings = Settings()
+        # self._settings = Settings()
+        self._settings = PubSubSettings()
         if host is None:
             host = self._settings.redis_host
         if db_number is None:
