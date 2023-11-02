@@ -1,50 +1,32 @@
+---
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
 # Copyright (C) 2023 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 
-# Nginx ingress
-
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: api
+  labels:
+    app: ingressclass-api
+  name: api-ingress
   namespace: kernelci-api
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
+    cert-manager.io/cluster-issuer: all-issuer
 spec:
-  ingressClassName: nginx
+  ingressClassName: ingressclass-api
   tls:
-  - hosts:
-    - kernelci-api.eastus.cloudapp.azure.com
-    secretName: tls-secret
+    - hosts:
+        - kernelci-api.eastus.cloudapp.azure.com
+      secretName: api-tls
   rules:
-  - host: kernelci-api.eastus.cloudapp.azure.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: api
-            port:
-              number: 80
----
-
-# SSL certificate issuer
-
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt
-  namespace: kernelci-api
-spec:
-  acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
-    email: kernelci-tsc@groups.io
-    privateKeySecretRef:
-      name: letsencrypt
-    solvers:
-    - http01:
-        ingress:
-          class: nginx
+    - host: kernelci-api.eastus.cloudapp.azure.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: api
+                port:
+                  number: 8000
+            path: /
+            pathType: Prefix
