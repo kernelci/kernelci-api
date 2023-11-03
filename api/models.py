@@ -213,6 +213,14 @@ class DefaultTimeout:
 
 class Node(DatabaseModel):
     """KernelCI primitive node object model for generic test results"""
+
+    # The first public API version is 1. Each new API version increases
+    # the number by 1.
+    # 0 = pre-release API version
+    api_version: int = Field(
+        default=0,
+        description="KernelCI API version this node conforms to"
+    )
     kind: str = Field(
         default='node',
         description="Type of the object"
