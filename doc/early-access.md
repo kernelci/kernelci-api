@@ -72,7 +72,7 @@ easier to read.
   password, you should change it to use your own arbitrary one instead:
 
 ```sh
-$ kci user change_password --user <your-user-name>
+$ kci user password update <your-user-name>
 Current password:
 New password:
 Retype new password:
@@ -82,7 +82,7 @@ Retype new password:
   password:
 
 ```sh
-$ kci user get_token --username <your-username>
+$ kci user token <your-username>
 Password:
 {"access_token": "<your-api-token-here>", "token_type": "bearer"}
 ```
@@ -90,12 +90,12 @@ Password:
 * Store your API token in a `kernelci.toml` file, for example:
 
 ```toml
-[DEFAULT]
-api_config = "early-access"
+[kci]
+api = 'early-access'
 indent = 4
 
-[api.early-access]
-api_token = "<your-api-token-here>"
+[kci.secrets]
+api.early-access.token = "<your-api-token-here>"
 ```
 
 * To verify things are set up correctly:
@@ -123,44 +123,63 @@ also use SSH or soon any S3-compatible storage.  There is a quota, currently
 5TiB for all the Early Access files.  Old files will be deleted after a while
 so please don't rely on it for any persistent storage.
 
-The token from your confirmation email should also be stored in `kernelci.toml`
-as `storage_cred` in order to make use of it, and it's convenient to also add a
-`storage_config` entry in the default section to avoid having to specify it all
-the time on the command line.  For example:
+Each user has a separate Azure File "share", so you need to add a YAML
+configuration entry for your own storage.  This can be done by adding a file
+such as `config/core/<your-username>.yaml`:
+
+```yaml
+storage:
+  early-access-azure-<your-username>:
+    storage_type: azure
+    base_url: https://kciapistagingstorage1.file.core.windows.net/
+    sas_public_token: "?sv=2022-11-02&ss=f&srt=sco&sp=r&se=2024-10-17T19:19:12Z&st=2023-10-17T11:19:12Z&spr=https&sig=sLmFlvZHXRrZsSGubsDUIvTiv%2BtzgDq6vALfkrtWnv8%3D"
+    share: <your-username>
+```
+
+Then the token from your confirmation email needs to be stored in the
+`kernelci.toml` settings file in order to make use of it.  Please note that
+only the part of the URL with the arguments starting with the `?` needs to be
+stored here, not the full URL.  It's convenient to also add the `storage`
+config name to avoid having to pass `--storage` on the command line all the
+time.  For example:
 
 ```toml
-[DEFAULT]
-api_config = "early-access"
-storage_config = 'early-access-azure'
+[kci]
+api = "early-access"
+storage = "early-access-azure-<your-username>"
 indent = 4
+config = ["config/core", "<your-username>.yaml"]
 
-[api.early-access]
-api_token = "your-api-token-here"
-
-[storage.early-access-azure]
-storage_cred = "your-azure-files-token-here"
+[kci.secrets]
+api.early-access.token = "<your-api-token-here>"
+storage.early-access-azure-<your-username>.credentials = "?sp=rcwdl&st=...<your-full-storage-token-here>"
 ```
 
 Then here's a quick way to check it's working, still in the same container:
 
 ```sh
 $ echo "your-username was here" > your-username.txt
-$ kci storage upload your-username.txt --verbose --upload-path=your-username
-https://kciapistagingstorage1.file.core.windows.net/early-access/your-username/your-username.txt?sv=2022-11-02&ss=bfqt&srt=sco&sp=r&se=2123-07-20T22:00:00Z&st=2023-07-21T18:27:25Z&spr=https&sig=TDt3NorDXylmyUtBQnP1S5BZ3uywR06htEGTG%2BSxLWg%3D
-$ curl "https://kciapistagingstorage1.file.core.windows.net/early-access/your-username/your-username.txt?sv=2022-11-02&ss=bfqt&srt=sco&sp=r&se=2123-07-20T22:00:00Z&st=2023-07-21T18:27:25Z&spr=https&sig=TDt3NorDXylmyUtBQnP1S5BZ3uywR06htEGTG%2BSxLWg%3D"
+$ kci storage upload your-username.txt
+https://kciapistagingstorage1.file.core.windows.net/your-username/your-username.txt?sv=2022-11-02&ss=bfqt&srt=sco&sp=r&se=2123-07-20T22:00:00Z&st=2023-07-21T18:27:25Z&spr=https&sig=TDt3NorDXylmyUtBQnP1S5BZ3uywR06htEGTG%2BSxLWg%3D
+$ curl "https://kciapistagingstorage1.file.core.windows.net/your-username/your-username.txt?sv=2022-11-02&ss=bfqt&srt=sco&sp=r&se=2123-07-20T22:00:00Z&st=2023-07-21T18:27:25Z&spr=https&sig=TDt3NorDXylmyUtBQnP1S5BZ3uywR06htEGTG%2BSxLWg%3D"
 your-username was here
 ```
 
 You can then use this kind of publicly-available URL to refer to files in the
 data sent to API, or any URL from any arbitrary storage as long as it allows
-download the file without additional authentication.  The `--upload-path`
-argument is optional, it's just to keep things tidy and not mix up your data
-with other users.  For typical API data, the file names should contain unique
-object IDs so there shouldn't be any collision anyway.
+download the file without additional authentication.  As per the help message:
+
+```
+Usage: kci storage upload [OPTIONS] FILENAME [PATH]
+```
+
+The `PATH` positional argument is optional, it's just to keep things tidy
+within your own share and create a target directory where the file will get
+uploaded.  For typical API data, the file names should contain unique object
+IDs so there shouldn't be any collision anyway.
 
 > **Note**: There's no way to list the files that have been uploaded via the
-> `kci` tool yet so make sure you keep a copy of the URLs.  The `--verbose`
-> argument is needed to get the URL after an upload.
+> `kci storage` tool yet so make sure you keep a copy of the URL.
 
 ## Going further
 
