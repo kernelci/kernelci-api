@@ -17,8 +17,10 @@ from fastapi import (
     HTTPException,
     status,
     Request,
+    Form
 )
 from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
@@ -325,6 +327,25 @@ async def get_users(request: Request):
     paginated_resp.items = serialize_paginated_data(
         User, paginated_resp.items)
     return paginated_resp
+
+
+@app.post("/user/update-password", response_model=UserRead, tags=["user"])
+async def update_password(request: Request,
+                          credentials: OAuth2PasswordRequestForm = Depends(),
+                          new_password: str = Form(None)):
+    """Update user password"""
+    user = await UserManager(BeanieUserDatabase(User)).authenticate(
+        credentials)
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="LOGIN_BAD_CREDENTIALS",
+        )
+    user_update = UserUpdate(password=new_password)
+    user_from_username = await db.find_one(User, username=credentials.username)
+    await users_router.routes[3].endpoint(
+        user_update, request, user_from_username,
+        UserManager(BeanieUserDatabase(User)))
 
 
 # -----------------------------------------------------------------------------
