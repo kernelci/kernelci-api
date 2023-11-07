@@ -556,7 +556,7 @@ async def put_node(node_id: str, node: Node,
 async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy):
     """Set node ownership information for a hierarchy of nodes"""
     if not hierarchy.node.owner:
-        hierarchy.node.owner = user.profile.username
+        hierarchy.node.owner = user.username
     for node in hierarchy.child_nodes:
         await _set_node_ownership_recursively(user, node)
 
