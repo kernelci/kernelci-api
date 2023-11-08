@@ -192,24 +192,23 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         JSON with Node object attributes
     """
     revision_obj = Revision(
-                tree="mainline",
-                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-                branch="master",
-                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-                describe="v5.16-rc4-31-g2a987e65025e"
+        tree="mainline",
+        url="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+        branch="master",
+        commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+        describe="v5.16-rc4-31-g2a987e65025e"
     )
     node_obj = Node(
-            id="61bda8f2eb1a63d2b7152418",
-            kind="node",
-            name="checkout",
-            path=["checkout"],
-            group="blah",
-            revision=revision_obj,
-            parent=None,
-            state="closing",
-            result=None,
-        )
+        id="61bda8f2eb1a63d2b7152418",
+        kind="checkout",
+        name="checkout",
+        path=["checkout"],
+        group="blah",
+        data = {'kernel_revision': revision_obj},
+        parent=None,
+        state="closing",
+        result=None,
+    )
     mock_db_find_by_id.return_value = node_obj
 
     response = test_client.get("node/61bda8f2eb1a63d2b7152418")
@@ -228,7 +227,6 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         'path',
         'parent',
         'result',
-        'revision',
         'state',
         'timeout',
         'updated',
