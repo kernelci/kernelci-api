@@ -262,17 +262,18 @@ def test_get_all_nodes(mock_db_find_by_attributes,
     """
     node_obj_1 = {
         "id": "61bda8f2eb1a63d2b7152418",
-        "kind": "node",
+        "kind": "checkout",
         "name": "checkout",
         "path": ["checkout"],
-        "revision": {
-            "tree": "mainline",
-            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
-                "torvalds/linux.git",
-            "branch": "master",
-            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-            "describe": "v5.16-rc4-31-g2a987e65025e",
-            "version": None,
+        "data": {
+            "kernel_revision": {
+                "tree": "mainline",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+                "branch": "master",
+                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                "describe": "v5.16-rc4-31-g2a987e65025e",
+                "version": None,
+            },
         },
         "parent": None,
         "state": "closing",
@@ -281,18 +282,19 @@ def test_get_all_nodes(mock_db_find_by_attributes,
 
     node_obj_2 = {
         "id": "61bda8f2eb1a63d2b7152414",
-        "kind": "node",
+        "kind": "checkout",
         "name": "test_node",
         "path": ["checkout", "test_suite", "test_node"],
         "group": None,
-        "revision": {
-            "tree": "mainline",
-            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
-                   "torvalds/linux.git",
-            "branch": "master",
-            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb45",
-            "describe": "v5.16-rc4-31-g2a987e65025e",
-            "version": None,
+        "data": {
+            "kernel_revision": {
+                "tree": "mainline",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+                "branch": "master",
+                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb45",
+                "describe": "v5.16-rc4-31-g2a987e65025e",
+                "version": None,
+            },
         },
         "parent": None,
         "state": "closing",
@@ -301,18 +303,19 @@ def test_get_all_nodes(mock_db_find_by_attributes,
 
     node_obj_3 = {
         "id": "61bda8f2eb1a63d2b7152421",
-        "kind": "node",
+        "kind": "checkout",
         "name": "test",
         "path": ["checkout", "group", "test"],
         "group": None,
-        "revision": {
-            "tree": "baseline",
-            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-            "branch": "master",
-            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-            "describe": "v5.16-rc4-31-g2a987e65025e",
-            "version": None,
+        "data": {
+            "kernel_revision": {
+                "tree": "baseline",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+                "branch": "master",
+                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                "describe": "v5.16-rc4-31-g2a987e65025e",
+                "version": None,
+            },
         },
         "parent": None,
         "state": "closing",
