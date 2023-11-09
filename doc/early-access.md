@@ -143,6 +143,10 @@ storage:
     share: <your-username>
 ```
 
+> **Note**: Please double check the exact name of your share as it may not
+> always be quite the same as your username.  Some characters are valid for
+> username but not for the share name.
+
 Then the token from your confirmation email needs to be stored in the
 `kernelci.toml` settings file in order to make use of it.  Please note that
 only the part of the URL with the arguments starting with the `?` needs to be
@@ -161,6 +165,10 @@ config = ["/etc/kernelci/core", "<your-username>.yaml"]
 api.early-access.token = "<your-api-token-here>"
 storage.early-access-azure-<your-username>.credentials = "?sp=rcwdl&st=...<your-full-storage-token-here>"
 ```
+
+> **Note**: If your username contains a dot or any special character, please
+> surround it with quotes to ensure it gets parsed correctly as TOML.  For
+> example: `storage."early-access-azure-my.name".credentials = "..."`.
 
 Then here's a quick way to check it's working, still in the same container:
 
