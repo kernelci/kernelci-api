@@ -155,7 +155,7 @@ time.  For example:
 api = "early-access"
 storage = "early-access-azure-<your-username>"
 indent = 4
-config = ["config/core", "<your-username>.yaml"]
+config = ["/etc/kernelci/core", "<your-username>.yaml"]
 
 [kci.secrets]
 api.early-access.token = "<your-api-token-here>"
