@@ -140,11 +140,16 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         return user
 
 
+def create_user_manager():
+    """Create a UserManager object"""
+    return UserManager(BeanieUserDatabase(User))
+
+
 async def get_user_db():
-    """Database adapter for fastapi-users"""
+    """Get a generator with the database adapter for fastapi-users"""
     yield BeanieUserDatabase(User)
 
 
 async def get_user_manager(user_db: BeanieUserDatabase = Depends(get_user_db)):
-    """Get user manager"""
+    """Get a generator with the user manager"""
     yield UserManager(user_db)
