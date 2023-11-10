@@ -220,12 +220,13 @@ async def update_me(request: Request, user: UserUpdate,
     Custom user update router handler will only allow users to update
     its own profile. Adding itself to 'admin' group is not allowed.
     """
-    existing_user = await db.find_one(User, username=user.username)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists",
-        )
+    if user.username and user.username != current_user.username:
+        existing_user = await db.find_one(User, username=user.username)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Username already exists: {user.username}",
+            )
     groups = []
     if user.groups:
         for group_name in user.groups:
@@ -251,7 +252,6 @@ async def update_me(request: Request, user: UserUpdate,
 async def update_user(user_id: str, request: Request, user: UserUpdate,
                       current_user: User = Depends(get_current_superuser)):
     """Router to allow admin users to update other user account"""
-
     user_from_id = await db.find_by_id(User, user_id)
     if not user_from_id:
         raise HTTPException(
@@ -259,12 +259,13 @@ async def update_user(user_id: str, request: Request, user: UserUpdate,
             detail=f"User not found with id: {user_id}",
         )
 
-    existing_user = await db.find_one(User, username=user.username)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists",
-        )
+    if user.username and user.username != user_from_id.username:
+        existing_user = await db.find_one(User, username=user.username)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Username already exists: {user.username}",
+            )
 
     groups = []
     if user.groups:
