@@ -30,12 +30,19 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
 
     def __init__(self, user_db: BaseUserDatabase[User, PydanticObjectId],
                  password_helper: PasswordHelperProtocol | None = None):
-        self._email_sender = EmailSender()
+        self._email_sender = None
         self._template_env = jinja2.Environment(
                             loader=jinja2.FileSystemLoader(
                                 "./templates/")
                         )
         super().__init__(user_db, password_helper)
+
+    @property
+    def email_sender(self):
+        """EmailSender instance"""
+        if self._email_sender is None:
+            self._email_sender = EmailSender()
+        return self._email_sender
 
     async def on_after_register(self, user: User,
                                 request: Optional[Request] = None):
@@ -50,7 +57,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         content = template.render(
             username=user.username, token=token
         )
-        self._email_sender.create_and_send_email(subject, content, user.email)
+        self.email_sender.create_and_send_email(subject, content, user.email)
 
     async def on_after_verify(self, user: User,
                               request: Optional[Request] = None):
@@ -62,7 +69,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         content = template.render(
             username=user.username,
         )
-        self._email_sender.create_and_send_email(subject, content, user.email)
+        self.email_sender.create_and_send_email(subject, content, user.email)
 
     async def on_after_login(self, user: User,
                              request: Optional[Request] = None):
@@ -77,7 +84,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         content = template.render(
             username=user.username, token=token
         )
-        self._email_sender.create_and_send_email(subject, content, user.email)
+        self.email_sender.create_and_send_email(subject, content, user.email)
 
     async def on_after_reset_password(self, user: User,
                                       request: Optional[Request] = None):
@@ -89,7 +96,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         content = template.render(
             username=user.username,
         )
-        self._email_sender.create_and_send_email(subject, content, user.email)
+        self.email_sender.create_and_send_email(subject, content, user.email)
 
     async def on_after_update(self, user: User, update_dict: Dict[str, Any],
                               request: Optional[Request] = None):
