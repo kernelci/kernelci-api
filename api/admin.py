@@ -48,7 +48,8 @@ async def setup_admin_user(db, username, email, admin_group):
         hashed_password=hashed_password,
         email=email,
         groups=[admin_group],
-        is_superuser=1
+        is_superuser=1,
+        is_verified=1,
     ))
 
 
