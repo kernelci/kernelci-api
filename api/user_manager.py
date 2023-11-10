@@ -10,11 +10,9 @@ from fastapi import Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import BaseUserManager
 from fastapi_users.db import (
-    BaseUserDatabase,
     BeanieUserDatabase,
     ObjectIDIDMixin,
 )
-from fastapi_users.password import PasswordHelperProtocol
 from beanie import PydanticObjectId
 import jinja2
 from .user_models import User
@@ -28,14 +26,12 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
     reset_password_token_secret = settings.secret_key
     verification_token_secret = settings.secret_key
 
-    def __init__(self, user_db: BaseUserDatabase[User, PydanticObjectId],
-                 password_helper: PasswordHelperProtocol | None = None):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._email_sender = None
         self._template_env = jinja2.Environment(
-                            loader=jinja2.FileSystemLoader(
-                                "./templates/")
-                        )
-        super().__init__(user_db, password_helper)
+            loader=jinja2.FileSystemLoader("./templates/")
+        )
 
     @property
     def email_sender(self):
