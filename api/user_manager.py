@@ -40,7 +40,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
     async def on_after_register(self, user: User,
                                 request: Optional[Request] = None):
         """Handler to execute after successful user registration"""
-        print(f"User {user.id} has registered.")
+        print(f"User {user.id} {user.username} has registered.")
 
     async def on_after_request_verify(self, user: User, token: str,
                                       request: Optional[Request] = None):
@@ -55,7 +55,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
     async def on_after_verify(self, user: User,
                               request: Optional[Request] = None):
         """Handler to execute after successful user verification"""
-        print(f"Verification successful for user {user.id}")
+        print(f"Verification successful for user {user.id} {user.username}")
         template = self._template_env.get_template(
             "email-verification-successful.jinja2")
         subject = "Email verification successful for KernelCI API account"
@@ -67,7 +67,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
     async def on_after_login(self, user: User,
                              request: Optional[Request] = None):
         """Handler to execute after successful user login"""
-        print(f"User {user.id} logged in.")
+        print(f"User {user.id} {user.username} logged in.")
 
     async def on_after_forgot_password(self, user: User, token: str,
                                        request: Optional[Request] = None):
@@ -82,7 +82,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
     async def on_after_reset_password(self, user: User,
                                       request: Optional[Request] = None):
         """Handler to execute after successful password reset"""
-        print(f"User {user.id} has reset their password.")
+        print(f"User {user.id} {user.username} has reset their password.")
         template = self._template_env.get_template(
             "reset-password-successful.jinja2")
         subject = "Password reset successful for KernelCI API account"
@@ -94,17 +94,17 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
     async def on_after_update(self, user: User, update_dict: Dict[str, Any],
                               request: Optional[Request] = None):
         """Handler to execute after successful user update"""
-        print(f"User {user.id} has been updated.")
+        print(f"User {user.id} {user.username} has been updated.")
 
     async def on_before_delete(self, user: User,
                                request: Optional[Request] = None):
         """Handler to execute before user delete."""
-        print(f"User {user.id} is going to be deleted.")
+        print(f"User {user.id} {user.username} is going to be deleted.")
 
     async def on_after_delete(self, user: User,
                               request: Optional[Request] = None):
         """Handler to execute after user delete."""
-        print(f"User {user.id} is successfully deleted.")
+        print(f"User {user.id} {user.username} was successfully deleted.")
 
     async def authenticate(
         self, credentials: OAuth2PasswordRequestForm
