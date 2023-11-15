@@ -31,7 +31,7 @@ async def setup_admin_group(db, admin_group):
 
 async def setup_admin_user(db, username, email, admin_group):
     user_obj = await db.find_one_by_attributes(User,
-                                               {'profile.username': username})
+                                               {'username': username})
     if user_obj:
         print(f"User {username} already exists, aborting.")
         print(user_obj.json())
