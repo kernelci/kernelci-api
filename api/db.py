@@ -37,6 +37,11 @@ class Database:
         'ne': '$ne',
     }
 
+    BOOL_VALUE_MAP = {
+        'true': True,
+        'false': False
+    }
+
     def __init__(self, service='mongodb://db:27017', db_name='kernelci'):
         self._motor = motor_asyncio.AsyncIOMotorClient(service)
         self._db = self._motor[db_name]
@@ -103,10 +108,19 @@ class Database:
             if isinstance(val, tuple) and len(val) == 2 and val[0] == 'int'
         }
 
+    def _convert_bool_values(self, attributes):
+        for key, val in attributes.items():
+            if isinstance(val, str):
+                bool_value = self.BOOL_VALUE_MAP.get(val.lower())
+                if bool_value is not None:
+                    attributes[key] = bool_value
+        return attributes
+
     def _prepare_query(self, attributes):
         query = attributes.copy()
         query.update(self._translate_operators(query))
         query.update(self._convert_int_values(query))
+        query.update(self._convert_bool_values(query))
         return query
 
     async def find_by_attributes(self, model, attributes):
