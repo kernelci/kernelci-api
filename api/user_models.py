@@ -35,6 +35,11 @@ class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
         # MongoDB collection name for model
         name = "user"
 
+    @classmethod
+    def create_indexes(cls, collection):
+        """Create an index to bind unique constraint to email"""
+        collection.create_index("email", unique=True)
+
 
 class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
     """Schema for reading a user"""
