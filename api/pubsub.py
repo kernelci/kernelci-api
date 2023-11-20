@@ -7,7 +7,7 @@
 
 import asyncio
 
-import aioredis
+from redis import asyncio as aioredis
 from cloudevents.http import CloudEvent, to_json
 from pydantic import BaseModel, Field
 from .config import PubSubSettings
