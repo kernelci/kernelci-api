@@ -648,6 +648,21 @@ async def publish(event: PublishEvent, channel: str,
     await pubsub.publish_cloudevent(channel, event.data, event.attributes)
 
 
+@app.post('/push/{list_name}')
+async def push(raw: dict, list_name: str,
+               user: User = Depends(get_current_user)):
+    """Push a message on the provided list"""
+    attributes = dict(raw)
+    data = attributes.pop('data')
+    await pubsub.push_cloudevent(list_name, data, attributes)
+
+
+@app.get('/pop/{list_name}')
+async def pop(list_name: str, user: User = Depends(get_current_user)):
+    """Pop a message from a given list"""
+    return await pubsub.pop(list_name)
+
+
 # -----------------------------------------------------------------------------
 # Regression
 
