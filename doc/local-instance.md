@@ -100,23 +100,18 @@ Creating admin user...
 
 ### Create an admin API token
 
-Then to get an API token, the `/token` API endpoint can be used.  For example,
+Then to get an API token, the `/user/login` API endpoint can be used.  For example,
 to create an admin token with the same user name and password as used
 previously:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/token' \
+  'http://localhost:8001/latest/user/login' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=&username=admin&password=hello&scope=admin users'
+  -d 'username=admin&password=hello'
 {"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4","token_type":"bearer"}
 ```
-
-> **Note** This token was created with "admin users" scope so it can be used to
-> create additional user accounts.  For more details about API tokens, see the
-> [API
-> documentation](/docs/api/api-details/#create-an-api-token-with-security-scopes)
 
 The token can now be used with API entry points that require authentication.
 For example, to check it's working:
@@ -213,8 +208,8 @@ echo "KCI_API_TOKEN=<your token>" >> .env
 
 > **Note** Admin API token created in the previous section can be used for
 > initial Pipeline instance testing. In production environment the best
-> practice would be to create a separate (non-admin) user with required scopes
-> and generate a new API token for that user.
+> practice would be to create a separate (non-admin) user and generate
+> a new API token for that user.
 
 ### Start docker-compose
 
