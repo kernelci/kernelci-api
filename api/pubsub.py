@@ -7,6 +7,7 @@
 
 import asyncio
 
+import json
 from redis import asyncio as aioredis
 from cloudevents.http import CloudEvent, to_json
 from pydantic import BaseModel, Field
@@ -131,6 +132,25 @@ class PubSub:
         """
         await self._redis.publish(channel, message)
 
+    async def push(self, list_name, message):
+        """Push a message onto the tail of a list
+
+        Push an arbitrary message asynchronously on a List.
+        """
+        await self._redis.rpush(list_name, message)
+
+    async def pop(self, list_name):
+        """Pop a message from a list
+
+        Listen on a given list asynchronously and get a message
+        when received. Only a single consumer will receive the message.
+        """
+        while True:
+            msg = await self._redis.blpop(list_name, timeout=1.0)
+            data = json.loads(msg[1].decode('utf-8')) if msg else None
+            if data is not None:
+                return data
+
     async def publish_cloudevent(self, channel, data, attributes=None):
         """Publish a CloudEvent on a Pub/Sub channel
 
@@ -147,3 +167,19 @@ class PubSub:
             }
         event = CloudEvent(attributes=attributes, data=data)
         await self.publish(channel, to_json(event))
+
+    async def push_cloudevent(self, list_name, data, attributes=None):
+        """Push a CloudEvent on a list
+
+        Push a CloudEvent asynchronously on a given list using the
+        provided data and optional attributes.  The data is the payload of the
+        message.  The attributes are the type and source of event which will be
+        populated by default if not provided.
+        """
+        if not attributes:
+            attributes = {
+                "type": "api.kernelci.org",
+                "source": self._settings.cloud_events_source,
+            }
+        event = CloudEvent(attributes=attributes, data=data)
+        await self.push(list_name, to_json(event))
