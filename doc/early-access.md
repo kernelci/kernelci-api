@@ -91,7 +91,7 @@ Retype new password:
 ```sh
 $ kci user token <your-username>
 Password:
-{"access_token": "<your-api-token-here>", "token_type": "bearer"}
+"<your-api-token-here>"
 ```
 
 * Store your API token in a `kernelci.toml` file, for example:
