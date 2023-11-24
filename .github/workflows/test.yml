@@ -29,7 +29,7 @@ jobs:
 
       - name: Export environment variables
         run: |
-          echo "SECRET_KEY=$(openssl rand -hex 32)" > .env
+          echo "SECRET_KEY=b6451545d2e4635148d768f07877aade3ad8e7e160d52962badd7587a4b9a150" > .env
           echo "SMTP_HOST=smtp.gmail.com" >> .env
           echo "SMTP_PORT=465" >> .env
           echo "EMAIL_SENDER=test@kernelci.org" >> .env

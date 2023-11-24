@@ -56,7 +56,7 @@ jobs:
 
       - name: Run pytest
         run: |
-          SECRET_KEY=$(openssl rand -hex 32) SMTP_HOST=smtp.gmail.com SMTP_PORT=465 EMAIL_SENDER=test@kernelci.org EMAIL_PASSWORD=random pytest -vs tests/unit_tests/
+          SECRET_KEY=b6451545d2e4635148d768f07877aade3ad8e7e160d52962badd7587a4b9a150 SMTP_HOST=smtp.gmail.com SMTP_PORT=465 EMAIL_SENDER=test@kernelci.org EMAIL_PASSWORD=random pytest -vs tests/unit_tests/
 
   lint:
     runs-on: ubuntu-22.04
