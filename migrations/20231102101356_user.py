@@ -23,9 +23,9 @@ def upgrade(db: "pymongo.database.Database"):
                 "_id": user['_id'],
                 "email": user['profile']['email'],
                 "hashed_password": user['profile']['hashed_password'],
-                "is_active": 1,
-                "is_superuser": 0,
-                "is_verified": 0,
+                "is_active": True,
+                "is_superuser": False,
+                "is_verified": False,
                 "username": user['profile']['username'],
                 "groups": user['profile']['groups']
             },
