@@ -367,3 +367,24 @@ def get_model_from_kind(kind: str):
             "regression": Regression
         }
     return models[kind]
+
+
+class PublishAttributes(BaseModel):
+    """API model for the attributes of a Publish operation"""
+    type: str = Field(
+        default='api.kernelci.org',
+        description="Type of the <publish> event"
+    )
+    source: str = Field(
+        description="Source of the <publish> event"
+    )
+
+
+class PublishEvent(BaseModel):
+    """API model for the data of a <publish> event"""
+    attributes: Optional[PublishAttributes] = Field(
+        description="Event attributes"
+    )
+    data: Dict = Field(
+        description="Event payload"
+    )
