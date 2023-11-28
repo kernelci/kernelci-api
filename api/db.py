@@ -208,3 +208,10 @@ class Database:
         if res.matched_count == 0:
             raise ValueError(f"No object found with id: {obj.id}")
         return obj.__class__(**await col.find_one(ObjectId(obj.id)))
+
+    async def delete_by_id(self, model, obj_id):
+        """Delete one object matching a given id"""
+        col = self._get_collection(model)
+        result = await col.delete_one({"_id": ObjectId(obj_id)})
+        if result.deleted_count == 0:
+            raise ValueError(f"No object found with id: {obj_id}")
