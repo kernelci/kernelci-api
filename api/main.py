@@ -606,6 +606,11 @@ async def listen(sub_id: int, user: User = Depends(get_current_user)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Subscription id not found: {str(error)}"
         ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error while listening to sub id {sub_id}: {str(error)}"
+        ) from error
 
 
 @app.post('/publish/{channel}')
