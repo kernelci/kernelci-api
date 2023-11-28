@@ -34,6 +34,7 @@ from .models import (
     Hierarchy,
     Regression,
     UserGroup,
+    PublishEvent,
     get_model_from_kind
 )
 from .paginator_models import PageModel
@@ -609,12 +610,10 @@ async def listen(sub_id: int, user: User = Depends(get_current_user)):
 
 
 @app.post('/publish/{channel}')
-async def publish(raw: dict, channel: str,
+async def publish(event: PublishEvent, channel: str,
                   user: User = Depends(get_current_user)):
-    """Publish a message on the provided Pub/Sub channel"""
-    attributes = dict(raw)
-    data = attributes.pop('data')
-    await pubsub.publish_cloudevent(channel, data, attributes)
+    """Publish an event on the provided Pub/Sub channel"""
+    await pubsub.publish_cloudevent(channel, event.data, event.attributes)
 
 
 # -----------------------------------------------------------------------------
