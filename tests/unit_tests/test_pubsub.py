@@ -44,6 +44,8 @@ async def test_subscribe_multiple_channels(mock_pubsub):
         PubSub._subscriptions dict should have 2 entries. This entries'
         keys should be 1, 2, and 3.
     """
+    # Reset `ID_KEY` value to get subscription ID starting from 1
+    await mock_pubsub._redis.set(mock_pubsub.ID_KEY, 0)
     channels = ((1, 'CHANNEL1'), (2, 'CHANNEL2'), (3, 'CHANNEL3'))
     for expected_id, expected_channel in channels:
         result = await mock_pubsub.subscribe(expected_channel)
