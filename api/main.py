@@ -393,6 +393,33 @@ async def get_group(group_id: str):
     return await db.find_by_id(UserGroup, group_id)
 
 
+@app.delete('/group/{group_id}', response_model=PageModel)
+async def delete_group(group_id: str,
+                       current_user: User = Depends(get_current_superuser)):
+    """Delete user group matching the provided group id"""
+    group_from_id = await db.find_by_id(UserGroup, group_id)
+    if not group_from_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Group not found with id: {group_id}"
+        )
+    # Remove users from the group before deleting it
+    users = await db.find_by_attributes(
+        User, {"groups.name": group_from_id.name})
+    for user in users.items:
+        user['groups'].remove(group_from_id)
+        await db.update(User(**user))
+
+    # Remove group from user groups that are permitted to update node
+    nodes = await db.find_by_attributes(
+        Node, {"user_groups": group_from_id.name})
+    for node in nodes.items:
+        node['user_groups'].remove(group_from_id.name)
+        await db.update(Node(**node))
+
+    await db.delete_by_id(UserGroup, group_id)
+
+
 # -----------------------------------------------------------------------------
 # Nodes
 
