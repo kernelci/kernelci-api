@@ -170,10 +170,11 @@ class PubSub:
         for more details.
         """
         if not attributes:
-            attributes = {
-                "type": "api.kernelci.org",
-                "source": self._settings.cloud_events_source,
-            }
+            attributes = {}
+        if not attributes.get('type'):
+            attributes['type'] = "api.kernelci.org"
+        if not attributes.get('source'):
+            attributes['source'] = self._settings.cloud_events_source
         event = CloudEvent(attributes=attributes, data=data)
         await self.publish(channel, to_json(event))
 
