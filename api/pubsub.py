@@ -131,8 +131,12 @@ class PubSub:
             msg = await sub['redis_sub'].get_message(
                 ignore_subscribe_messages=True, timeout=1.0
             )
-            if msg is not None:
-                return msg
+            if msg is None:
+                continue
+            msg_data = json.loads(msg['data'])
+            if 'owner' in msg_data and msg_data['owner'] != sub['sub'].user:
+                continue
+            return msg
 
     async def publish(self, channel, message):
         """Publish a message on a channel
