@@ -53,6 +53,12 @@ class PubSub:
         if db_number is None:
             db_number = self._settings.redis_db_number
         self._redis = aioredis.from_url(f'redis://{host}/{db_number}')
+        # self._subscriptions is a dict that matches a subscription id
+        # (key) with a Subscription object ('sub') and a redis
+        # PubSub object ('redis_sub'). For instance:
+        # {1 : {'sub': <Subscription>, 'redis_sub': <PubSub>}}
+        #
+        # Note that this matching is kept in this dict only.
         self._subscriptions = {}
         self._channels = set()
         self._lock = asyncio.Lock()
@@ -82,24 +88,24 @@ class PubSub:
     def _update_channels(self):
         self._channels = set()
         for sub in self._subscriptions.values():
-            for channel in sub.channels.keys():
+            for channel in sub['redis_sub'].channels.keys():
                 self._channels.add(channel.decode())
 
-    async def subscribe(self, channel):
+    async def subscribe(self, channel, user):
         """Subscribe to a Pub/Sub channel
 
-        Subscribe to a given channel and return a Subscription object
-        containing the subscription id which can then be used again in other
-        methods.
+        Subscribe to a given channel and return a Subscription object.
         """
         sub_id = await self._redis.incr(self.ID_KEY)
         async with self._lock:
-            sub = self._redis.pubsub()
-            self._subscriptions[sub_id] = sub
-            await sub.subscribe(channel)
+            redis_sub = self._redis.pubsub()
+            sub = Subscription(id=sub_id, channel=channel, user=user)
+            self._subscriptions[sub_id] = {'redis_sub': redis_sub,
+                                           'sub': sub}
+            await redis_sub.subscribe(channel)
             self._update_channels()
             self._start_keep_alive_timer()
-            return Subscription(id=sub_id, channel=channel)
+            return sub
 
     async def unsubscribe(self, sub_id):
         """Unsubscribe from a Pub/Sub channel
@@ -108,10 +114,9 @@ class PubSub:
         in a Subscription object.
         """
         async with self._lock:
-            sub = self._subscriptions[sub_id]
-            self._subscriptions.pop(sub_id)
+            sub = self._subscriptions.pop(sub_id)
             self._update_channels()
-            await sub.unsubscribe()
+            await sub['redis_sub'].unsubscribe()
 
     async def listen(self, sub_id):
         """Listen for Pub/Sub messages
@@ -123,7 +128,7 @@ class PubSub:
             sub = self._subscriptions[sub_id]
 
         while True:
-            msg = await sub.get_message(
+            msg = await sub['redis_sub'].get_message(
                 ignore_subscribe_messages=True, timeout=1.0
             )
             if msg is not None:
