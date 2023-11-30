@@ -22,6 +22,10 @@ class Subscription(BaseModel):
     channel: str = Field(
         description='Subscription channel name'
     )
+    user: str = Field(
+        description=("Username of the user that created the "
+                     "subscription (owner)")
+    )
 
 
 class PubSub:
