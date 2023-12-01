@@ -611,7 +611,7 @@ async def put_nodes(
 @app.post('/subscribe/{channel}', response_model=Subscription)
 async def subscribe(channel: str, user: User = Depends(get_current_user)):
     """Subscribe handler for Pub/Sub channel"""
-    return await pubsub.subscribe(channel)
+    return await pubsub.subscribe(channel, user.username)
 
 
 @app.post('/unsubscribe/{sub_id}')
