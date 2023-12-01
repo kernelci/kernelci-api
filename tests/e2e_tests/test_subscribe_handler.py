@@ -28,7 +28,7 @@ def test_subscribe_node_channel(test_client):
     )
     pytest.node_channel_subscription_id = response.json()['id']
     assert response.status_code == 200
-    assert ('id', 'channel') == tuple(response.json().keys())
+    assert ('id', 'channel', 'user') == tuple(response.json().keys())
     assert response.json().get('channel') == 'node'
 
 
@@ -51,7 +51,7 @@ def test_subscribe_test_channel(test_client):
     )
     pytest.test_channel_subscription_id = response.json()['id']
     assert response.status_code == 200
-    assert ('id', 'channel') == tuple(response.json().keys())
+    assert ('id', 'channel', 'user') == tuple(response.json().keys())
     assert response.json().get('channel') == 'test_channel'
 
 
@@ -75,5 +75,5 @@ def test_subscribe_user_group_channel(test_client):
     )
     pytest.user_group_channel_subscription_id = response.json()['id']
     assert response.status_code == 200
-    assert ('id', 'channel') == tuple(response.json().keys())
+    assert ('id', 'channel', 'user') == tuple(response.json().keys())
     assert response.json().get('channel') == 'user_group'

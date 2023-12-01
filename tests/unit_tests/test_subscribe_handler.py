@@ -18,7 +18,7 @@ def test_subscribe_endpoint(mock_subscribe, test_client):
         HTTP Response Code 200 OK
         JSON with 'id' and 'channel' keys
     """
-    subscribe = Subscription(id=1, channel='abc')
+    subscribe = Subscription(id=1, channel='abc', user='test')
     mock_subscribe.return_value = subscribe
 
     response = test_client.post(
@@ -29,4 +29,4 @@ def test_subscribe_endpoint(mock_subscribe, test_client):
     )
     print("response.json()", response.json())
     assert response.status_code == 200
-    assert ('id', 'channel') == tuple(response.json().keys())
+    assert ('id', 'channel', 'user') == tuple(response.json().keys())

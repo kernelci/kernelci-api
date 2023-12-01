@@ -23,7 +23,7 @@ async def test_subscribe_single_channel(mock_pubsub):
         PubSub._subscriptions dict should have one entry. This entry's
         key should be equal 1.
     """
-    result = await mock_pubsub.subscribe('CHANNEL')
+    result = await mock_pubsub.subscribe('CHANNEL', 'test')
     assert result.channel == 'CHANNEL'
     assert result.id == 1
     assert len(mock_pubsub._subscriptions) == 1
@@ -48,7 +48,7 @@ async def test_subscribe_multiple_channels(mock_pubsub):
     await mock_pubsub._redis.set(mock_pubsub.ID_KEY, 0)
     channels = ((1, 'CHANNEL1'), (2, 'CHANNEL2'), (3, 'CHANNEL3'))
     for expected_id, expected_channel in channels:
-        result = await mock_pubsub.subscribe(expected_channel)
+        result = await mock_pubsub.subscribe(expected_channel, 'test')
         assert result.channel == expected_channel
         assert result.id == expected_id
     assert len(mock_pubsub._subscriptions) == 3

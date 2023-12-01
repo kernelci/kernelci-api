@@ -28,7 +28,7 @@ from api.main import (
 )
 from api.models import UserGroup
 from api.user_models import User
-from api.pubsub import PubSub
+from api.pubsub import PubSub, Subscription
 
 BEARER_TOKEN = "Bearer \
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.\
@@ -223,8 +223,10 @@ def mock_pubsub_subscriptions(mocker):
     """Mocks `_redis` and `_subscriptions` member of PubSub class instance"""
     pubsub = PubSub()
     redis_mock = fakeredis.aioredis.FakeRedis()
+    sub = Subscription(id=1, channel='test', user='test')
     mocker.patch.object(pubsub, '_redis', redis_mock)
-    subscriptions_mock = dict({1: pubsub._redis.pubsub()})
+    subscriptions_mock = dict(
+        {1: {'sub': sub, 'redis_sub': pubsub._redis.pubsub()}})
     mocker.patch.object(pubsub, '_subscriptions', subscriptions_mock)
     return pubsub
 
