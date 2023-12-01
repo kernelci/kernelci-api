@@ -549,7 +549,10 @@ async def post_node(node: Node,
     node.owner = current_user.username
     obj = await db.create(node)
     data = _get_node_event_data('created', obj)
-    await pubsub.publish_cloudevent('node', data)
+    attributes = {}
+    if data.get('owner', None):
+        attributes['owner'] = data['owner']
+    await pubsub.publish_cloudevent('node', data, attributes)
     return obj
 
 
@@ -578,7 +581,10 @@ async def put_node(node_id: str, node: Node,
 
     obj = await db.update(node)
     data = _get_node_event_data('updated', obj)
-    await pubsub.publish_cloudevent('node', data)
+    attributes = {}
+    if data.get('owner', None):
+        attributes['owner'] = data['owner']
+    await pubsub.publish_cloudevent('node', data, attributes)
     return obj
 
 
@@ -600,7 +606,10 @@ async def put_nodes(
     await _set_node_ownership_recursively(user, nodes)
     obj_list = await db.create_hierarchy(nodes, Node)
     data = _get_node_event_data('updated', obj_list[0])
-    await pubsub.publish_cloudevent('node', data)
+    attributes = {}
+    if data.get('owner', None):
+        attributes['owner'] = data['owner']
+    await pubsub.publish_cloudevent('node', data, attributes)
     return obj_list
 
 
