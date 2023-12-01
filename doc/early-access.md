@@ -79,10 +79,20 @@ easier to read.
   password, you should change it to use your own arbitrary one instead:
 
 ```sh
-$ kci user password update <your-user-name>
+$ kci user password update <your-username>
 Current password:
 New password:
 Retype new password:
+```
+
+* Then verify your email address by providing verification token
+sent to your email:
+
+```sh
+$ kci user verify <your-username>
+Sending verification token to <your-email>
+Verification token: <verification-token>
+Email verification successful!
 ```
 
 * Then create an API token by providing your username and new
@@ -111,13 +121,12 @@ api.early-access.token = "<your-api-token-here>"
 $ kci user whoami
 {
     "id": "64f4a0978326c545a780bffc",
-    "active": true,
-    "profile": {
-        "username": "(your-username)",
-        "hashed_password": "(password hash)",
-        "groups": [],
-        "email": "(email@something.com)"
-    }
+    "email": "<your-email>"
+    "is_active": true,
+    "is_superuser": false,
+    "is_verified": true,
+    "groups": [],
+    "username": "<your-username>"
 }
 ```
 
