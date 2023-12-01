@@ -647,7 +647,20 @@ async def listen(sub_id: int, user: User = Depends(get_current_user)):
 async def publish(event: PublishEvent, channel: str,
                   user: User = Depends(get_current_user)):
     """Publish an event on the provided Pub/Sub channel"""
-    await pubsub.publish_cloudevent(channel, event.data, event.attributes)
+    event_dict = PublishEvent.dict(event)
+    # 1 - Extract data and attributes from the event
+    # 2 - Add the owner as an extra attribute
+    # 3 - Collect all the other extra attributes, if available, without
+    #     overwriting any of the standard ones in the dict
+    data = event_dict.pop('data')
+    extra_attributes = event_dict.pop("attributes")
+    attributes = event_dict
+    attributes['owner'] = user.username
+    if extra_attributes:
+        for k in extra_attributes:
+            if k not in attributes:
+                attributes[k] = extra_attributes[k]
+    await pubsub.publish_cloudevent(channel, data, attributes)
 
 
 @app.post('/push/{list_name}')
