@@ -110,7 +110,7 @@ $ curl -X 'POST' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'username=admin&password=hello'
-{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4","token_type":"bearer"}
+{"access_token":"<your-api-token>","token_type":"bearer"}
 ```
 
 The token can now be used with API entry points that require authentication.
@@ -121,7 +121,8 @@ $ curl -X 'GET' \
   'http://localhost:8001/latest/whoami' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4'
-{"id":"615f30020eb7c3c6616e5ac3","profile": {"username":"admin","hashed_password":"$2b$12$VtfVij6zz20F/Qr0Ri18O.11.0LJMMXyJxAJAHQbKU0jC96eo2fr.", "groups": "admin", "email": "admin@kernelci.org"},"active":true}
+{"id":"615f30020eb7c3c6616e5ac3", "email": "admin@kernelci.org", "is_active":true, "is_superuser":true, "is_verified":true,
+"groups": [{"id":"648c07a70fccad400a122509","name":"admin"}], "username":"admin"}
 ```
 
 ### Setup SSH keys
