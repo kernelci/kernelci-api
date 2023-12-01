@@ -627,11 +627,16 @@ async def subscribe(channel: str, user: User = Depends(get_current_user)):
 async def unsubscribe(sub_id: int, user: User = Depends(get_current_user)):
     """Unsubscribe handler for Pub/Sub channel"""
     try:
-        await pubsub.unsubscribe(sub_id)
+        await pubsub.unsubscribe(sub_id, user.username)
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Subscription id not found: {str(error)}"
+        ) from error
+    except RuntimeError as error:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(error)
         ) from error
 
 

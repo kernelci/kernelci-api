@@ -107,14 +107,21 @@ class PubSub:
             self._start_keep_alive_timer()
             return sub
 
-    async def unsubscribe(self, sub_id):
+    async def unsubscribe(self, sub_id, user=None):
         """Unsubscribe from a Pub/Sub channel
 
         Unsubscribe from a channel using the provided subscription id as found
         in a Subscription object.
         """
         async with self._lock:
-            sub = self._subscriptions.pop(sub_id)
+            sub = self._subscriptions[sub_id]
+            # Only allow a user to unsubscribe its own
+            # subscriptions. One exception: let an anonymous (internal)
+            # call to this function to unsubscribe any subscription
+            if user and user != sub['sub'].user:
+                raise RuntimeError(f"Subscription {sub_id} "
+                                   f"not owned by {user}")
+            self._subscriptions.pop(sub_id)
             self._update_channels()
             await sub['redis_sub'].unsubscribe()
 
