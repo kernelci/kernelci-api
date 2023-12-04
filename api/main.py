@@ -677,7 +677,7 @@ for sub_app in versioned_app.routes:
         )
 
 
-@app.middleware("http")
+@versioned_app.middleware("http")
 async def redirect_http_requests(request: Request, call_next):
     """Redirect request with version prefix when no version is provided"""
     response = None
