@@ -318,7 +318,8 @@ async def authorize_user(node_id: str,
 @app.get('/users', response_model=PageModel, tags=["user"],
          response_model_exclude={"items": {"__all__": {
                                     "hashed_password"}}})
-async def get_users(request: Request):
+async def get_users(request: Request,
+                    current_user: User = Depends(get_current_user)):
     """Get all the users if no request parameters have passed.
        Get the matching users otherwise."""
     query_params = dict(request.query_params)
