@@ -202,6 +202,7 @@ app.add_api_route(
     tags=["user"],
     methods=["GET"],
     description="Get user information by ID",
+    dependencies=[Depends(get_current_user)],
     endpoint=users_router.routes[2].endpoint)
 app.add_api_route(
     path="/user/{id}",
