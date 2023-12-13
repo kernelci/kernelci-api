@@ -644,7 +644,7 @@ async def unsubscribe(sub_id: int, user: User = Depends(get_current_user)):
 async def listen(sub_id: int, user: User = Depends(get_current_user)):
     """Listen messages from a subscribed Pub/Sub channel"""
     try:
-        return await pubsub.listen(sub_id)
+        return await pubsub.listen(sub_id, user.username)
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
