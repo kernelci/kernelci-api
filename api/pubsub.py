@@ -125,7 +125,7 @@ class PubSub:
             self._update_channels()
             await sub['redis_sub'].unsubscribe()
 
-    async def listen(self, sub_id):
+    async def listen(self, sub_id, user=None):
         """Listen for Pub/Sub messages
 
         Listen on a given subscription id asynchronously and return a message
@@ -134,6 +134,12 @@ class PubSub:
         async with self._lock:
             sub = self._subscriptions[sub_id]
 
+        # Only allow a user to listen to its own subscriptions. One
+        # exception: let an anonymous (internal) call to this function
+        # to listen to any subscription
+        if user and user != sub['sub'].user:
+            raise RuntimeError(f"Subscription {sub_id} "
+                               f"not owned by {user}")
         while True:
             msg = await sub['redis_sub'].get_message(
                 ignore_subscribe_messages=True, timeout=1.0
