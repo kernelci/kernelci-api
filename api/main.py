@@ -29,11 +29,10 @@ from fastapi_users import FastAPIUsers
 from beanie import PydanticObjectId
 from .auth import Authentication
 from .db import Database
-from .models import (
+from kernelci.api.models import (
     Node,
     Hierarchy,
     Regression,
-    UserGroup,
     PublishEvent,
     get_model_from_kind
 )
@@ -45,6 +44,7 @@ from .user_models import (
     UserRead,
     UserCreate,
     UserUpdate,
+    UserGroup,
 )
 
 

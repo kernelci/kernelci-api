@@ -10,8 +10,8 @@ from bson import ObjectId
 from beanie import init_beanie
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
-from .models import Hierarchy, Node, Regression, UserGroup
-from .user_models import User
+from kernelci.api.models import Hierarchy, Node, Regression
+from .user_models import User, UserGroup
 
 
 class Database:

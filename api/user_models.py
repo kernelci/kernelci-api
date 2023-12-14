@@ -18,7 +18,19 @@ from beanie import (
     Document,
     PydanticObjectId,
 )
-from .models import DatabaseModel, UserGroup, ModelId
+from kernelci.api.models_base import DatabaseModel, ModelId
+
+
+class UserGroup(DatabaseModel):
+    """API model to group associated user accounts"""
+    name: str = Field(
+        description="User group name"
+    )
+
+    @classmethod
+    def create_indexes(cls, collection):
+        """Create an index to bind unique constraint to group name"""
+        collection.create_index("name", unique=True)
 
 
 class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
