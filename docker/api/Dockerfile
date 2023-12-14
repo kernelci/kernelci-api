@@ -6,6 +6,8 @@
 FROM python:3.10
 MAINTAINER "KernelCI TSC" <kernelci-tsc@groups.io>
 
+RUN apt-get update && apt-get install --no-install-recommends -y git
+
 # Upgrade pip3 - never mind the warning about running this as root
 RUN pip3 install --upgrade pip
 
@@ -21,5 +23,19 @@ WORKDIR /home/kernelci
 COPY requirements*.txt /home/kernelci/
 ARG REQUIREMENTS=requirements.txt
 RUN pip install --requirement ${REQUIREMENTS}
+
+# Install kernelci Python package from kernelci-core
+USER root
+ARG core_url=https://github.com/kernelci/kernelci-core.git
+ARG core_rev=main
+RUN git clone --depth=1 $core_url /tmp/kernelci-core
+WORKDIR /tmp/kernelci-core
+RUN git fetch origin $core_rev
+RUN git checkout FETCH_HEAD
+RUN python3 setup.py install
+RUN cp -R config /etc/kernelci/
+WORKDIR /home/kernelci
+RUN rm -rf /tmp/kernelci-core
+USER kernelci
 
 CMD ["uvicorn", "api.main:versioned_app", "--host", "0.0.0.0", "--reload"]
