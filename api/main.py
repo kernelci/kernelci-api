@@ -38,7 +38,7 @@ from .models import (
     get_model_from_kind
 )
 from .paginator_models import PageModel
-from .pubsub import PubSub, Subscription
+from .pubsub import PubSub, Subscription, SubscriptionStats
 from .user_manager import get_user_manager, create_user_manager
 from .user_models import (
     User,
@@ -690,6 +690,12 @@ async def push(raw: dict, list_name: str,
 async def pop(list_name: str, user: User = Depends(get_current_user)):
     """Pop a message from a given list"""
     return await pubsub.pop(list_name)
+
+
+@app.get('/stats/subscriptions', response_model=List[SubscriptionStats])
+async def stats(user: User = Depends(get_current_superuser)):
+    """Get details of all existing subscriptions"""
+    return await pubsub.subscription_stats()
 
 
 # -----------------------------------------------------------------------------

@@ -8,6 +8,8 @@
 import asyncio
 
 import json
+from datetime import datetime
+from typing import Optional
 from redis import asyncio as aioredis
 from cloudevents.http import CloudEvent, to_json
 from pydantic import BaseModel, Field
@@ -25,6 +27,16 @@ class Subscription(BaseModel):
     user: str = Field(
         description=("Username of the user that created the "
                      "subscription (owner)")
+    )
+
+
+class SubscriptionStats(Subscription):
+    """Pub/Sub subscription statistics object model"""
+    created: datetime = Field(
+        description='Timestamp of connection creation'
+    )
+    last_poll: Optional[datetime] = Field(
+        description='Timestamp when connection last polled for data'
     )
 
 
@@ -100,9 +112,11 @@ class PubSub:
         async with self._lock:
             redis_sub = self._redis.pubsub()
             sub = Subscription(id=sub_id, channel=channel, user=user)
-            self._subscriptions[sub_id] = {'redis_sub': redis_sub,
-                                           'sub': sub}
             await redis_sub.subscribe(channel)
+            self._subscriptions[sub_id] = {'redis_sub': redis_sub,
+                                           'sub': sub,
+                                           'created': datetime.utcnow(),
+                                           'last_poll': None}
             self._update_channels()
             self._start_keep_alive_timer()
             return sub
@@ -141,6 +155,7 @@ class PubSub:
             raise RuntimeError(f"Subscription {sub_id} "
                                f"not owned by {user}")
         while True:
+            self._subscriptions[sub_id]['last_poll'] = datetime.utcnow()
             msg = await sub['redis_sub'].get_message(
                 ignore_subscribe_messages=True, timeout=1.0
             )
@@ -210,3 +225,18 @@ class PubSub:
             }
         event = CloudEvent(attributes=attributes, data=data)
         await self.push(list_name, to_json(event))
+
+    async def subscription_stats(self):
+        """Get existing subscription details"""
+        subscriptions = []
+        for _, subscription in self._subscriptions.items():
+            sub = subscription['sub']
+            stats = SubscriptionStats(
+                id=sub.id,
+                channel=sub.channel,
+                user=sub.user,
+                created=subscription['created'],
+                last_poll=subscription['last_poll']
+            )
+            subscriptions.append(stats)
+        return subscriptions
