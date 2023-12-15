@@ -8,7 +8,7 @@
 """Unit test function for KernelCI API subscribe handler"""
 
 from tests.unit_tests.conftest import BEARER_TOKEN
-from api.pubsub import Subscription
+from api.models import Subscription
 
 
 def test_subscribe_endpoint(mock_subscribe, test_client):

@@ -26,9 +26,9 @@ from api.main import (
     get_current_user,
     get_current_superuser,
 )
-from api.models import UserGroup
+from api.models import UserGroup, Subscription
 from api.user_models import User
-from api.pubsub import PubSub, Subscription
+from api.pubsub import PubSub
 
 BEARER_TOKEN = "Bearer \
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.\
