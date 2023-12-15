@@ -10,22 +10,8 @@ import asyncio
 import json
 from redis import asyncio as aioredis
 from cloudevents.http import CloudEvent, to_json
-from pydantic import BaseModel, Field
 from .config import PubSubSettings
-
-
-class Subscription(BaseModel):
-    """Pub/Sub subscription object model"""
-    id: int = Field(
-        description='Subscription ID'
-    )
-    channel: str = Field(
-        description='Subscription channel name'
-    )
-    user: str = Field(
-        description=("Username of the user that created the "
-                     "subscription (owner)")
-    )
+from .models import Subscription
 
 
 class PubSub:

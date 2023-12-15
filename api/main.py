@@ -35,10 +35,11 @@ from .models import (
     Regression,
     UserGroup,
     PublishEvent,
+    Subscription,
     get_model_from_kind
 )
 from .paginator_models import PageModel
-from .pubsub import PubSub, Subscription
+from .pubsub import PubSub
 from .user_manager import get_user_manager, create_user_manager
 from .user_models import (
     User,

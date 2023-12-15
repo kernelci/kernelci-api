@@ -383,3 +383,17 @@ class PublishEvent(BaseModel):
     attributes: Optional[Dict] = Field(
         description="Extra Cloudevents Extension Context Attributes"
     )
+
+
+class Subscription(BaseModel):
+    """Pub/Sub subscription object model"""
+    id: int = Field(
+        description='Subscription ID'
+    )
+    channel: str = Field(
+        description='Subscription channel name'
+    )
+    user: str = Field(
+        description=("Username of the user that created the "
+                     "subscription (owner)")
+    )
