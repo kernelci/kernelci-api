@@ -19,6 +19,7 @@ from fastapi import (
     Request,
     Form
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
@@ -704,6 +705,13 @@ versioned_app = VersionedFastAPI(
         ]
     )
 
+versioned_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 """Workaround to use global exception handlers for versioned API.
 The issue has already been reported here:
