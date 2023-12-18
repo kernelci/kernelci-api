@@ -17,27 +17,19 @@ import getpass
 
 from .auth import Authentication
 from .db import Database
-from .models import UserGroup
 from .user_models import User
 
 
-async def setup_admin_group(db, admin_group):
-    group_obj = await db.find_one(UserGroup, name=admin_group)
-    if group_obj is None:
-        print(f"Creating {admin_group} group...")
-        group_obj = await db.create(UserGroup(name=admin_group))
-    return group_obj
-
-
-async def setup_admin_user(db, username, email, admin_group):
+async def setup_admin_user(db, username, email):
+    """Create an admin user"""
     user_obj = await db.find_one_by_attributes(User,
                                                {'username': username})
     if user_obj:
         print(f"User {username} already exists, aborting.")
         print(user_obj.json())
         return None
-    password = getpass.getpass(f"Password for user '{args.username}': ")
-    retyped = getpass.getpass(f"Retype password for user '{args.username}': ")
+    password = getpass.getpass(f"Password for user '{username}': ")
+    retyped = getpass.getpass(f"Retype password for user '{username}': ")
     if password != retyped:
         print("Sorry, passwords do not match, aborting.")
         return None
@@ -47,7 +39,6 @@ async def setup_admin_user(db, username, email, admin_group):
         username=username,
         hashed_password=hashed_password,
         email=email,
-        groups=[admin_group],
         is_superuser=1,
         is_verified=1,
     ))
@@ -56,8 +47,7 @@ async def setup_admin_user(db, username, email, admin_group):
 async def main(args):
     db = Database(args.mongo, args.database)
     await db.initialize_beanie()
-    group = await setup_admin_group(db, args.admin_group)
-    user = await setup_admin_user(db, args.username, args.email, group)
+    await setup_admin_user(db, args.username, args.email)
     return True
 
 
@@ -67,8 +57,6 @@ if __name__ == '__main__':
                         help="Mongo server connection string")
     parser.add_argument('--username', default='admin',
                         help="Admin username")
-    parser.add_argument('--admin-group', default='admin',
-                        help="Admin group name")
     parser.add_argument('--database', default='kernelci',
                         help="KernelCI database name")
     parser.add_argument('--email', required=True,
