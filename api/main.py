@@ -27,8 +27,6 @@ from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
 from fastapi_users import FastAPIUsers
 from beanie import PydanticObjectId
-from .auth import Authentication
-from .db import Database
 from kernelci.api.models import (
     Node,
     Hierarchy,
@@ -36,10 +34,14 @@ from kernelci.api.models import (
     PublishEvent,
     get_model_from_kind
 )
-from .paginator_models import PageModel
-from .pubsub import PubSub, Subscription, SubscriptionStats
+from .auth import Authentication
+from .db import Database
+from .pubsub import PubSub
 from .user_manager import get_user_manager, create_user_manager
-from .user_models import (
+from .models import (
+    PageModel,
+    Subscription,
+    SubscriptionStats,
     User,
     UserRead,
     UserCreate,

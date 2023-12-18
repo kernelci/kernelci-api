@@ -17,7 +17,7 @@ import pymongo
 
 from .auth import Authentication
 from .db import Database
-from .user_models import User
+from .models import User
 
 
 async def setup_admin_user(db, username, email):
