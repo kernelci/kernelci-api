@@ -11,7 +11,7 @@ from beanie import init_beanie
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
 from kernelci.api.models import Hierarchy, Node, Regression
-from .user_models import User, UserGroup
+from .models import User, UserGroup
 
 
 class Database:

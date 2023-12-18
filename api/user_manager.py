@@ -15,7 +15,7 @@ from fastapi_users.db import (
 )
 from beanie import PydanticObjectId
 import jinja2
-from .user_models import User
+from .models import User
 from .config import AuthSettings
 from .email_sender import EmailSender
 

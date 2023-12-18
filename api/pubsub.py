@@ -9,35 +9,10 @@ import asyncio
 
 import json
 from datetime import datetime
-from typing import Optional
 from redis import asyncio as aioredis
 from cloudevents.http import CloudEvent, to_json
-from pydantic import BaseModel, Field
+from .models import Subscription, SubscriptionStats
 from .config import PubSubSettings
-
-
-class Subscription(BaseModel):
-    """Pub/Sub subscription object model"""
-    id: int = Field(
-        description='Subscription ID'
-    )
-    channel: str = Field(
-        description='Subscription channel name'
-    )
-    user: str = Field(
-        description=("Username of the user that created the "
-                     "subscription (owner)")
-    )
-
-
-class SubscriptionStats(Subscription):
-    """Pub/Sub subscription statistics object model"""
-    created: datetime = Field(
-        description='Timestamp of connection creation'
-    )
-    last_poll: Optional[datetime] = Field(
-        description='Timestamp when connection last polled for data'
-    )
 
 
 class PubSub:
