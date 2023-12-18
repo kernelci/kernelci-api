@@ -220,7 +220,7 @@ async def update_me(request: Request, user: UserUpdate,
     """User update route
 
     Custom user update router handler will only allow users to update
-    its own profile. Adding itself to 'admin' group is not allowed.
+    its own profile.
     """
     if user.username and user.username != current_user.username:
         existing_user = await db.find_one(User, username=user.username)
@@ -232,10 +232,6 @@ async def update_me(request: Request, user: UserUpdate,
     groups = []
     if user.groups:
         for group_name in user.groups:
-            if group_name == "admin":
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Unauthorized to add user to 'admin' group")
             group = await db.find_one(UserGroup, name=group_name)
             if not group:
                 raise HTTPException(
