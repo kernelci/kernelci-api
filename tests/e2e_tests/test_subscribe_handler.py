@@ -12,7 +12,7 @@ import pytest
 @pytest.mark.dependency(
     depends=['e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
-@pytest.mark.order(4)
+@pytest.mark.order(3)
 def test_subscribe_node_channel(test_client):
     """
     Test Case : Test KernelCI API '/subscribe' endpoint with 'node' channel
@@ -35,7 +35,7 @@ def test_subscribe_node_channel(test_client):
 @pytest.mark.dependency(
     depends=['e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
-@pytest.mark.order(4)
+@pytest.mark.order(3)
 def test_subscribe_test_channel(test_client):
     """
     Test Case : Test KernelCI API '/subscribe' endpoint with 'test_channel'
@@ -58,7 +58,7 @@ def test_subscribe_test_channel(test_client):
 @pytest.mark.dependency(
     depends=['e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
-@pytest.mark.order(4)
+@pytest.mark.order(3)
 def test_subscribe_user_group_channel(test_client):
     """
     Test Case : Test KernelCI API '/subscribe' endpoint with 'user_group'

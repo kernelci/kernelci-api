@@ -26,7 +26,6 @@ from api.main import (
     get_current_user,
     get_current_superuser,
 )
-from api.models import UserGroup
 from api.user_models import User
 from api.pubsub import PubSub, Subscription
 
@@ -86,7 +85,7 @@ def mock_get_current_admin_user(request: Request):
         hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
                         'xCZGmM8jWXUXJZ4K',
         email='admin@kernelci.org',
-        groups=[UserGroup(name='admin')],
+        groups=[],
         is_active=True,
         is_superuser=True,
         is_verified=True

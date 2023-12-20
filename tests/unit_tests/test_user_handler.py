@@ -74,7 +74,7 @@ async def test_create_admin_user(test_async_client, mock_db_find_one,
         id='61bda8f2eb1a63d2b7152419',
         username='test_admin',
         email='test-admin@kernelci.org',
-        groups=[UserGroup(name='admin')],
+        groups=[],
         is_active=True,
         is_verified=False,
         is_superuser=True
