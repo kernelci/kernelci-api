@@ -9,7 +9,6 @@ import json
 import pytest
 
 from e2e_tests.conftest import db_create
-from api.models import UserGroup
 from api.user_models import User
 from api.db import Database
 from api.auth import Authentication
@@ -19,7 +18,7 @@ from api.auth import Authentication
     depends=["e2e_tests/test_user_group_handler.py::test_create_user_groups"],
     scope="session")
 @pytest.mark.dependency()
-@pytest.mark.order(2)
+@pytest.mark.order(1)
 @pytest.mark.asyncio
 async def test_create_admin_user(test_async_client):
     """
@@ -38,7 +37,7 @@ async def test_create_admin_user(test_async_client):
             username=username,
             hashed_password=hashed_password,
             email='test-admin@kernelci.org',
-            groups=[UserGroup(name="admin")],
+            groups=[],
             is_superuser=1,
             is_verified=1
         ))
@@ -62,7 +61,7 @@ async def test_create_admin_user(test_async_client):
 
 
 @pytest.mark.dependency(depends=["test_create_admin_user"])
-@pytest.mark.order(3)
+@pytest.mark.order(2)
 @pytest.mark.asyncio
 async def test_create_regular_user(test_async_client):
     """
