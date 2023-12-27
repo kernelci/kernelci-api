@@ -51,6 +51,8 @@ class EmailSender:
         if smtp:
             smtp.send_message(email_msg)
             smtp.quit()
+        else:
+            raise Exception("Failed to connect to SMTP server")
 
     def create_and_send_email(self, email_subject, email_content,
                               email_recipient):
