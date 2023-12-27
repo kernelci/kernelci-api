@@ -11,3 +11,6 @@ metadata:
 data:
   redis_host: "redis.kernelci-api.svc.cluster.local"
   mongo_service: "MONGOCONNECTSTRING"
+  email_sender: "mail@address.com"
+  smtp_host: "smtp.gmail.com"
+  smtp_port: "465"
