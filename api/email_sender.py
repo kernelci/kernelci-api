@@ -11,6 +11,7 @@ from email.mime.multipart import MIMEMultipart
 import email
 import email.mime.text
 import smtplib
+from fastapi import HTTPException, status
 from .config import EmailSettings
 
 
@@ -47,10 +48,17 @@ class EmailSender:
 
     def _send_email(self, email_msg):
         """Method to send an email message using SMTP"""
-        smtp = self._smtp_connect()
-        if smtp:
-            smtp.send_message(email_msg)
-            smtp.quit()
+        try:
+            smtp = self._smtp_connect()
+            if smtp:
+                smtp.send_message(email_msg)
+                smtp.quit()
+        except Exception as exc:
+            print(f"Error in sending email: {str(exc)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send email"
+            )from exc
 
     def create_and_send_email(self, email_subject, email_content,
                               email_recipient):
