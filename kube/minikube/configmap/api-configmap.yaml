@@ -11,3 +11,6 @@ metadata:
 data:
   redis_host: "kernelci-api-redis.default.svc.cluster.local"
   mongo_service: "mongodb://kernelci-api-db.default.svc.cluster.local:27017"
+  email_sender: "sample@kernelci.org"
+  smtp_host: "smtp.gmail.com"
+  smtp_port: "465"

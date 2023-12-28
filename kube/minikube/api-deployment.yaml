@@ -38,6 +38,26 @@ spec:
               configMapKeyRef:
                 name: kernelci-api-config
                 key: mongo_service
+          - name: EMAIL_SENDER
+              valueFrom:
+                configMapKeyRef:
+                  name: kernelci-api-config
+                  key: email_sender
+          - name: EMAIL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: kernelci-api-secret
+                key: email-password
+          - name: SMTP_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: kernelci-api-config
+                key: smtp_host
+          - name: SMTP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: kernelci-api-config
+                key: smtp_port
         volumeMounts:
           - name: api-volume
             mountPath: /home/kernelci/api
