@@ -12,8 +12,8 @@
 import asyncio
 import argparse
 import sys
-
 import getpass
+import pymongo
 
 from .auth import Authentication
 from .db import Database
@@ -22,12 +22,6 @@ from .user_models import User
 
 async def setup_admin_user(db, username, email):
     """Create an admin user"""
-    user_obj = await db.find_one_by_attributes(User,
-                                               {'username': username})
-    if user_obj:
-        print(f"User {username} already exists, aborting.")
-        print(user_obj.json())
-        return None
     password = getpass.getpass(f"Password for user '{username}': ")
     retyped = getpass.getpass(f"Retype password for user '{username}': ")
     if password != retyped:
@@ -35,18 +29,27 @@ async def setup_admin_user(db, username, email):
         return None
     hashed_password = Authentication.get_password_hash(password)
     print(f"Creating {username} user...")
-    return await db.create(User(
-        username=username,
-        hashed_password=hashed_password,
-        email=email,
-        is_superuser=1,
-        is_verified=1,
-    ))
+    try:
+        return await db.create(User(
+            username=username,
+            hashed_password=hashed_password,
+            email=email,
+            is_superuser=1,
+            is_verified=1,
+        ))
+    except pymongo.errors.DuplicateKeyError as exc:
+        err = str(exc)
+        if "username" in err:
+            print(f"User {username} already exists, aborting.")
+        elif "email" in err:
+            print(f"User with {email} already exists, aborting.")
+        return None
 
 
 async def main(args):
     db = Database(args.mongo, args.database)
     await db.initialize_beanie()
+    await db.create_indexes()
     await setup_admin_user(db, args.username, args.email)
     return True
 
