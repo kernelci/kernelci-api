@@ -66,9 +66,11 @@ class UserGroup(DatabaseModel):
     )
 
     @classmethod
-    def create_indexes(cls, collection):
-        """Create an index to bind unique constraint to group name"""
-        collection.create_index("name", unique=True)
+    def get_indexes(cls):
+        """Get an index to bind unique constraint to group name"""
+        return [
+            cls.Index('name', {'unique': True}),
+        ]
 
 
 class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
@@ -86,9 +88,11 @@ class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
         name = "user"
 
     @classmethod
-    def create_indexes(cls, collection):
-        """Create an index to bind unique constraint to email"""
-        collection.create_index("email", unique=True)
+    def get_indexes(cls):
+        """Get indices"""
+        return [
+            cls.Index('email', {'unique': True}),
+        ]
 
 
 class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
