@@ -62,8 +62,12 @@ class Database:
     async def create_indexes(self):
         """Create indexes for models"""
         for model in self.COLLECTIONS:
+            indexes = model.get_indexes()
+            if not indexes:
+                continue
             col = self._get_collection(model)
-            model.create_indexes(col)
+            for index in indexes:
+                col.create_index(index.field, **index.attributes)
 
     async def find_one(self, model, **kwargs):
         """Find one object with matching attributes
