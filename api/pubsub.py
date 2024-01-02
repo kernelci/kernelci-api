@@ -138,6 +138,8 @@ class PubSub:
             self._subscriptions.pop(sub_id)
             self._update_channels()
             await sub['redis_sub'].unsubscribe()
+            # shut down pubsub connection
+            await sub['redis_sub'].close()
 
     async def listen(self, sub_id, user=None):
         """Listen for Pub/Sub messages
