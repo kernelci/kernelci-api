@@ -5,9 +5,9 @@
 
 """End-to-end test functions for KernelCI API user group handler"""
 
+import json
 import pytest
 from cloudevents.http import from_json
-import json
 
 from .listen_handler import create_listen_task
 
@@ -28,17 +28,17 @@ async def test_create_and_get_user_group(test_async_client):
     The GET '/group/{group_id}' will be sent using group id from event data
     to get newly created user group object.
     """
-    
+
     # Create Task to listen pubsub event on 'user_group' channel
     task_listen = create_listen_task(test_async_client,
-                                     pytest.user_group_channel_subscription_id)
-    
+                                     pytest.user_group_channel_subscription_id)  # pylint: disable=no-member
+
     # Create a user group
     response = await test_async_client.post(
         "group",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.ADMIN_BEARER_TOKEN}"
+            "Authorization": f"Bearer {pytest.ADMIN_BEARER_TOKEN}"  # pylint: disable=no-member
         },
         data=json.dumps({"name": "kernelci"})
     )

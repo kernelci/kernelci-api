@@ -8,10 +8,10 @@
 import json
 import pytest
 
-from e2e_tests.conftest import db_create
 from api.user_models import User
 from api.db import Database
 from api.auth import Authentication
+from .conftest import db_create
 
 
 @pytest.mark.dependency(

@@ -27,7 +27,7 @@ async def test_password_endpoint(test_async_client):
         "user/me",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
         },
         data=json.dumps(
             {
