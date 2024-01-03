@@ -53,6 +53,7 @@ jobs:
           pylint api.user_manager
           pylint api.user_models
           pylint tests/unit_tests
+          pylint tests/e2e_tests
 
       - name: Run pytest
         run: |
