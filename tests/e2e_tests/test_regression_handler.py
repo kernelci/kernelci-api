@@ -9,6 +9,7 @@
 import json
 import pytest
 
+from .conftest import regression_model_fields
 from .test_node_handler import create_node, get_node_by_attribute
 
 
@@ -23,31 +24,12 @@ async def create_regression(test_async_client, regression_node):
         "regression",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
         },
         data=json.dumps(regression_node)
         )
     assert response.status_code == 200
-    assert response.json().keys() == {
-            'id',
-            'artifacts',
-            'created',
-            'data',
-            'group',
-            'holdoff',
-            'kind',
-            'name',
-            'owner',
-            'path',
-            'parent',
-            'result',
-            'revision',
-            'regression_data',
-            'state',
-            'timeout',
-            'updated',
-            'user_groups',
-        }
+    assert response.json().keys() == regression_model_fields
 
 
 @pytest.mark.dependency(
@@ -73,12 +55,12 @@ async def test_regression_handler(test_async_client):
 
     # Create a 'kver' passed node
     passed_node = {
-        "name": "passed_kver",
+        "name": "kver",
         "path": ["checkout", "kver"],
         "group": "kver",
         "parent": checkout_node["id"],
         "revision": {
-            "tree": "mainline",
+            "tree": "staging-next",
             "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
                     "torvalds/linux.git",
             "branch": "master",
@@ -95,7 +77,6 @@ async def test_regression_handler(test_async_client):
 
     # Create a 'kver' failed node
     failed_node = passed_node.copy()
-    failed_node["name"] = "failed_kver"
     failed_node["result"] = "fail"
 
     failed_node_obj = (

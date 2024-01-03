@@ -13,6 +13,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from fastapi.testclient import TestClient
 
 from api.main import versioned_app
+from api.models import Node, Regression
 
 BASE_URL = 'http://api:8000/latest/'
 DB_URL = 'mongodb://db:27017'
@@ -20,7 +21,14 @@ DB_NAME = 'kernelci'
 
 db_client = AsyncIOMotorClient(DB_URL)
 db = db_client[DB_NAME]
-
+node_model_fields = set(Node.__fields__.keys())
+regression_model_fields = set(Regression.__fields__.keys())
+paginated_response_keys = {
+    'items',
+    'total',
+    'limit',
+    'offset',
+}
 
 @pytest.fixture(scope='session')
 def test_client():

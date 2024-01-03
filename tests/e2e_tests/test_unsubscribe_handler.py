@@ -21,9 +21,9 @@ def test_unsubscribe_node_channel(test_client):
         HTTP Response Code 200 OK
     """
     response = test_client.post(
-        f"unsubscribe/{pytest.node_channel_subscription_id}",
+        f"unsubscribe/{pytest.node_channel_subscription_id}",  # pylint: disable=no-member
         headers={
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
         },
     )
     assert response.status_code == 200
@@ -41,9 +41,9 @@ def test_unsubscribe_test_channel(test_client):
         HTTP Response Code 200 OK
     """
     response = test_client.post(
-        f"unsubscribe/{pytest.test_channel_subscription_id}",
+        f"unsubscribe/{pytest.test_channel_subscription_id}",  # pylint: disable=no-member
         headers={
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
         },
     )
     assert response.status_code == 200

@@ -38,7 +38,7 @@ async def test_node_pipeline(test_async_client):
 
     # Create Task to listen pubsub event on 'node' channel
     task_listen = create_listen_task(test_async_client,
-                                     pytest.node_channel_subscription_id)
+                                     pytest.node_channel_subscription_id)  # pylint: disable=no-member
 
     # Create a node
     node = {
@@ -49,7 +49,7 @@ async def test_node_pipeline(test_async_client):
             "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
                     "torvalds/linux.git",
             "branch": "master",
-            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb28",
             "describe": "v5.16-rc4-31-g2a987e65025e"
         }
     }
@@ -71,7 +71,7 @@ async def test_node_pipeline(test_async_client):
 
     # Create Task to listen 'updated' event on 'node' channel
     task_listen = create_listen_task(test_async_client,
-                                     pytest.node_channel_subscription_id)
+                                     pytest.node_channel_subscription_id)  # pylint: disable=no-member
 
     # Update node.state
     node.update({"state": "done"})
