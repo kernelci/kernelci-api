@@ -39,25 +39,40 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      - name: Export environment variables
+        run: |
+          echo "SECRET_KEY=b6451545d2e4635148d768f07877aade3ad8e7e160d52962badd7587a4b9a150" > .env
+          echo "SMTP_HOST=smtp.gmail.com" >> .env
+          echo "SMTP_PORT=465" >> .env
+          echo "EMAIL_SENDER=test@kernelci.org" >> .env
+          echo "EMAIL_PASSWORD=random" >> .env
+
+      - name: Build docker images
+        run: docker-compose -f test-docker-compose.yaml build
+
       - name: Run pycodestyle
         run: |
           pycodestyle api/*.py
 
+      - name: Run API containers
+        run: |
+          docker-compose -f test-docker-compose.yaml up -d test
+
       - name: Run pylint
         run: |
-          pylint api.auth
-          pylint api.db
-          pylint api.main
-          pylint api.models
-          pylint api.pubsub
-          pylint api.user_manager
-          pylint api.user_models
-          pylint tests/unit_tests
-          pylint tests/e2e_tests
+          docker-compose -f test-docker-compose.yaml exec -T test pylint api.auth
+          docker-compose -f test-docker-compose.yaml exec -T test pylint api.db
+          docker-compose -f test-docker-compose.yaml exec -T test pylint api.main
+          docker-compose -f test-docker-compose.yaml exec -T test pylint api.models
+          docker-compose -f test-docker-compose.yaml exec -T test pylint api.pubsub
+          docker-compose -f test-docker-compose.yaml exec -T test pylint api.user_manager
+          docker-compose -f test-docker-compose.yaml exec -T test pylint tests/unit_tests
+          docker-compose -f test-docker-compose.yaml exec -T test pylint tests/e2e_tests
 
-      - name: Run pytest
+      - name: Stop docker containers
+        if: always()
         run: |
-          SECRET_KEY=b6451545d2e4635148d768f07877aade3ad8e7e160d52962badd7587a4b9a150 SMTP_HOST=smtp.gmail.com SMTP_PORT=465 EMAIL_SENDER=test@kernelci.org EMAIL_PASSWORD=random pytest -vs tests/unit_tests/
+          docker-compose -f test-docker-compose.yaml down
 
   lint:
     runs-on: ubuntu-22.04

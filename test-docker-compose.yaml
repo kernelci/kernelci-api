@@ -48,15 +48,14 @@ services:
       - '${SSH_HOST_PORT:-8022}:22'
 
   test:
-    container_name: 'kernelci-api-e2e-tests'
+    container_name: 'kernelci-api-tests'
     build:
       context: 'docker/api'
       args:
         - REQUIREMENTS=${REQUIREMENTS:-requirements-dev.txt}
-    command: "pytest -v e2e_tests"
     volumes:
       - './api:/home/kernelci/api'
-      - './tests/e2e_tests:/home/kernelci/e2e_tests'
+      - './tests:/home/kernelci/tests'
     depends_on:
       - api
     env_file:
