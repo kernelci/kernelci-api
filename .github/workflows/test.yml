@@ -40,11 +40,15 @@ jobs:
 
       - name: Run API containers
         run: |
-          docker-compose -f test-docker-compose.yaml up -d api db redis storage ssh
+          docker-compose -f test-docker-compose.yaml up -d api db redis storage ssh test
 
-      - name: Run test container
+      - name: Run unit tests
         run: |
-          docker-compose -f test-docker-compose.yaml up --exit-code-from test test
+          docker-compose -f test-docker-compose.yaml exec -T test pytest -vs tests/unit_tests
+
+      - name: Run e2e tests
+        run: |
+          docker-compose -f test-docker-compose.yaml exec -T test pytest -v tests/e2e_tests
 
       - name: Stop docker containers
         if: always()
