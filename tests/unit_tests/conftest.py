@@ -26,8 +26,8 @@ from api.main import (
     get_current_user,
     get_current_superuser,
 )
-from api.user_models import User
-from api.pubsub import PubSub, Subscription
+from api.models import User, Subscription
+from api.pubsub import PubSub
 
 BEARER_TOKEN = "Bearer \
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.\
@@ -310,6 +310,6 @@ def mock_user_find(mocker):
     Mocks async call to external method to find user model using Beanie
     """
     async_mock = AsyncMock()
-    mocker.patch('api.user_models.User.find_one',
+    mocker.patch('api.models.User.find_one',
                  side_effect=async_mock)
     return async_mock

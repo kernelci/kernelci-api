@@ -12,7 +12,7 @@
 
 import pytest
 from tests.unit_tests.conftest import BEARER_TOKEN
-from api.user_models import UserRead
+from api.models import UserRead
 
 
 @pytest.mark.asyncio

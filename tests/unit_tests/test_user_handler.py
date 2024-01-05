@@ -14,8 +14,7 @@ from tests.unit_tests.conftest import (
     ADMIN_BEARER_TOKEN,
     BEARER_TOKEN,
 )
-from api.models import UserGroup
-from api.user_models import UserRead
+from api.models import UserGroup, UserRead
 
 
 @pytest.mark.asyncio
