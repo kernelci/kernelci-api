@@ -11,7 +11,7 @@
 """Unit test function for KernelCI API token handler"""
 
 import pytest
-from api.user_models import User
+from api.models import User
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,7 @@
 import json
 import pytest
 
-from api.user_models import User
+from api.models import User
 from api.db import Database
 from api.auth import Authentication
 from .conftest import db_create

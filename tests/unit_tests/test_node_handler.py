@@ -13,8 +13,8 @@
 import json
 
 from tests.unit_tests.conftest import BEARER_TOKEN
-from api.models import Node, Revision
-from api.paginator_models import PageModel
+from kernelci.api.models import Node, Revision
+from api.models import PageModel
 
 
 def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,

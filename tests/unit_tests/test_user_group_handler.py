@@ -13,8 +13,7 @@ from tests.unit_tests.conftest import (
     ADMIN_BEARER_TOKEN,
     BEARER_TOKEN,
 )
-from api.models import UserGroup
-from api.paginator_models import PageModel
+from api.models import UserGroup, PageModel
 
 
 def test_create_user_group(mock_db_create, mock_publish_cloudevent,
