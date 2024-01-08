@@ -330,37 +330,36 @@ events and publish them too.  All the events are formatted using
 
 ### Listen & Publish CloudEvent
 
-The
-[`client.py`](https://github.com/kernelci/kernelci-api/blob/main/api/client.py)
-script provides a reference implementation for publishing and listening to
-events.
+The API provides different endpoints for publishing and listening to events.
 
-For example, in a first terminal:
-
+For example, subscribe to a channel first:
 ```
-$ docker-compose exec api /bin/sh -c '\
-TOKEN=<insert token here> \
-/usr/bin/env python3 /home/kernelci/api/client.py \
-listen abc'
-Listening for events on channel abc.
-Press Ctrl-C to stop.
+curl -X 'POST' 'http://localhost:8001/latest/subscribe/abc' -H 'Authorization: Bearer TOKEN'
+{"id":800,"channel":"abc","user":"bob"}
 ```
 
-Then in a second terminal:
-
+Use the subscription ID from the response to listen to the events:
 ```
-$ docker-compose exec api /bin/sh -c '\
-TOKEN=<insert token here> \
-/usr/bin/env python3 /home/kernelci/api/client.py \
-publish abc "Hello KernelCI"'
+$ curl -X 'GET' 'http://localhost:8001/latest/listen/800' -H 'Authorization: Bearer TOKEN'
 ```
 
-You should see the message appear in the first terminal (and stopping after
-pressing Ctrl-C):
-
+Then in a second terminal publish `CloudEvent` message:
 ```
-Message: Hello KernelCI
-^CStopping.
+$ curl -X 'POST' 'http://localhost:8001/latest/publish/abc' -H 'Authorization: Bearer TOKEN' -H 'Content-Type: application/json' \
+-d '{"data": {"sample_key":"sample_value"}}'
+```
+Other `CloudEvent` fields such as "type", "source", and "attributes" can also
+be sent to the request dictionary above.
+
+You should see the message appear in the first terminal inside "data" dictionary:
+```
+$ curl -X 'GET' 'http://localhost:8001/latest/listen/800' -H 'Authorization: Bearer TOKEN'
+{"type":"message","pattern":null,"channel":"abc","data":"{\"specversion\": \"1.0\", \"id\": \"9e67036c-650e-4688-b4dd-5b2eafd21f5f\", \"source\": \"https://api.kernelci.org/\", \"type\": \"api.kernelci.org\", \"time\": \"2024-01-04T10:48:39.974782+00:00\", \"data\": {\"sample_key\": \"sample_value\"}, \"owner\": \"bob\"}"}
+```
+
+Now, unsubscribe from the channel:
+```
+$ curl -X 'GET' 'http://localhost:8001/latest/unsubscribe/800' -H 'Authorization: Bearer TOKEN'
 ```
 
 Meanwhile, something like this should be seen in the API logs:
@@ -372,7 +371,3 @@ kernelci-api | INFO:     127.0.0.1:35810 - "POST /publish/abc HTTP/1.1" 200 OK
 kernelci-api | INFO:     127.0.0.1:35754 - "GET /listen/abc HTTP/1.1" 200 OK
 kernelci-api | INFO:     127.0.0.1:36744 - "POST /unsubscribe/abc HTTP/1.1" 200 OK
 ```
-
-> **Note** The client doesn't necessarily need to be run within the `api`
-Docker container, but it's a convenient way of trying things out as it already
-has all the Python dependencies installed (essentially, `cloudevents`).
