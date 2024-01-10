@@ -10,7 +10,7 @@ from bson import ObjectId
 from beanie import init_beanie
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
-from kernelci.api.models import Hierarchy, Node, Regression
+from kernelci.api.models import Hierarchy, Node
 from .models import User, UserGroup
 
 
@@ -25,7 +25,6 @@ class Database:
     COLLECTIONS = {
         User: 'user',
         Node: 'node',
-        Regression: 'regression',
         UserGroup: 'usergroup',
     }
 
