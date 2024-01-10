@@ -6,30 +6,9 @@
 
 """End-to-end test function for KernelCI API regression handler"""
 
-import json
 import pytest
 
-from .conftest import regression_model_fields
 from .test_node_handler import create_node, get_node_by_attribute
-
-
-async def create_regression(test_async_client, regression_node):
-    """
-    Test Case : Test KernelCI API POST '/regression' endpoint
-    Expected Result :
-        HTTP Response Code 200 OK
-        JSON with created Regression object attributes
-    """
-    response = await test_async_client.post(
-        "regression",
-        headers={
-            "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
-        },
-        data=json.dumps(regression_node)
-        )
-    assert response.status_code == 200
-    assert response.json().keys() == regression_model_fields
 
 
 @pytest.mark.dependency(
@@ -44,7 +23,7 @@ async def test_regression_handler(test_async_client):
     First, it will get 'checkout' node. After getting the parent node,
     two 'kver' child nodes having different name and result ('pass' and
     'fail') will be created. Based on child nodes, a regression
-    node will be generated and added to database using 'create_regression'
+    node will be generated and added to database using 'create_node'
     method.
     """
     # Get "checkout" node
@@ -56,16 +35,18 @@ async def test_regression_handler(test_async_client):
     # Create a 'kver' passed node
     passed_node = {
         "name": "kver",
+        "kind": "test",
         "path": ["checkout", "kver"],
         "group": "kver",
         "parent": checkout_node["id"],
-        "revision": {
-            "tree": "staging-next",
-            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-            "branch": "master",
-            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-            "describe": "v5.16-rc4-31-g2a987e65025e",
+        "data": {
+            "kernel_revision": {
+                "tree": "mainline",
+                "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+                "branch": "master",
+                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+                "describe": "v5.16-rc4-31-g2a987e65025e",
+            },
         },
         "state": "done",
         "result": "pass",
@@ -84,14 +65,15 @@ async def test_regression_handler(test_async_client):
     ).json()
 
     # Create a "kver" regression node
-    regression_fields = [
-            'group', 'name', 'path', 'revision', 'result', 'state',
-        ]
+    regression_fields = ['group', 'name', 'path', 'state']
     regression_node = {
         field: failed_node_obj[field]
         for field in regression_fields
     }
 
-    regression_node["parent"] = failed_node_obj["id"]
-    regression_node["regression_data"] = [failed_node_obj, passed_node_obj]
-    await create_regression(test_async_client, regression_node)
+    regression_node["kind"] = "regression"
+    regression_node["data"] = {
+        "fail_node": failed_node_obj["id"],
+        "pass_node": passed_node_obj["id"]
+    }
+    await create_node(test_async_client, regression_node)
