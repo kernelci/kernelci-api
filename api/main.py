@@ -427,12 +427,14 @@ def _get_node_event_data(operation, node):
     return {
         'op': operation,
         'id': str(node.id),
+        'kind': node.kind,
         'name': node.name,
         'path': node.path,
         'group': node.group,
         'state': node.state,
         'result': node.result,
         'owner': node.owner,
+        'data': node.data,
     }
 
 
