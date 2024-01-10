@@ -59,8 +59,8 @@ async def test_node_pipeline(test_async_client):
     await task_listen
     event_data = from_json(task_listen.result().json().get('data')).data
     assert event_data != 'BEEP'
-    keys = {'op', 'id', 'name', 'path', 'group', 'state', 'result', 'revision',
-            'owner'}
+    keys = {'op', 'id', 'kind', 'name', 'path',
+            'group', 'state', 'result', 'owner', 'data'}
     assert keys == event_data.keys()
     assert event_data.get('op') == 'created'
     assert event_data.get('id') == response.json()['id']
@@ -82,7 +82,7 @@ async def test_node_pipeline(test_async_client):
     await task_listen
     event_data = from_json(task_listen.result().json().get('data')).data
     assert event_data != 'BEEP'
-    keys = {'op', 'id', 'name', 'path', 'group', 'state', 'result', 'revision',
-            'owner'}
+    keys = {'op', 'id', 'kind', 'name', 'path',
+            'group', 'state', 'result', 'owner', 'data'}
     assert keys == event_data.keys()
     assert event_data.get('op') == 'updated'
