@@ -8,6 +8,6 @@
 # Script for running API end-to-end tests
 
 docker-compose -f test-docker-compose.yaml build
-docker-compose -f test-docker-compose.yaml up -d api db redis storage ssh
-docker-compose -f test-docker-compose.yaml up test
+docker-compose -f test-docker-compose.yaml up -d api db redis storage ssh test
+docker-compose -f test-docker-compose.yaml exec test pytest -v tests/e2e_tests
 docker-compose -f test-docker-compose.yaml down
