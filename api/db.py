@@ -10,7 +10,7 @@ from bson import ObjectId
 from beanie import init_beanie
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
-from kernelci.api.models import Hierarchy, Node
+from kernelci.api.models import Hierarchy, Node, parse_node_obj
 from .models import User, UserGroup
 
 
@@ -163,7 +163,7 @@ class Database:
 
     async def _create_recursively(self, hierarchy: Hierarchy, parent: Node,
                                   cls, col):
-        obj, nodes = hierarchy.node, hierarchy.child_nodes
+        obj = parse_node_obj(hierarchy.node)
         if parent:
             obj.parent = parent.id
         if obj.id:
@@ -179,7 +179,7 @@ class Database:
             obj.id = res.inserted_id
         obj = cls(**await col.find_one(ObjectId(obj.id)))
         obj_list = [obj]
-        for node in nodes:
+        for node in hierarchy.child_nodes:
             child_nodes = await self._create_recursively(node, obj, cls, col)
             obj_list.extend(child_nodes)
         return obj_list
