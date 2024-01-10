@@ -25,39 +25,33 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         HTTP Response Code 200 OK
         JSON with created Node object attributes
     """
-    revision_obj = Revision(
-                tree="mainline",
-                url="https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-                branch="master",
-                commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-                describe="v5.16-rc4-31-g2a987e65025e"
-    )
+    revision_data = {
+        "tree": "mainline",
+        "url": "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
+        "branch": "master",
+        "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
+        "describe": "v5.16-rc4-31-g2a987e65025e",
+    }
+
+    revision_obj = Revision.parse_obj(revision_data)
     node_obj = Node(
-            id="61bda8f2eb1a63d2b7152418",
-            kind="node",
-            name="checkout",
-            path=["checkout"],
-            group="debug",
-            revision=revision_obj,
-            parent=None,
-            state="closing",
-            result=None,
-        )
+        id="61bda8f2eb1a63d2b7152418",
+        kind="checkout",
+        name="checkout",
+        path=["checkout"],
+        group="debug",
+        data= {'kernel_revision': revision_obj},
+        parent=None,
+        state="closing",
+        result=None,
+    )
     mock_db_create.return_value = node_obj
 
     request_dict = {
         "name": "checkout",
+        "kind": "checkout",
         "path": ["checkout"],
-        "revision": {
-            "tree": "mainline",
-            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-            "branch": "master",
-            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-            "describe": "v5.16-rc4-31-g2a987e65025e"
-        },
-        "data": {"foo": "bar"},
+        "data": {"kernel_revision": revision_data},
     }
     response = test_client.post(
         "node",
@@ -82,7 +76,6 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         'path',
         'parent',
         'result',
-        'revision',
         'state',
         'timeout',
         'updated',
