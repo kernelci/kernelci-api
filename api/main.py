@@ -10,7 +10,7 @@
 
 import os
 import re
-from typing import List, Union
+from typing import List
 from fastapi import (
     Depends,
     FastAPI,
@@ -30,9 +30,8 @@ from beanie import PydanticObjectId
 from kernelci.api.models import (
     Node,
     Hierarchy,
-    Regression,
     PublishEvent,
-    get_model_from_kind
+    parse_node_obj,
 )
 from .auth import Authentication
 from .db import Database
@@ -446,13 +445,12 @@ async def translate_null_query_params(query_params: dict):
     return translated
 
 
-@app.get('/node/{node_id}', response_model=Union[Regression, Node],
+@app.get('/node/{node_id}', response_model=Node,
          response_model_by_alias=False)
-async def get_node(node_id: str, kind: str = "node"):
+async def get_node(node_id: str):
     """Get node information from the provided node id"""
     try:
-        model = get_model_from_kind(kind)
-        return await db.find_by_id(model, node_id)
+        return await db.find_by_id(Node, node_id)
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -476,7 +474,7 @@ def serialize_paginated_data(model, data: list):
 
 
 @app.get('/nodes', response_model=PageModel)
-async def get_nodes(request: Request, kind: str = "node"):
+async def get_nodes(request: Request):
     """Get all the nodes if no request parameters have passed.
        Get all the matching nodes otherwise, within the pagination limit."""
     query_params = dict(request.query_params)
@@ -488,7 +486,9 @@ async def get_nodes(request: Request, kind: str = "node"):
     query_params = await translate_null_query_params(query_params)
 
     try:
-        model = get_model_from_kind(kind)
+        # Query using the base Node model, regardless of the specific
+        # node type
+        model = Node
         translated_params = model.translate_fields(query_params)
         paginated_resp = await db.find_by_attributes(model, translated_params)
         paginated_resp.items = serialize_paginated_data(
@@ -504,7 +504,7 @@ add_pagination(app)
 
 
 @app.get('/count', response_model=int)
-async def get_nodes_count(request: Request, kind: str = "node"):
+async def get_nodes_count(request: Request):
     """Get the count of all the nodes if no request parameters have passed.
        Get the count of all the matching nodes otherwise."""
     query_params = dict(request.query_params)
@@ -512,7 +512,9 @@ async def get_nodes_count(request: Request, kind: str = "node"):
     query_params = await translate_null_query_params(query_params)
 
     try:
-        model = get_model_from_kind(kind)
+        # Query using the base Node model, regardless of the specific
+        # node type
+        model = Node
         translated_params = model.translate_fields(query_params)
         return await db.count(model, translated_params)
     except KeyError as error:
@@ -535,6 +537,10 @@ async def _verify_user_group_existence(user_groups: List[str]):
 async def post_node(node: Node,
                     current_user: User = Depends(get_current_user)):
     """Create a new node"""
+    # Explicit pydantic model validation
+    parse_node_obj(node)
+
+    # [TODO] Implement sanity checks depending on the node kind
     if node.parent:
         parent = await db.find_by_id(Node, node.parent)
         if not parent:
@@ -545,6 +551,9 @@ async def post_node(node: Node,
 
     await _verify_user_group_existence(node.user_groups)
     node.owner = current_user.username
+    # The node is handled as a generic Node by the DB, regardless of its
+    # specific kind. The concrete Node submodel (Kbuild, Checkout, etc.)
+    # is only used for data format validation
     obj = await db.create(node)
     data = _get_node_event_data('created', obj)
     attributes = {}
@@ -565,19 +574,27 @@ async def put_node(node_id: str, node: Node,
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Node not found with id: {node.id}"
         )
-    is_valid, message = node_from_id.validate_node_state_transition(
+    # Sanity checks
+    # Note: do not update node ownership fields, don't update 'state'
+    # until we've checked the state transition is valid.
+    update_data = node.dict(exclude={'user', 'user_groups', 'state'})
+    new_node_def = node_from_id.copy(update=update_data)
+    # 1- Parse and validate node to specific subtype
+    specialized_node = parse_node_obj(new_node_def)
+
+    # 2 - State transition checks
+    is_valid, message = specialized_node.validate_node_state_transition(
         node.state)
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=message
         )
+    # Now we can update the state
+    new_node_def.state = node.state
 
-    # Do not update node ownership fields
-    update_data = node.dict(exclude={'user', 'user_groups'})
-    node = node_from_id.copy(update=update_data)
-
-    obj = await db.update(node)
+    # Update node in the DB
+    obj = await db.update(new_node_def)
     data = _get_node_event_data('updated', obj)
     attributes = {}
     if data.get('owner', None):
@@ -693,34 +710,6 @@ async def pop(list_name: str, user: User = Depends(get_current_user)):
 async def stats(user: User = Depends(get_current_superuser)):
     """Get details of all existing subscriptions"""
     return await pubsub.subscription_stats()
-
-
-# -----------------------------------------------------------------------------
-# Regression
-
-@app.post('/regression', response_model=Regression,
-          response_model_by_alias=False)
-async def post_regression(regression: Regression,
-                          user: str = Depends(get_current_user)):
-    """Create a new regression"""
-    obj = await db.create(regression)
-    operation = 'created'
-    await pubsub.publish_cloudevent('regression', {'op': operation,
-                                                   'id': str(obj.id)})
-    return obj
-
-
-@app.put('/regression/{regression_id}', response_model=Regression,
-         response_model_by_alias=False)
-async def put_regression(regression_id: str, regression: Regression,
-                         user: str = Depends(get_current_user)):
-    """Update an already added regression"""
-    regression.id = ObjectId(regression_id)
-    obj = await db.update(regression)
-    operation = 'updated'
-    await pubsub.publish_cloudevent('regression', {'op': operation,
-                                                   'id': str(obj.id)})
-    return obj
 
 
 versioned_app = VersionedFastAPI(
