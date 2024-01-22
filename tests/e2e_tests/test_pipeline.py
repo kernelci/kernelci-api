@@ -44,13 +44,15 @@ async def test_node_pipeline(test_async_client):
     node = {
         "name": "checkout",
         "path": ["checkout"],
-        "revision": {
-            "tree": "mainline",
-            "url": "https://git.kernel.org/pub/scm/linux/kernel/git/"
-                    "torvalds/linux.git",
-            "branch": "master",
-            "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb28",
-            "describe": "v5.16-rc4-31-g2a987e65025e"
+        "data": {
+            "kernel_revision": {
+                "tree": "mainline",
+                "url": ("https://git.kernel.org/pub/scm/linux/kernel/git/"
+                       "torvalds/linux.git"),
+                "branch": "master",
+                "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb28",
+                "describe": "v5.16-rc4-31-g2a987e65025e"
+            }
         }
     }
     response = await create_node(test_async_client, node)
