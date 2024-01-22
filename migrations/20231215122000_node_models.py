@@ -71,8 +71,8 @@ def upgrade(db: "pymongo.database.Database"):
                 'path': regression.get('path'),
                 'kind': 'regression',
                 'data': {
-                    'pass_node': ObjectId(regression['regression_data'][0]),
-                    'fail_node': ObjectId(regression['regression_data'][1])
+                    'pass_node': ObjectId(regression['regression_data'][0]['_id']),
+                    'fail_node': ObjectId(regression['regression_data'][1]['_id'])
                 },
                 'artifacts': regression.get('artifacts'),
                 'created': regression.get('created'),
