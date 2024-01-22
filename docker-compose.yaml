@@ -12,6 +12,7 @@ services:
       context: 'docker/api'
       args:
         - REQUIREMENTS=${REQUIREMENTS:-requirements.txt}
+        - core_rev=${CORE_REV:-main}
     volumes:
       - './api:/home/kernelci/api'
       - './tests:/home/kernelci/tests'
