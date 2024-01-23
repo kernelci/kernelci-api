@@ -15,8 +15,8 @@ setting things up and issuing low-level queries.
 
 ## Environment Variables
 
-General instructions about the environment file are described on the [getting
-started](https://kernelci.org/docs/api/getting-started/#create-the-environment-file)
+General instructions about the environment file are described on the [local
+instance](https://kernelci.org/docs/api/local-instance/#create-the-environment-file)
 page.  This section goes through all the environment variables used by the API.
 
 ### Set ALGORITHM and ACCESS_TOKEN_EXPIRE_MINUTES in environment file
