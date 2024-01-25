@@ -714,6 +714,26 @@ async def stats(user: User = Depends(get_current_superuser)):
     return await pubsub.subscription_stats()
 
 
+@app.get('/viewer')
+async def viewer():
+    """Serve simple HTML page to view the API /static/viewer.html
+    Set various no-cache tag we might update it often"""
+    mod_root = os.path.dirname(os.path.abspath(__file__))
+    # truncate the last part of the path to get the root of the module
+    # We need to install templates UNDER api package
+    mod_root = os.path.dirname(mod_root)
+    viewer_path = os.path.join(mod_root, 'templates', 'viewer.html')
+    with open(viewer_path, 'r', encoding='utf-8') as file:
+        # set header to text/html and no-cache stuff
+        hdr = {
+            'Content-Type': 'text/html',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
+        return PlainTextResponse(file.read(), headers=hdr)
+
+
 versioned_app = VersionedFastAPI(
         app,
         version_format='{major}',
