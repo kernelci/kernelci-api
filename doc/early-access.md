@@ -89,7 +89,7 @@ Retype new password:
 sent to your email:
 
 ```sh
-$ kci user verify <your-username>
+$ kci user verify <your-email>
 Sending verification token to <your-email>
 Verification token: <verification-token>
 Email verification successful!
