@@ -34,6 +34,7 @@ class Database:
         'gt': '$gt',
         'gte': '$gte',
         'ne': '$ne',
+        're': '$regex',
     }
 
     BOOL_VALUE_MAP = {
