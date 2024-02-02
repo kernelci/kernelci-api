@@ -622,6 +622,7 @@ async def put_nodes(
     nodes.node.id = ObjectId(node_id)
     await _set_node_ownership_recursively(user, nodes)
     obj_list = await db.create_hierarchy(nodes, Node)
+    print(f"[PUT nodes/{node_id}] hierarchy: {nodes}")
     data = _get_node_event_data('updated', obj_list[0])
     attributes = {}
     if data.get('owner', None):
