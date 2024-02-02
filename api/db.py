@@ -165,6 +165,8 @@ class Database:
     async def _create_recursively(self, hierarchy: Hierarchy, parent: Node,
                                   cls, col):
         obj = parse_node_obj(hierarchy.node)
+        print(f"[_create_recursively] obj: {obj}")
+        print(f"[_create_recursively] obj.data: {obj.data}")
         if parent:
             obj.parent = parent.id
         if obj.id:
@@ -179,6 +181,7 @@ class Database:
             res = await col.insert_one(obj.dict(by_alias=True))
             obj.id = res.inserted_id
         obj = cls(**await col.find_one(ObjectId(obj.id)))
+        print(f"[_create_recursively] stored obj: {obj}")
         obj_list = [obj]
         for node in hierarchy.child_nodes:
             child_nodes = await self._create_recursively(node, obj, cls, col)
