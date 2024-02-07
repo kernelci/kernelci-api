@@ -164,11 +164,16 @@ class Database:
 
     async def _create_recursively(self, hierarchy: Hierarchy, parent: Node,
                                   cls, col):
+        # print out Node object and its full dict
+        node = hierarchy.node
+        node_debug = node.dict(by_alias=True)
+        print(f"_create_recursively node: {node_debug}")
         obj = parse_node_obj(hierarchy.node)
+        print(f"_create_recursively full dict: {obj.dict(by_alias=True)}")
         if parent:
             obj.parent = parent.id
         if obj.id:
-            obj.update()
+            obj.update()            
             res = await col.replace_one(
                 {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
             )
