@@ -8,20 +8,17 @@ services:
 
   api:
     container_name: 'kernelci-api'
-    build:
-      context: 'docker/api'
-      args:
-        - REQUIREMENTS=${REQUIREMENTS:-requirements.txt}
-        - core_rev=${CORE_REV:-main}
-    volumes:
-      - './api:/home/kernelci/api'
-      - './tests:/home/kernelci/tests'
-      - './migrations:/home/kernelci/migrations'
-      - './templates:/home/kernelci/templates'
+    image: ${KERNELCI_API_IMAGE:-kernelci/staging-api}:${KERNELCI_API_TAG:-latest}
     ports:
       - '${API_HOST_PORT:-8001}:8000'
     env_file:
       - '.env'
+    command:
+      - 'uvicorn'
+      - 'api.main:versioned_app'
+      - '--host'
+      - '0.0.0.0'
+      - '--reload'
 
   db:
     container_name: 'kernelci-api-db'
