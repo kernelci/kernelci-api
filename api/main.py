@@ -540,7 +540,11 @@ async def post_node(node: Node,
                     current_user: User = Depends(get_current_user)):
     """Create a new node"""
     # Explicit pydantic model validation
-    parse_node_obj(node)
+    parsed_node = parse_node_obj(node)
+    # Convert again to parent model `Node` in order to enable JSON
+    # serialization of nested models (such as `CheckoutData`) and
+    # map model against existing DB collection i.e. `Node`
+    node = Node(**parsed_node.dict())
 
     # [TODO] Implement sanity checks depending on the node kind
     if node.parent:
