@@ -32,6 +32,7 @@ from kernelci.api.models import (
     Hierarchy,
     PublishEvent,
     parse_node_obj,
+    KernelVersion,
 )
 from .auth import Authentication
 from .db import Database
@@ -535,10 +536,24 @@ async def _verify_user_group_existence(user_groups: List[str]):
                 detail=f"User group does not exist with name: {group_name}")
 
 
+def _translate_version_fields(node: Node):
+    """Translate Node version fields"""
+    data = node.data
+    if data:
+        version = data.get('kernel_revision', {}).get('version')
+        if version:
+            version = KernelVersion.translate_version_fields(version)
+            node.data['kernel_revision']['version'] = version
+    return node
+
+
 @app.post('/node', response_model=Node, response_model_by_alias=False)
 async def post_node(node: Node,
                     current_user: User = Depends(get_current_user)):
     """Create a new node"""
+    # [TODO] Remove translation below once we can use it in the pipeline
+    node = _translate_version_fields(node)
+
     # Explicit pydantic model validation
     parse_node_obj(node)
 
@@ -576,6 +591,10 @@ async def put_node(node_id: str, node: Node,
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Node not found with id: {node.id}"
         )
+
+    # [TODO] Remove translation below once we can use it in the pipeline
+    node = _translate_version_fields(node)
+
     # Sanity checks
     # Note: do not update node ownership fields, don't update 'state'
     # until we've checked the state transition is valid.
