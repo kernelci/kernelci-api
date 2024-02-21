@@ -133,6 +133,12 @@
                 "suffix": "?search=kind%3Dcheckout&search=created%3E" + dayagostring,
             },
         ];
+        var lava_urls = {
+            "lava-broonie": "lava.sirena.org.uk",
+            "lava-collabora": "lava.collabora.dev",
+            "lava-collabora-early-access": "staging.lava.collabora.dev",
+            "lava-collabora-staging": "staging.lava.collabora.dev",
+        };
 
         function fancydisplayjson(jsontext) {
             // add indentation to json text
@@ -155,9 +161,16 @@
 
         function miscclick(event) {
             event.preventDefault();
-            var fullurl = pagebaseurl + this.getAttribute("href");
-            window.history.pushState("", "", fullurl);
-            parseParameters(fullurl);
+            var fullurl = this.getAttribute("href");
+            // if it looks like an absolute URL, open in new tab/window
+            if (fullurl.startsWith("http")) {
+                window.open(fullurl, '_blank');
+            // otherwise build the full URL and load it in the current page
+            } else {
+                fullurl = pagebaseurl + this.getAttribute("href");
+                window.history.pushState("", "", fullurl);
+                parseParameters(fullurl);
+            }
             console.log("miscclick fullurl: " + fullurl);
         }
 
@@ -188,6 +201,15 @@
             miscbuttonshtml += "</select>";
             // add download button
             miscbuttonshtml += "<button id=\"downloadbutton\" class=\"download\" href=\"\" onclick=\"\">Download</button>";
+
+            var node_data = data.data;
+            if (node_data != null) {
+                var runtime = node_data.runtime;
+                var job = node_data.job_id;
+                if (node_data.runtime.startsWith("lava") && node_data.job_id != null) {
+                    miscbuttonshtml += "<button id=\"lavajobbutton\" class=\"misc\" href=\"https://" + lava_urls[node_data.runtime] + "/scheduler/job/" + node_data.job_id + "\">LAVA Job</button>";
+                }
+            }
 
             // add node size info (raw size)
             var nodesize = raw.length;
