@@ -174,23 +174,25 @@
             miscbuttonshtml += "<button id=\"childrenbutton\" class=\"misc\" href=\"?search=" + urlencoded_condition + "\">Children</button>";
 
             // add selectbox for each artifact and button to download them
+            miscbuttonshtml += "<select id=\"artifacts\">";
+            miscbuttonshtml += "<option value=\"" + apiurl + "/latest/node/" + data.id + "\">Raw node</option>";
             var artifacts = data.artifacts;
             if (artifacts != null) {
                 var artifactnames = Object.keys(artifacts);
-                miscbuttonshtml += "<select id=\"artifacts\">";
                 for (var i = 0; i < artifactnames.length; i++) {
                     var artifacturi = artifacts[artifactnames[i]];
                     var artifactname = artifactnames[i];
                     miscbuttonshtml += "<option value=\"" + artifacturi + "\">" + artifactname + "</option>";
-                    // add download button
                 }
-                miscbuttonshtml += "</select>";
-                miscbuttonshtml += "<button id=\"downloadbutton\" class=\"download\" href=\"\" onclick=\"\">Download</button>";
-                // add node size info (raw size)
-                var nodesize = raw.length;
-                miscbuttonshtml += "<span>Node size: " + nodesize + " bytes</span>";
             }
-            
+            miscbuttonshtml += "</select>";
+            // add download button
+            miscbuttonshtml += "<button id=\"downloadbutton\" class=\"download\" href=\"\" onclick=\"\">Download</button>";
+
+            // add node size info (raw size)
+            var nodesize = raw.length;
+            miscbuttonshtml += "<span>Node size: " + nodesize + " bytes</span>";
+
             // add miscbuttons
             miscbuttons.innerHTML = miscbuttonshtml;
 
