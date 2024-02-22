@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KernelCIv2 API Viewer</title>
+    <!-- add vertical divider at menu -->
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 20px;
+            color: #333333;
+            background-color: #ffffff;
+            padding: 10px;
+        }
+        #menu {
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e5e5e5;
+            border-top: 1px solid #e5e5e5;
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+        #menu a {
+            color: #999999;
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+            text-decoration: none;
+            /* Add light grey box for each menu item */
+            padding: 10px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+
+        }
+        #menu a:hover {
+            color: #333333;
+            text-decoration: none;            
+        }
+        #menu a:active {
+            color: #333333;
+            text-decoration: none;
+        }
+        #menu a:focus {
+            color: #333333;
+            text-decoration: none;
+        }        
+        #requestinfo {
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e5e5e5;
+            border-top: 1px solid #e5e5e5;
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+        #requestinfo input {
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+            text-decoration: none;
+        }
+        #requestinfo button {
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+            text-decoration: none;
+        }
+        #miscbuttons {
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e5e5e5;
+            border-top: 1px solid #e5e5e5;
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+        #miscbuttons button {
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+            text-decoration: none;
+        }
+        .nodesearch {
+            border-collapse: collapse;
+            border-spacing: 1;
+            width: 100%;
+            border: 1px solid #ddd;
+        }
+        .nodesearch th, .nodesearch td {
+            text-align: left;
+            padding: 8px;
+        }
+        /* alternate color for rows, depends on tr class, fail - pink, null - yellow */
+        .nodesearch tr:nth-child(even){background-color: #f2f2f2}
+        .nodesearch tr:hover {background-color: #ddd;}
+        .nodesearch tr.fail {background-color: #ffcccc}
+        .nodesearch tr.null {background-color: #ffffcc}
+
+        .nodesearch th {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #nodeinfo {
+            line-height: 20px; /* Fixed line height */
+            white-space: pre-wrap; /* To wrap text and preserve spaces and line breaks */
+        }
+    </style>
+    <script>
+        var pagebaseurl;
+        var apiurl;
+        var dateobj = new Date();
+        dateobj.setDate(dateobj.getDate() - 7);
+        // format: 2024-01-12T12:21:00.421000
+        var weekagostring = dateobj.toISOString().split(".")[0];
+        // dayago
+        dateobj = new Date();
+        dateobj.setDate(dateobj.getDate() - 1);
+        var dayagostring = dateobj.toISOString().split(".")[0];        
+        var mainmenu = [
+            {
+                "name": "Home",
+                "suffix": "",
+            },
+            {
+                "name": "Node",
+                "suffix": "?node_id=",
+            },
+            {
+                "name": "Search",
+                "suffix": "?search=",
+            },
+            {
+                "name": "Last week Checkouts",
+                "suffix": "?search=kind%3Dcheckout&search=created%3E" + weekagostring,
+            },
+            {
+                "name": "Last 24h Checkouts",
+                "suffix": "?search=kind%3Dcheckout&search=created%3E" + dayagostring,
+            },
+        ];
+
+        function fancydisplayjson(jsontext) {
+            // add indentation to json text
+            var json = JSON.parse(jsontext);
+            var jsonhtml = JSON.stringify(json, null, 2);
+            return jsonhtml;
+        }
+
+        function cleardivs() {
+            // hide&clean nodeinfo and requestinfo
+            var nodeinfo = document.getElementById("nodeinfo");
+            nodeinfo.innerHTML = "";
+            var requestinfo = document.getElementById("requestinfo");
+            requestinfo.innerHTML = "";
+            var miscbuttons = document.getElementById("miscbuttons");
+            miscbuttons.innerHTML = "";
+            var nodesearchdiv = document.getElementById("nodesearchdiv");
+            nodesearchdiv.innerHTML = "";
+        }
+
+        function miscclick(event) {
+            event.preventDefault();
+            var fullurl = pagebaseurl + this.getAttribute("href");
+            window.history.pushState("", "", fullurl);
+            parseParameters(fullurl);
+            console.log("miscclick fullurl: " + fullurl);
+        }
+
+        function addmiscbuttons(data, raw) {
+            var miscbuttons = document.getElementById("miscbuttons");
+            var miscbuttonshtml = "";
+            // do we have parent? then add button to display parent
+            if (data.parent != null) {
+                miscbuttonshtml += "<button id=\"parentbutton\" class=\"misc\" href=\"?node_id=" + data.parent + "\">Parent</button>";
+            }
+            // search for children, ?search=parent=65b09399b198ea6cb7bbffda
+            var url = apiurl + "/latest/nodes?search=parent=" + data.id;
+            var urlencoded_condition = encodeURIComponent("parent=" + data.id);
+            miscbuttonshtml += "<button id=\"childrenbutton\" class=\"misc\" href=\"?search=" + urlencoded_condition + "\">Children</button>";
+
+            // add selectbox for each artifact and button to download them
+            var artifacts = data.artifacts;
+            if (artifacts != null) {
+                var artifactnames = Object.keys(artifacts);
+                miscbuttonshtml += "<select id=\"artifacts\">";
+                for (var i = 0; i < artifactnames.length; i++) {
+                    var artifacturi = artifacts[artifactnames[i]];
+                    var artifactname = artifactnames[i];
+                    miscbuttonshtml += "<option value=\"" + artifacturi + "\">" + artifactname + "</option>";
+                    // add download button
+                }
+                miscbuttonshtml += "</select>";
+                miscbuttonshtml += "<button id=\"downloadbutton\" class=\"download\" href=\"\" onclick=\"\">Download</button>";
+                // add node size info (raw size)
+                var nodesize = raw.length;
+                miscbuttonshtml += "<span>Node size: " + nodesize + " bytes</span>";
+            }
+            
+            // add miscbuttons
+            miscbuttons.innerHTML = miscbuttonshtml;
+
+            // add onclick event listener to all misc buttons
+            links = document.getElementsByClassName("misc");
+            for (var i = 0; i < links.length; i++) {
+                links[i].addEventListener("click", miscclick);
+            };
+
+            // add onclick event listener to all download buttons
+            links = document.getElementsByClassName("download");
+            for (var i = 0; i < links.length; i++) {
+                links[i].addEventListener("click", function(event) {
+                    console.log("downloadbutton clicked, uri: " + document.getElementById("artifacts").value);
+                    event.preventDefault();
+                    var url = document.getElementById("artifacts").value;
+                    window.open(url, '_blank');
+                });
+            };
+
+        }
+
+
+        function displaynode(nodeid) {
+            // hide requestinfo
+            var requestinfo = document.getElementById("requestinfo");
+            requestinfo.innerHTML = "";
+            requestinfo.style.display = "none";
+            // request API for node info
+            // /latest/node/{node_id}
+            var url = apiurl + "/latest/node/" + nodeid;
+            var request = new XMLHttpRequest();
+            request.open('GET', url, true);
+            request.onload = function() {
+                console.log("request.status: " + request.status);
+                if (request.status >= 200 && request.status < 400) {
+                    // Success!
+                    var data = JSON.parse(request.responseText);
+                    addmiscbuttons(data, request.responseText);
+                    var nodeinfo = document.getElementById("nodeinfo");
+                    var nodeinfohtml = "";
+                    // add pre tag to display json
+                    nodeinfohtml += "<pre>";
+                    nodeinfohtml += fancydisplayjson(request.responseText);
+                    nodeinfohtml += "</pre>";
+                    nodeinfo.innerHTML = nodeinfohtml;
+                    console.log(data);
+                    // green line
+                    getgreenline();
+                }
+            };
+            request.onerror = function() {
+                // There was a connection error of some sort
+            };
+            request.send();
+        }
+
+    /*
+    As a syntactic convenience, if the operator matches one of >, <, >=, <=, !=
+    then the corresponding API operator '__gt', '__lt', '__gte', '__lte',
+    '__ne' is added to the key name automatically.  Spaces can also be used
+    around the operators, although this typically means adding double quotes on
+    the command line around each attribute.  As such, the example used
+    previously is equivalent to "score >= 100".
+    """
+    operators = {
+        '>': '__gt',
+        '<': '__lt',
+        '>=': '__gte',
+        '<=': '__lte',
+        '!=': '__ne',
+        '=': '',
+    }
+        // on python we split by using regex
+            pattern = re.compile(r'^([.a-zA-Z0-9_-]+) *([<>!=]+) *(.*)')
+        */
+        function convert_condition(condition) {
+            var operators = {
+                '>': '__gt=',
+                '<': '__lt=',
+                '>=': '__gte=',
+                '<=': '__lte=',
+                '!=': '__ne=',
+                '=': '=',
+            }
+            //var pattern = /^([.a-zA-Z0-9_-]+) *([<>!=]+) *(.*)/;
+            var pattern = /^([.a-zA-Z0-9_-]+)([<>!=]+)(.*)/;
+            var match = pattern.exec(condition);
+            if (match == null) {
+                console.log("condition: " + condition + " does not match");
+                return condition;
+            }
+            var key = match[1];
+            var op = match[2];
+            var value = match[3];
+            if (op in operators) {
+                op = operators[op];
+            }
+            console.log("key: " + key + " op: " + op + " value: " + value);
+            return key + op + value;
+        }
+
+        function humanAge(diff) {
+            var diffString = "";
+            var diffhours = Math.floor(diff / (1000 * 60 * 60)) % 24;
+            var diffminutes = Math.floor(diff / (1000 * 60)) % 60;
+            if (diffhours > 0) {
+                diffString += diffhours + "h ";
+            }
+            diffString += diffminutes + "m";
+
+            return diffString;
+        }
+
+        function display_search(data) {
+            cleardivs();
+            // hide requestinfo and miscbuttons
+            var requestinfo = document.getElementById("requestinfo");
+            requestinfo.innerHTML = "";
+            requestinfo.style.display = "none";
+            var miscbuttons = document.getElementById("miscbuttons");
+            miscbuttons.innerHTML = "";
+            miscbuttons.style.display = "none";
+            var nodeinfo = document.getElementById("nodesearchdiv");
+            var nodeinfohtml = "<table class=\"nodesearch\">";
+            var thnames = ["id", "kind", "name", "state", "result", "created"];
+            // is data.kernel_revision present? then add to thnames: 
+            // data.kernel_revision.tree, data.kernel_revision.branch, data.kernel_revision.commit
+            if (data.items.length > 0) {
+                if (data.items[0].data.kernel_revision != null) {
+                    thnames.push("tree");
+                    thnames.push("branch");
+                    thnames.push("commit");
+                }
+            }
+            // header
+            nodeinfohtml += "<tr>";
+            for (var i = 0; i < thnames.length; i++) {
+                nodeinfohtml += "<th>" + thnames[i] + "</th>";
+            }
+            nodeinfohtml += "</tr>";
+            // data            
+            for (var i = 0; i < data.items.length; i++) {
+                node = data.items[i];
+                // if fail, then add class fail
+                if (node.result == "fail") {
+                    nodeinfohtml += "<tr class=\"fail\">";
+                } else if (node.result == null && node.state != "running") {
+                    // null might be because job is still running, but if it is not - it is failure
+                    nodeinfohtml += "<tr class=\"null\">";
+                } else {
+                    nodeinfohtml += "<tr>";
+                }
+                nodeinfohtml += "<td><a href=\"?node_id=" + node.id + "\">" + node.id + "</a>&nbsp;";
+
+                // add also arrow - direct link to search children objects of this node
+                nodeinfohtml += "<a href=\"?search=parent%3D" + node.id + "\">-></a></td>";
+                nodeinfohtml += "</td>";
+                nodeinfohtml += "<td>" + node.kind + "</td>";
+                nodeinfohtml += "<td>" + node.name + "</td>";
+                nodeinfohtml += "<td>" + node.state + "</td>";
+                nodeinfohtml += "<td>" + node.result + "</td>";
+                // if state not done, calculate age of node since created and add it
+                if (node.state != "done") {
+                    var created = new Date(node.created);
+                    var now = new Date();
+                    var timezoneshift = now.getTimezoneOffset() * 60 * 1000;
+                    var diff = now - created + timezoneshift;
+                    nodeinfohtml += "<td>" + node.created + "(" + humanAge(diff) + " ago)</td>";
+                } else {
+                    // how long node took to process
+                    var date_start = new Date(node.created);
+                    var date_end = new Date(node.updated);
+                    var diff = date_end - date_start;
+                    nodeinfohtml += "<td>" + node.created + "(" + humanAge(diff) + ")</td>";
+                }
+                if (node.data.kernel_revision != null) {
+                    nodeinfohtml += "<td>" + node.data.kernel_revision.tree + "</td>";
+                    nodeinfohtml += "<td>" + node.data.kernel_revision.branch + "</td>";
+                    nodeinfohtml += "<td>" + node.data.kernel_revision.commit + "</td>";
+                }
+                nodeinfohtml += "</tr>";
+            }
+            nodeinfohtml += "</table>";
+            nodeinfo.innerHTML = nodeinfohtml;
+        }
+
+        function process_search(conditions) {
+            // urldecode
+            //conditions = decodeURIComponent(conditions);
+            console.log("conditions: " + conditions + " number of conditions: " + conditions.length);
+            // group conditions for url
+            var url = apiurl + "/latest/nodes?";
+            // build url nodes?condition1&condition2&condition3
+            for (var i = 0; i < conditions.length; i++) {
+                dec = decodeURIComponent(conditions[i]);
+                url += convert_condition(dec);
+                if (i != conditions.length - 1) {
+                    url += "&";
+                }
+            }
+            // add limit=50
+            url += "&limit=250";
+            console.log("url: " + url);
+            // request API for node info
+            var request = new XMLHttpRequest();
+            request.open('GET', url, true);
+            request.onload = function() {
+                console.log("request.status: " + request.status);
+                if (request.status >= 200 && request.status < 400) {
+                    var data = JSON.parse(request.responseText);
+                    display_search(data);
+                    //nodeinfo = document.getElementById("nodeinfo");
+                    //nodeinfo.innerHTML = fancydisplayjson(request.responseText);
+                }
+            };
+            request.onerror = function() {
+                // There was a connection error of some sort
+            };
+            request.send();
+        }
+
+        function requestnodeid() {
+            // request in requestinfo input text field the node id with
+            // the following format: ?node_id=1
+            var requestinfo = document.getElementById("requestinfo");
+            var requestinfohtml = "";
+            requestinfohtml += "<input type=\"text\" id=\"nodeid\" value=\"\" placeholder=\"65b09399b198ea6cb7bbffda\">";
+            requestinfohtml += "<button id=\"nodeidbutton\"\">Request</button>";
+            requestinfo.innerHTML = requestinfohtml;
+            requestinfo.style.display = "block";
+            // add event listener to nodeidbutton
+            document.getElementById("nodeidbutton").addEventListener("click", function(event) {
+                event.preventDefault();
+                var nodeid = document.getElementById("nodeid").value;
+                if (nodeid == "") {
+                    alert("nodeid is empty");
+                    return;
+                }
+                var fullurl = pagebaseurl + "?node_id=" + nodeid;
+                // dont refresh, just change the url
+                window.history.pushState("", "", fullurl);
+                displaynode(nodeid);
+            });
+            // clear nodeinfo
+            var nodeinfo = document.getElementById("nodeinfo");
+            nodeinfo.innerHTML = "";
+        }
+
+        function displayMenu() {
+            var menu = document.getElementById("menu");
+            var menuhtml = "";
+            for (var i = 0; i < mainmenu.length; i++) {
+                menuhtml += "<a class=\"menulink\" href=\"" + mainmenu[i].suffix + "\">" + mainmenu[i].name + "</a> ";
+            }
+            menu.innerHTML = menuhtml;
+            // add event listener to all menu links (by class)
+            links = document.getElementsByClassName("menulink");
+            for (var i = 0; i < links.length; i++) {
+                links[i].addEventListener("click", function(event) {
+                    event.preventDefault();
+                    var fullurl = pagebaseurl + this.getAttribute("href");
+                    window.history.pushState("", "", fullurl);
+                    parseParameters(fullurl);
+                });
+            };
+        }
+
+        function parseParameters(url) {
+            // parse the url and extract the parameters
+            var url = url.split("?")[1];
+            if (url == undefined) {
+                cleardivs();
+                return;
+            }
+            var parameters = url.split("&");
+            for (var i = 0; i < parameters.length; i++) {
+                var parameter = parameters[i].split("=");
+                if (parameter[0] == "node_id") {
+                    // if node_id is present, then display the node, if not then request it
+                    if (parameter[1] == "") {
+                        requestnodeid();
+                    } else {
+                        console.log("node_id: " + parameter[1]);
+                        displaynode(parameter[1]);
+                    }
+                    return;
+                }
+                if (parameter[0] == "search") {
+                    var conditions = [];
+                    for (var j = 0; j < parameters.length; j++) {
+                        var parameter = parameters[j].split("=");
+                        if (parameter[0] == "search") {
+                            conditions.push(parameter[1]);
+                        }
+                    }
+                    process_search(conditions);
+                    return;
+                }
+                // if we are here, then we have an unknown parameter
+                console.log("unknown parameter: " + parameter[0]);
+                alert("unknown parameter: " + parameter[0]);
+                cleardivs();
+            }
+        }
+    
+        function nodegreenline(lineNumber) {
+            // get nodeinfo div
+            var div = document.getElementById('nodeinfo');            
+            // make this line green
+            var lines = div.innerHTML.split("\n");
+            // remove old green
+            for (var i = 0; i < lines.length; i++) {
+                if (lines[i].indexOf("background-color: #ccffcc") != -1) {
+                    lines[i] = lines[i].replace("background-color: #ccffcc", "");
+                }
+            }
+            var line = lines[lineNumber - 1];
+            var linehtml = "<span style=\"background-color: #ccffcc\">" + line + "</span>";
+            lines[lineNumber - 1] = linehtml;
+            div.innerHTML = lines.join("\n");
+            console.log("div.innerHTML: " + div.innerHTML);
+        }
+
+        function getgreenline() {
+            // get url
+            var url = window.location.href;
+            // do we have #line=123 in the url? then highlight the line
+            if (url.indexOf("#line=") != -1) {
+                var line = url.split("#line=")[1];
+                // convert to int
+                line = parseInt(line);
+                nodegreenline(line);
+            }
+        }
+
+        // TODO: not very clean as doesnt remove span on re-click
+        function nodeclick(event) {
+            event.preventDefault();
+            var div = document.getElementById('nodeinfo');
+            var y = event.clientY - div.getBoundingClientRect().top; // Y position within the div
+            var lineHeight = parseInt(window.getComputedStyle(div).lineHeight);
+            var lineNumber = Math.floor(y / lineHeight) + 1; // Add 1 because lines are 1-indexed
+            nodegreenline(lineNumber);
+            // add to url the line number as #line=123
+            var currenturl = window.location.href;
+            var newurl = currenturl.split("#")[0] + "#line=" + lineNumber;
+            window.history.pushState("", "", newurl);
+        }
+
+        function onLoad() {
+            // do we have a node id in the url?
+            var url = window.location.href;
+            pagebaseurl = url.split("?")[0];
+            // api url is just remove /viewer
+            apiurl = pagebaseurl.replace("/viewer", "");
+            // do we have any parameters? then call parseParameters()
+            if (url.indexOf("?") != -1) {
+                parseParameters(url);
+            }
+            displayMenu();
+            // event on nodeinfo double click
+            var nodeinfo = document.getElementById("nodeinfo");
+            nodeinfo.addEventListener("dblclick", nodeclick);
+        }
+    </script>
+</head>
+<body onload="onLoad()">
+<!-- nice horizontal menu at top -->
+<div id="menu">
+</div>
+<div id="requestinfo"></div>
+<div id="miscbuttons"></div>
+<div id="nodeinfo"></div>
+<div id="nodesearchdiv"></div>
+</body>
+</html>
