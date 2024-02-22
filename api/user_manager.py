@@ -30,7 +30,7 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         super().__init__(*args, **kwargs)
         self._email_sender = None
         self._template_env = jinja2.Environment(
-            loader=jinja2.FileSystemLoader("./templates/")
+            loader=jinja2.PackageLoader("api", "templates")
         )
 
     @property
