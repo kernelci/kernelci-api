@@ -51,8 +51,8 @@ Documentation = "https://kernelci.org/docs"
 Repository = "https://github.com/kernelci/kernelci-api"
 
 [tool.setuptools]
-packages = ["api", "scripts", "templates"]
+packages = ["api", "scripts", "api.templates"]
 
 [tool.setuptools.package-data]
 scripts = ["*"]
-templates = ["*.jinja2", "*.html"]
+"api.templates" = ["*.jinja2", "*.html"]
