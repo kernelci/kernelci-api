@@ -8,16 +8,17 @@ services:
 
   api:
     container_name: 'test-kernelci-api'
-    build:
-      context: 'docker/api'
-      args:
-        - REQUIREMENTS=${REQUIREMENTS:-requirements-dev.txt}
-    volumes:
-      - './api:/home/kernelci/api'
+    image: '${KERNELCI_API_IMAGE:-kernelci/staging-api}:${KERNELCI_API_TAG:-latest}'
     ports:
       - '${API_HOST_PORT:-8001}:8000'
     env_file:
       - '.env'
+    command:
+      - 'uvicorn'
+      - 'api.main:versioned_app'
+      - '--host'
+      - '0.0.0.0'
+      - '--reload'
 
   db:
     container_name: 'test-kernelci-api-db'
