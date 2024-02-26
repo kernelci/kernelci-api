@@ -15,7 +15,7 @@ from .test_node_handler import create_node, get_node_by_id, update_node
 
 @pytest.mark.dependency(
     depends=[
-        'e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel'],
+        'tests/e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel'],
     scope='session')
 @pytest.mark.order(4)
 @pytest.mark.asyncio

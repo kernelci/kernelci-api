@@ -11,7 +11,7 @@ import pytest
 
 
 @pytest.mark.dependency(
-    depends=["e2e_tests/test_user_creation.py::test_create_regular_user"],
+    depends=["tests/e2e_tests/test_user_creation.py::test_create_regular_user"],
     scope="session",
 )
 @pytest.mark.order("last")

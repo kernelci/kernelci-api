@@ -11,7 +11,7 @@ import pytest
 
 @pytest.mark.dependency(
     depends=[
-        'e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel'],
+        'tests/e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel'],
     scope='session')
 @pytest.mark.order("last")
 def test_unsubscribe_node_channel(test_client):
@@ -31,7 +31,7 @@ def test_unsubscribe_node_channel(test_client):
 
 @pytest.mark.dependency(
     depends=[
-        'e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel'],
+        'tests/e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel'],
     scope='session')
 @pytest.mark.order("last")
 def test_unsubscribe_test_channel(test_client):

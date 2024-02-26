@@ -13,7 +13,7 @@ from .listen_handler import create_listen_task
 
 
 @pytest.mark.dependency(
-    depends=['e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel'],
+    depends=['tests/e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel'],
     scope='session')
 @pytest.mark.asyncio
 async def test_pubsub_handler(test_async_client):

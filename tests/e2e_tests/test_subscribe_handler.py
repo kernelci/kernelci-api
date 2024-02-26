@@ -10,7 +10,7 @@ import pytest
 
 
 @pytest.mark.dependency(
-    depends=['e2e_tests/test_user_creation.py::test_create_regular_user'],
+    depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
 @pytest.mark.order(3)
 def test_subscribe_node_channel(test_client):
@@ -33,7 +33,7 @@ def test_subscribe_node_channel(test_client):
 
 
 @pytest.mark.dependency(
-    depends=['e2e_tests/test_user_creation.py::test_create_regular_user'],
+    depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
 @pytest.mark.order(3)
 def test_subscribe_test_channel(test_client):
@@ -56,7 +56,7 @@ def test_subscribe_test_channel(test_client):
 
 
 @pytest.mark.dependency(
-    depends=['e2e_tests/test_user_creation.py::test_create_regular_user'],
+    depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
 @pytest.mark.order(3)
 def test_subscribe_user_group_channel(test_client):

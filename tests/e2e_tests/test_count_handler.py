@@ -12,7 +12,7 @@ import pytest
 
 @pytest.mark.dependency(
     depends=[
-        'e2e_tests/test_pipeline.py::test_node_pipeline'],
+        'tests/e2e_tests/test_pipeline.py::test_node_pipeline'],
     scope='session')
 def test_count_nodes(test_client):
     """
@@ -28,7 +28,7 @@ def test_count_nodes(test_client):
 
 @pytest.mark.dependency(
     depends=[
-        'e2e_tests/test_pipeline.py::test_node_pipeline'],
+        'tests/e2e_tests/test_pipeline.py::test_node_pipeline'],
     scope='session')
 def test_count_nodes_matching_attributes(test_client):
     """

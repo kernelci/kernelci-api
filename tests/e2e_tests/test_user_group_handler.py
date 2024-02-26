@@ -14,7 +14,7 @@ from .listen_handler import create_listen_task
 
 @pytest.mark.dependency(
     depends=[
-        'e2e_tests/test_subscribe_handler.py::test_subscribe_user_group_channel'],
+        'tests/e2e_tests/test_subscribe_handler.py::test_subscribe_user_group_channel'],
     scope='session')
 @pytest.mark.asyncio
 async def test_create_and_get_user_group(test_async_client):
