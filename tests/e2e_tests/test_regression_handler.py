@@ -13,7 +13,7 @@ from .test_node_handler import create_node, get_node_by_attribute
 
 @pytest.mark.dependency(
     depends=[
-        "e2e_tests/test_pipeline.py::test_node_pipeline"],
+        "tests/e2e_tests/test_pipeline.py::test_node_pipeline"],
     scope="session")
 @pytest.mark.asyncio
 async def test_regression_handler(test_async_client):

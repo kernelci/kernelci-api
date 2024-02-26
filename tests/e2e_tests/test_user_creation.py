@@ -15,7 +15,7 @@ from .conftest import db_create
 
 
 @pytest.mark.dependency(
-    depends=["e2e_tests/test_user_group_handler.py::test_create_user_groups"],
+    depends=["tests/e2e_tests/test_user_group_handler.py::test_create_user_groups"],
     scope="session")
 @pytest.mark.dependency()
 @pytest.mark.order(1)
