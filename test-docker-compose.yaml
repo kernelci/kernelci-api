@@ -50,10 +50,7 @@ services:
 
   test:
     container_name: 'kernelci-api-tests'
-    build:
-      context: 'docker/api'
-      args:
-        - REQUIREMENTS=${REQUIREMENTS:-requirements-dev.txt}
+    image: '${KERNELCI_API_IMAGE:-kernelci/staging-api}:${KERNELCI_API_TAG:-latest}'
     volumes:
       - './api:/home/kernelci/api'
       - './tests:/home/kernelci/tests'
@@ -63,3 +60,9 @@ services:
       - '.env'
     environment:
       - 'KEEP_ALIVE_PERIOD=0'
+    command:
+      - 'uvicorn'
+      - 'api.main:versioned_app'
+      - '--host'
+      - '0.0.0.0'
+      - '--reload'
