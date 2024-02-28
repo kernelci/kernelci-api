@@ -48,7 +48,7 @@ jobs:
           echo "EMAIL_PASSWORD=random" >> .env
 
       - name: Build docker images
-        run: docker-compose -f test-docker-compose.yaml build
+        run: docker-compose -f test-docker-compose.yaml build --no-cache
 
       - name: Run pycodestyle
         run: |
