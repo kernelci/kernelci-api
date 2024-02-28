@@ -203,7 +203,7 @@
             miscbuttonshtml += "<button id=\"downloadbutton\" class=\"download\" href=\"\" onclick=\"\">Download</button>";
 
             var node_data = data.data;
-            if (node_data != null) {
+            if (node_data != null && node_data.runtime != null) {
                 var runtime = node_data.runtime;
                 var job = node_data.job_id;
                 if (node_data.runtime.startsWith("lava") && node_data.job_id != null) {
