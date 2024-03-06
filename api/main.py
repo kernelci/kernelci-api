@@ -738,8 +738,8 @@ async def viewer():
     """Serve simple HTML page to view the API /static/viewer.html
     Set various no-cache tag we might update it often"""
 
-    root = os.path.dirname(os.path.abspath(__file__))
-    viewer_path = os.path.join(root, 'templates', 'viewer.html')
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    viewer_path = os.path.join(root_dir, 'templates', 'viewer.html')
     with open(viewer_path, 'r', encoding='utf-8') as file:
         # set header to text/html and no-cache stuff
         hdr = {
