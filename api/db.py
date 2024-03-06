@@ -96,21 +96,29 @@ class Database:
         return model(**obj) if obj else None
 
     def _translate_operators(self, attributes):
+        translated_attributes = {}
         for key, value in attributes.items():
-            if isinstance(value, tuple) and len(value) == 2:
-                op_name, op_value = value
-                op_key = self.OPERATOR_MAP.get(op_name)
-                if op_key:
-                    if isinstance(op_value, str) and op_value.isdecimal():
-                        op_value = int(op_value)
-                    yield key, {op_key: op_value}
+            if isinstance(value, dict):
+                for op_name, op_value in value.items():
+                    op_key = self.OPERATOR_MAP.get(op_name)
+                    if op_key:
+                        if isinstance(op_value, str) and op_value.isdecimal():
+                            op_value = int(op_value)
+                        if translated_attributes.get(key):
+                            translated_attributes[key].update({
+                                op_key: op_value})
+                        else:
+                            translated_attributes[key] = {op_key: op_value}
+        return translated_attributes
 
     @classmethod
     def _convert_int_values(cls, attributes):
-        return {
-            key: int(val[1]) for key, val in attributes.items()
-            if isinstance(val, tuple) and len(val) == 2 and val[0] == 'int'
-        }
+        for key, val in attributes.items():
+            if isinstance(val, dict):
+                for sub_key, sub_val in val.items():
+                    if sub_key == 'int':
+                        attributes[key] = int(sub_val)
+        return attributes
 
     def _convert_bool_values(self, attributes):
         for key, val in attributes.items():
