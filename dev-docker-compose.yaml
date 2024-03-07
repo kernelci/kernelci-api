@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: LGPL-2.1-or-later
+#
+# Copyright (C) 2024 Collabora Limited
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
+
+version: '3'
+services:
+
+  api:
+    container_name: 'kernelci-api'
+    build:
+      context: 'docker/api'
+      args:
+        - REQUIREMENTS=${REQUIREMENTS:-requirements.txt}
+        - core_rev=${CORE_REV:-main}
+    volumes:
+      - './api:/home/kernelci/api'
+      - './tests:/home/kernelci/tests'
+      - './migrations:/home/kernelci/migrations'
+      - './templates:/home/kernelci/templates'
+    ports:
+      - '${API_HOST_PORT:-8001}:8000'
+    env_file:
+      - '.env'
+
+  db:
+    container_name: 'kernelci-api-db'
+    image: 'mongo:5.0'
+    command: '--wiredTigerCacheSizeGB=0.5'
+    ports:
+      - '${MONGO_HOST_PORT:-8017}:27017'
+    volumes:
+      - 'mongodata:/data/db'
+
+  redis:
+    container_name: 'kernelci-api-redis'
+    image: 'redis:6.2'
+    volumes:
+      - './docker/redis/data:/data'
+
+  storage:
+    container_name: 'kernelci-api-storage'
+    image: 'nginx:1.21.3'
+    volumes:
+      - './docker/storage/data:/usr/share/nginx/html'
+      - './docker/storage/config/default.conf:/etc/nginx/conf.d/default.conf'
+    ports:
+      - ${STORAGE_HOST_PORT:-8002}:80
+
+  ssh:
+    container_name: 'kernelci-api-ssh'
+    build:
+      context: 'docker/ssh'
+    volumes:
+      - './docker/storage/data:/home/kernelci/data'
+      - './docker/ssh/user-data:/home/kernelci/.ssh'
+    ports:
+      - '${SSH_HOST_PORT:-8022}:22'
+
+volumes:
+  mongodata:
