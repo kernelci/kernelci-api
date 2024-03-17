@@ -28,11 +28,13 @@ step that produced the node passed or failed.  Finally there's a list of
 artifacts with URLs to know where to find all the related files (binaries,
 logs, generated results etc.).
 
-Here's a publicly available
-[graph](https://charts.mongodb.com/charts-kernelci-api-staging-otxuy/public/dashboards/5b52c3c6-81bb-4658-a5f3-8ebd2e980436#)
-showing the number of nodes added to the database every day:
+A
+[dashboard](https://charts.mongodb.com/charts-kernelci-api-staging-otxuy/public/dashboards/5b52c3c6-81bb-4658-a5f3-8ebd2e980436#)
+is public available with some graphs taken directly from the Atlas database.
+In particular, here's a filtered view of added nodes with a one-month rolling
+time window:
 
-<div style="padding: 0 0 20px 0"><iframe style="background: #FFFFFF;border: none;border-radius: 2px;box-shadow: 0 2px 10px 0 rgba(70, 76, 79, .2);" width="640" height="480" src="https://charts.mongodb.com/charts-kernelci-api-staging-otxuy/embed/charts?id=64c9fa16-ba81-40e9-8cd7-cd56fb88fbf3&maxDataAge=3600&theme=light&autoRefresh=true"></iframe></div>
+<div style="padding: 0 0 20px 0"><iframe style="background: #FFFFFF;border: none;border-radius: 2px;box-shadow: 0 2px 10px 0 rgba(70, 76, 79, .2);" width="640" height="480" src="https://charts.mongodb.com/charts-kernelci-api-staging-otxuy/embed/charts?id=95536164-3480-4f6b-801a-7e410f89a55f&maxDataAge=3600&theme=light&autoRefresh=true"></iframe></div>
 
 > **Note:** The API doesn't manage storage, the only requirement is to provide
 > publicly-available HTTP(S) URLs for each artifact.
