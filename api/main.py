@@ -557,6 +557,7 @@ async def post_node(node: Node,
     # Explicit pydantic model validation
     parse_node_obj(node)
 
+    parent = None
     # [TODO] Implement sanity checks depending on the node kind
     if node.parent:
         parent = await db.find_by_id(Node, node.parent)
@@ -577,6 +578,10 @@ async def post_node(node: Node,
     if data.get('owner', None):
         attributes['owner'] = data['owner']
     await pubsub.publish_cloudevent('node', data, attributes)
+    # Parent node updates
+    if parent and not parent.path.endswith('/'):
+        parent.path += '/'
+        await db.update(parent)
     return obj
 
 
@@ -624,12 +629,19 @@ async def put_node(node_id: str, node: Node,
     return obj
 
 
-async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy):
-    """Set node ownership information for a hierarchy of nodes"""
+async def _node_tree_normalization(user: User, hierarchy: Hierarchy):
+    """Runs some pre-checks and normalization logic to a hierarchy of
+    nodes before committing it to the DB
+    """
+    # Set trailing slash in parent nodes paths
+    if hierarchy.child_nodes and len(hierarchy.child_nodes):
+        hierarchy.node.path.rstrip('/')
+        hierarchy.node.path += '/'
+    # Set default node ownership if not specified
     if not hierarchy.node.owner:
         hierarchy.node.owner = user.username
     for node in hierarchy.child_nodes:
-        await _set_node_ownership_recursively(user, node)
+        await _node_tree_normalization(user, node)
 
 
 @app.put('/nodes/{node_id}', response_model=List[Node],
@@ -639,7 +651,7 @@ async def put_nodes(
         user: str = Depends(authorize_user)):
     """Add a hierarchy of nodes to an existing root node"""
     nodes.node.id = ObjectId(node_id)
-    await _set_node_ownership_recursively(user, nodes)
+    await _node_tree_normalization(user, nodes)
     obj_list = await db.create_hierarchy(nodes, Node)
     data = _get_node_event_data('updated', obj_list[0])
     attributes = {}
