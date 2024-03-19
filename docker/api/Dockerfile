@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2021 Collabora Limited
+# Copyright (C) 2021-2024 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
+# Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
-FROM python:3.10
+FROM python:3.11
 MAINTAINER "KernelCI TSC" <kernelci-tsc@groups.io>
 
 RUN apt-get update && apt-get install --no-install-recommends -y git
