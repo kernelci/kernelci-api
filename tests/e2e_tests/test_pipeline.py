@@ -43,7 +43,7 @@ async def test_node_pipeline(test_async_client):
     # Create a node
     node = {
         "name": "checkout",
-        "path": ["checkout"],
+        "path": "checkout",
         "data": {
             "kernel_revision": {
                 "tree": "mainline",
