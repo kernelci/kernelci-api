@@ -19,7 +19,7 @@ from fastapi import (
     Request,
     Form
 )
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
@@ -749,6 +749,37 @@ async def viewer():
             'Expires': '0'
         }
         return PlainTextResponse(file.read(), headers=hdr)
+
+
+@app.get('/dashboard')
+async def dashboard():
+    """Serve simple HTML page to view the API dashboard.html
+    Set various no-cache tag we might update it often"""
+
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    dashboard_path = os.path.join(root_dir, 'templates', 'dashboard.html')
+    with open(dashboard_path, 'r', encoding='utf-8') as file:
+        # set header to text/html and no-cache stuff
+        hdr = {
+            'Content-Type': 'text/html',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
+        return PlainTextResponse(file.read(), headers=hdr)
+
+
+@app.get('/icons/{icon_name}')
+async def icons(icon_name: str):
+    """Serve icons from /static/icons"""
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    if not re.match(r'^[A-Za-z0-9_.-]+\.png$', icon_name):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid icon name"
+        )
+    icon_path = os.path.join(root_dir, 'templates', icon_name)
+    return FileResponse(icon_path)
 
 
 versioned_app = VersionedFastAPI(
