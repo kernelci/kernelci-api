@@ -55,4 +55,4 @@ packages = ["api", "scripts", "api.templates"]
 
 [tool.setuptools.package-data]
 scripts = ["*"]
-"api.templates" = ["*.jinja2", "*.html"]
+"api.templates" = ["*.jinja2", "*.html", "*.png"]
