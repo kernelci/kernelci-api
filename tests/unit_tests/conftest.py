@@ -11,7 +11,6 @@
 """pytest fixtures for KernelCI API"""
 
 from unittest.mock import AsyncMock
-import asyncio
 import fakeredis.aioredis
 from fastapi.testclient import TestClient
 from fastapi import Request, HTTPException, status
@@ -96,12 +95,12 @@ app.dependency_overrides[get_current_user] = mock_get_current_user
 app.dependency_overrides[get_current_superuser] = mock_get_current_admin_user
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def test_client():
     """Fixture to get FastAPI Test client instance"""
     # Mock dependency callables for getting current user
     with TestClient(app=versioned_app, base_url=BASE_URL) as client:
-        return client
+        yield client
 
 
 @pytest.fixture
@@ -111,20 +110,6 @@ async def test_async_client():
         await versioned_app.router.startup()
         yield client
         await versioned_app.router.shutdown()
-
-
-@pytest.fixture
-def event_loop():
-    """Create an instance of the default event loop for each test case.
-    This is a workaround to prevent the default event loop to be closed by
-    async pubsub tests. It was causing other tests unable to run.
-    The issue has already been reported here:
-    https://github.com/pytest-dev/pytest-asyncio/issues/371
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield loop
-    loop.close()
 
 
 @pytest.fixture
