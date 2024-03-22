@@ -90,7 +90,7 @@ def mock_get_current_admin_user(request: Request):
         is_verified=True
     )
 
-
+# Mock dependency callables for getting current user
 app.dependency_overrides[get_current_user] = mock_get_current_user
 app.dependency_overrides[get_current_superuser] = mock_get_current_admin_user
 
@@ -98,7 +98,6 @@ app.dependency_overrides[get_current_superuser] = mock_get_current_admin_user
 @pytest.fixture(scope='session')
 def test_client():
     """Fixture to get FastAPI Test client instance"""
-    # Mock dependency callables for getting current user
     with TestClient(app=versioned_app, base_url=BASE_URL) as client:
         yield client
 
