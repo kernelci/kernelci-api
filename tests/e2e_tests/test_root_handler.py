@@ -5,9 +5,12 @@
 
 """End-to-end test functions for KernelCI API root handler"""
 
+import pytest
 
-def test_root_endpoint(test_client):
+
+@pytest.mark.asyncio
+async def test_root_endpoint(test_async_client):
     """Test root handler"""
-    response = test_client.get("/latest")
+    response = await test_async_client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "KernelCI API"}
