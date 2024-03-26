@@ -10,8 +10,6 @@ import pytest
 from httpx import AsyncClient
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from fastapi.testclient import TestClient
-
 from api.main import versioned_app
 from kernelci.api.models import Node, Regression
 
@@ -29,12 +27,6 @@ paginated_response_keys = {
     'limit',
     'offset',
 }
-
-@pytest.fixture(scope='session')
-def test_client():
-    """Fixture to get FastAPI Test client instance"""
-    with TestClient(app=versioned_app, base_url=BASE_URL) as client:
-        yield client
 
 
 @pytest.fixture(scope='session')
