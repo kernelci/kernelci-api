@@ -494,6 +494,8 @@ async def get_nodes(request: Request):
         model = Node
         translated_params = model.translate_fields(query_params)
         paginated_resp = await db.find_by_attributes(model, translated_params)
+        # how many items we got?
+        print(f"Got {len(paginated_resp.items)} items")
         paginated_resp.items = serialize_paginated_data(
             model, paginated_resp.items)
         return paginated_resp
@@ -741,6 +743,24 @@ async def viewer():
     root_dir = os.path.dirname(os.path.abspath(__file__))
     viewer_path = os.path.join(root_dir, 'templates', 'viewer.html')
     with open(viewer_path, 'r', encoding='utf-8') as file:
+        # set header to text/html and no-cache stuff
+        hdr = {
+            'Content-Type': 'text/html',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
+        return PlainTextResponse(file.read(), headers=hdr)
+
+
+@app.get('/dashboard')
+async def dashboard():
+    """Serve simple HTML page to view the API dashboard.html
+    Set various no-cache tag we might update it often"""
+
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    dashboard_path = os.path.join(root_dir, 'templates', 'dashboard.html')
+    with open(dashboard_path, 'r', encoding='utf-8') as file:
         # set header to text/html and no-cache stuff
         hdr = {
             'Content-Type': 'text/html',
