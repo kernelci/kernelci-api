@@ -9,18 +9,19 @@
 import pytest
 
 
+@pytest.mark.asyncio
 @pytest.mark.dependency(
     depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
 @pytest.mark.order(3)
-def test_subscribe_node_channel(test_client):
+async def test_subscribe_node_channel(test_async_client):
     """
     Test Case : Test KernelCI API '/subscribe' endpoint with 'node' channel
     Expected Result :
         HTTP Response Code 200 OK
         JSON with subscription 'id' and 'channel' keys
     """
-    response = test_client.post(
+    response = await test_async_client.post(
         "subscribe/node",
         headers={
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
@@ -32,18 +33,19 @@ def test_subscribe_node_channel(test_client):
     assert response.json().get('channel') == 'node'
 
 
+@pytest.mark.asyncio
 @pytest.mark.dependency(
     depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
 @pytest.mark.order(3)
-def test_subscribe_test_channel(test_client):
+async def test_subscribe_test_channel(test_async_client):
     """
     Test Case : Test KernelCI API '/subscribe' endpoint with 'test_channel'
     Expected Result :
         HTTP Response Code 200 OK
         JSON with subscription 'id' and 'channel' keys
     """
-    response = test_client.post(
+    response = await test_async_client.post(
         "subscribe/test_channel",
         headers={
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
@@ -55,11 +57,12 @@ def test_subscribe_test_channel(test_client):
     assert response.json().get('channel') == 'test_channel'
 
 
+@pytest.mark.asyncio
 @pytest.mark.dependency(
     depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
     scope='session')
 @pytest.mark.order(3)
-def test_subscribe_user_group_channel(test_client):
+async def test_subscribe_user_group_channel(test_async_client):
     """
     Test Case : Test KernelCI API '/subscribe' endpoint with 'user_group'
     channel
@@ -67,7 +70,7 @@ def test_subscribe_user_group_channel(test_client):
         HTTP Response Code 200 OK
         JSON with subscription 'id' and 'channel' keys
     """
-    response = test_client.post(
+    response = await test_async_client.post(
         "subscribe/user_group",
         headers={
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
