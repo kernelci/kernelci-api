@@ -13,19 +13,18 @@ requires-python = ">=3.10"
 license = {text = "LGPL-2.1-or-later"}
 dependencies = [
   "cloudevents == 1.9.0",
-  "fastapi[all] == 0.68.1",
+  "fastapi[all] == 0.99.1",
   "fastapi-pagination == 0.9.3",
   "fastapi-users[beanie, oauth] == 10.4.0",
   "fastapi-versioning == 0.10.0",
   "MarkupSafe == 2.0.1",
-  "motor == 2.5.1",
+  "motor == 3.3.2",
   "passlib == 1.7.4",
   "pydantic == 1.10.5",
   "pymongo-migrate == 0.11.0",
   "python-jose[cryptography] == 3.3.0",
-  "pyyaml == 5.3.1",
   "redis == 5.0.1",
-  "uvicorn[standard] == 0.13.4",
+  "uvicorn[standard] == 0.29.0",
 ]
 
 [project.optional-dependencies]
@@ -42,7 +41,7 @@ tests = [
 dev = [
   "kernelci-api[tests]",
   "pycodestyle == 2.8.0",
-  "pylint == 2.12.2",
+  "pylint == 3.1.0",
 ]
 
 [project.urls]
