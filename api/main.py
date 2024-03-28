@@ -10,7 +10,7 @@
 
 import os
 import re
-from typing import List
+from typing import List, Union
 from fastapi import (
     Depends,
     FastAPI,
@@ -387,7 +387,7 @@ async def get_user_groups(request: Request):
     return paginated_resp
 
 
-@app.get('/group/{group_id}', response_model=UserGroup,
+@app.get('/group/{group_id}', response_model=Union[UserGroup, None],
          response_model_by_alias=False)
 async def get_group(group_id: str):
     """Get user group information from the provided group id"""
@@ -448,7 +448,7 @@ async def translate_null_query_params(query_params: dict):
     return translated
 
 
-@app.get('/node/{node_id}', response_model=Node,
+@app.get('/node/{node_id}', response_model=Union[Node, None],
          response_model_by_alias=False)
 async def get_node(node_id: str):
     """Get node information from the provided node id"""
