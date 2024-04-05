@@ -769,6 +769,23 @@ async def dashboard():
         return PlainTextResponse(file.read(), headers=hdr)
 
 
+@app.get('/manage')
+async def manage():
+    """Serve simple HTML page to submit custom nodes"""
+
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    manage_path = os.path.join(root_dir, 'templates', 'manage.html')
+    with open(manage_path, 'r', encoding='utf-8') as file:
+        # set header to text/html and no-cache stuff
+        hdr = {
+            'Content-Type': 'text/html',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
+        return PlainTextResponse(file.read(), headers=hdr)
+
+
 @app.get('/icons/{icon_name}')
 async def icons(icon_name: str):
     """Serve icons from /static/icons"""

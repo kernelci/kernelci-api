@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>KernelCIv2 API Manage</title>
+    <!-- add vertical divider at menu -->
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 20px;
+            color: #333333;
+            background-color: #ffffff;
+            padding: 10px;
+        }
+
+        #menu {
+            background-color: #f5f5f5;
+            border-bottom: 1px solid #e5e5e5;
+            border-top: 1px solid #e5e5e5;
+            margin-bottom: 20px;
+            padding: 10px 0;
+        }
+
+        #menu a {
+            color: #999999;
+            font-size: 14px;
+            font-weight: bold;
+            margin-right: 10px;
+            text-decoration: none;
+            /* Add light grey box for each menu item */
+            padding: 10px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+
+        }
+
+        #menu a:hover {
+            color: #333333;
+            text-decoration: none;
+        }
+
+        #menu a:active {
+            color: #333333;
+            text-decoration: none;
+        }
+
+        #menu a:focus {
+            color: #333333;
+            text-decoration: none;
+        }
+
+        #menu a.menutab {
+            border-right: 1px solid #e5e5e5;
+        }
+
+        #menu a.menutab:last-child {
+            border-right: none;
+        }
+
+        #login {
+            background-color: #7ce48a;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            padding: 20px;
+            width: 30%;
+            /* center login form */
+            margin-left: auto;
+            margin-right: auto;
+            /* by default hidden */
+            display: none;
+        }
+
+        #login input[type="text"],
+        #login input[type="password"] {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            /* center input text */
+            margin-left: auto;
+            margin-right: auto;
+            /* size input text */
+            width: calc(100% - 23px);
+        }
+
+        #login input[type="submit"] {
+            background-color: #f5f5f5;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            color: #333333;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 10px;
+            width: 100%;
+        }
+
+        #login input[type="submit"]:hover {
+            background-color: #e5e5e5;
+            color: #333333;
+        }
+
+        #login input[type="submit"]:active {
+            background-color: #e5e5e5;
+            color: #333333;
+        }
+
+        #login input[type="submit"]:focus {
+            background-color: #e5e5e5;
+            color: #333333;
+        }
+
+        #login input[type="submit"]:disabled {
+            background-color: #f5f5f5;
+            color: #999999;
+            cursor: not-allowed;
+        }
+
+        .chktable {
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 10px;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        /* jobfilter a bit wider */
+        .chktable input[type="text"] {
+            width: calc(100% - 23px);
+        }
+        /* tr, td */
+        .chktable tr {
+            border-bottom: 1px solid #e5e5e5;
+            border-top: 1px solid #e5e5e5;
+        }
+        .chktable td {
+            padding-left: 5px;
+        }
+
+        #popup {
+            background-color: #7ce48a;
+            border: 1px solid #e5e5e5;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            padding: 20px;
+            width: 30%;
+            /* center login form */
+            margin-left: auto;
+            margin-right: auto;
+            /* by default hidden */
+            display: none;
+
+        }
+
+    </style>
+    <script>
+        var apiurl;
+        var checkoutnodes = [];
+        var jobnameshint = [
+            'baseline-arm64',
+            'baseline-arm64-broonie',
+            'baseline-arm64-chromeos-mediatek',
+            'baseline-arm64-chromeos-qualcomm',
+            'baseline-armel',
+            'baseline-x86',
+            'baseline-x86-pineview',
+            'baseline-x86-stoneyridge',
+            'baseline-x86-stoneyridge-staging',
+            'kbuild-clang-17-x86',
+            'kbuild-gcc-10-arm64',
+            'kbuild-gcc-10-arm64-chromebook',
+            'kbuild-gcc-10-arm64-chromeos-mediatek',
+            'kbuild-gcc-10-arm64-chromeos-qualcomm',
+            'kbuild-gcc-10-arm64-dtbscheck',
+            'kbuild-gcc-10-armel',
+            'kbuild-gcc-10-i386',
+            'kbuild-gcc-10-riscv',
+            'kbuild-gcc-10-x86',
+            'kbuild-gcc-10-x86-chromeos-pineview',
+            'kbuild-gcc-10-x86-chromeos-stoneyridge',
+            'kselftest-dt',
+            'kunit',
+            'kunit-x86_64',
+            'kver',
+            'sleep',
+            'tast-basic-arm64-mediatek',
+            'tast-basic-arm64-qualcomm',
+            'tast-basic-x86-pineview',
+            'tast-basic-x86-stoneyridge',
+            'tast-decoder-chromestack-arm64-mediatek',
+            'tast-decoder-chromestack-arm64-qualcomm',
+            'tast-decoder-chromestack-x86-pineview',
+            'tast-decoder-chromestack-x86-stoneyridge',
+            'tast-decoder-v4l2-sf-h264-arm64-qualcomm',
+            'tast-decoder-v4l2-sf-hevc-arm64-qualcomm',
+            'tast-decoder-v4l2-sf-vp8-arm64-qualcomm',
+            'tast-decoder-v4l2-sf-vp9-arm64-qualcomm',
+            'tast-decoder-v4l2-sf-vp9-extra-arm64-qualcomm',
+            'tast-decoder-v4l2-sl-av1-arm64-mediatek',
+            'tast-decoder-v4l2-sl-h264-arm64-mediatek',
+            'tast-decoder-v4l2-sl-hevc-arm64-mediatek',
+            'tast-decoder-v4l2-sl-vp8-arm64-mediatek',
+            'tast-decoder-v4l2-sl-vp9-arm64-mediatek',
+            'tast-hardware-arm64-mediatek',
+            'tast-hardware-arm64-qualcomm',
+            'tast-hardware-x86-pineview',
+            'tast-hardware-x86-stoneyridge',
+            'tast-kernel-arm64-mediatek',
+            'tast-kernel-arm64-qualcomm',
+            'tast-kernel-x86-pineview',
+            'tast-kernel-x86-stoneyridge',
+            'tast-mm-decode-arm64-mediatek',
+            'tast-mm-decode-arm64-qualcomm',
+            'tast-mm-misc-arm64-mediatek',
+            'tast-mm-misc-arm64-qualcomm',
+            'tast-mm-misc-x86-pineview',
+            'tast-mm-misc-x86-stoneyridge',
+            'tast-perf-arm64-mediatek',
+            'tast-perf-arm64-qualcomm',
+            'tast-perf-long-duration-arm64-mediatek',
+            'tast-perf-long-duration-arm64-qualcomm',
+            'tast-perf-long-duration-x86-pineview',
+            'tast-perf-long-duration-x86-stoneyridge',
+            'tast-perf-x86-pineview',
+            'tast-perf-x86-stoneyridge',
+            'tast-platform-arm64-mediatek',
+            'tast-platform-arm64-qualcomm',
+            'tast-platform-x86-pineview',
+            'tast-platform-x86-stoneyridge',
+            'tast-power-arm64-mediatek',
+            'tast-power-arm64-qualcomm',
+            'tast-power-x86-pineview',
+            'tast-power-x86-stoneyridge',
+            'tast-sound-arm64-mediatek',
+            'tast-sound-arm64-qualcomm',
+            'tast-sound-x86-pineview',
+            'tast-sound-x86-stoneyridge',
+            'tast-ui-arm64-mediatek',
+            'tast-ui-arm64-qualcomm',
+            'tast-ui-x86-pineview',
+            'tast-ui-x86-stoneyridge'];
+        
+        function showpopup(msg) {
+            var popup = document.getElementById("popup");
+            popup.innerHTML = msg;
+            if (msg == "") {
+                // hide popup
+                popup.style.display = "none";
+                return;
+            } else {
+                popup.style.display = "block";
+            }
+            // put on top of everything and disable rest
+            popup.style.zIndex = 1000;
+            popup.style.position = "absolute";
+            popup.style.top = "50%";
+            popup.style.left = "50%";
+            popup.style.transform = "translate(-50%, -50%)";
+        }
+        // https://staging.kernelci.org:9000/latest/nodes?created__gt=2024-04-04T12:02:45&kind=kbuild&limit=5000
+        function getcheckoutnodes() {
+            // 1 week ago from now
+            var d = new Date();
+            d.setDate(d.getDate() - 30);
+            var created = d.toISOString();
+            created = created.split(".")[0];
+            var url = apiurl + "/latest/nodes?created__gt=" + created + "&kind=checkout&limit=5000";
+            var xhr = new XMLHttpRequest();
+            console.log('url', url);
+            xhr.open("GET", url, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    checkoutnodes = JSON.parse(xhr.responseText);
+                    console.log('checkoutnodes', checkoutnodes);
+                }
+                showpopup("")
+            }
+            xhr.onerror = function () {
+                alert("Error getting checkout nodes");
+                showpopup("");
+            }
+            xhr.send();
+            showpopup("Please wait, getting checkout nodes");
+        }
+        // logout function
+        function logout() {
+            console.log('logout');
+            localStorage.removeItem("token");
+            load();
+        }
+        function checktoken(e) {
+            var token = document.getElementById("token").value;
+            // send token to the server
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", apiurl + "/latest/whoami", true);
+            console.log('token', token);
+            // set Authorization header
+            xhr.setRequestHeader("Authorization", "Bearer " + token);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    // save token in local storage
+                    localStorage.setItem("token", token);
+                    // remove login form
+                    var login = document.getElementById("login");
+                    login.innerHTML = "";
+                    login.style.display = "none";
+                }
+                // on error 401, alert user
+                if (xhr.readyState == 4 && xhr.status == 401) {
+                    alert("Invalid token");
+                }
+            }
+            xhr.onerror = function () {
+                alert("Invalid token");
+            }
+
+            xhr.send();
+            return false;
+        }
+        function load() {
+            var menu = document.getElementById("menu");
+            var items = menu.getElementsByTagName("a");
+            var pagebaseurl = window.location.href;
+            // strip all after # or ?
+            pagebaseurl = pagebaseurl.split("#")[0];
+            pagebaseurl = pagebaseurl.split("?")[0];
+            // get apiurl from url
+            apiurl = pagebaseurl.replace("/manage", "");
+
+            console.log('apiurl', apiurl);
+
+            // check if checkoutnodes are empty
+            if (checkoutnodes.length == 0) {
+                getcheckoutnodes();
+            }
+
+            for (var i = 0; i < items.length; i++) {
+                items[i].style.borderRight = "1px solid #e5e5e5";
+            }
+            // verify if we have in local storage the token
+            var token = localStorage.getItem("token");
+            if (token == null) {
+                console.log('token not found');
+                // put login form in the middle, on top of all content and ask for token
+                var login = document.getElementById("login");
+                login.innerHTML = "<form id='loginform'><input type='password' id='token' placeholder='Token' required><input type='submit' value='Verify' onclick='return checktoken(event)'></form>";
+                login.style.display = "block";
+            } else {
+                console.log('token found in local storage' + token);
+            }
+            // onclick menutab #logout
+            var logoutbtn = document.getElementById("logout");
+            logoutbtn.onclick = function (e) {
+                e.preventDefault();
+                logout();
+            }
+            // home page just clear all divs
+            var homebtn = document.getElementById("home");
+            homebtn.onclick = function (e) {
+                e.preventDefault();
+                var login = document.getElementById("login");
+                login.innerHTML = "";
+                login.style.display = "none";
+                var checkout = document.getElementById("checkout");
+                checkout.innerHTML = "";
+                checkout.style.display = "none";
+            }
+            // checkout page
+            var checkoutbtn = document.getElementById("checkout");
+            checkoutbtn.onclick = function (e) {
+                e.preventDefault();
+                var checkout = document.getElementById("checkoutform");
+                chkhtml = "<form id='checkoutform'>";
+                chkhtml += "<table class='chktable'>";
+                chkhtml += "<tr><td>Tree/Branch</td><td><select name='treebranch' id='treebranch' required></select></td><td></td></tr>";
+                chkhtml += "<tr><td>Commit</td><td><input type='text' name='commit' required id='commit'></td><td></td></tr>";
+                chkhtml += "<tr><td>Job Filter</td><td><input type='text' name='jobfilter' required id='jobfilter'></td><td><select id='jobfilterhint'><option>Select jobname to append</option></select></td></tr>";
+                chkhtml += "<tr><td></td><td><input type='submit' value='Submit' onclick='submitcheckout(event)'></td><td><button id='restorechkout'>Restore previous</button></td></tr>";
+                chkhtml += "</table>";
+                chkhtml += "</form>";
+                checkout.innerHTML = chkhtml;
+                checkout.style.display = "block";
+                // fill jobfilterhint
+                var jobfilterhint = document.getElementById("jobfilterhint");
+                for (var i = 0; i < jobnameshint.length; i++) {
+                    var option = document.createElement("option");
+                    option.text = jobnameshint[i];
+                    option.value = jobnameshint[i];
+                    jobfilterhint.add(option);
+                }
+                // set event for jobfilterhint, if any selected
+                jobfilterhint.onchange = function (e) {
+                    var jobfilter = document.getElementById("jobfilter");
+                    if (jobfilter.value == "") {
+                        jobfilter.value = jobfilterhint.value;
+                    } else {
+                        jobfilter.value += "," + jobfilterhint.value;
+                    }
+                    jobfilterhint.value = "Select jobname to append";
+                }
+                // restore previous checkout
+                var restorechkout = document.getElementById("restorechkout");
+                restorechkout.onclick = function (e) {
+                    e.preventDefault();
+                    restorecheckout();
+                }
+                info = checkoutnodesinfo();
+                console.log('info', info);
+                // checkoutnodes
+                console.log('checkoutnodes', checkoutnodes);
+                var treebranch = document.getElementsByName("treebranch")[0];
+                for (var i = 0; i < info.length; i++) {
+                    var option = document.createElement("option");
+                    var dk = info[i]["data"]["kernel_revision"];
+                    option.text = dk["tree"] + "/" + dk["branch"];
+                    option.value = dk["tree"] + "/" + dk["branch"];
+                    treebranch.add(option);
+                }
+            }
+        }
+
+        function restorecheckout() {
+            var chk = localStorage.getItem("checkout");
+            if (chk != null) {
+                chk = JSON.parse(chk);
+                document.getElementById("treebranch").value = chk["data"]["kernel_revision"]["tree"] + "/" + chk["data"]["kernel_revision"]["branch"];
+                document.getElementById("commit").value = chk["data"]["kernel_revision"]["commit"];
+                // jobfilter is array, convert to comma delimited string
+                var jobfilter = chk["job_filter"].join(",");
+                document.getElementById("jobfilter").value = jobfilter;
+
+            }
+        }
+
+        function checkoutnodesinfo() {
+            var info = [];
+            var unique_treebranch = [];
+            var allnodes = checkoutnodes.items;
+            for (var i = 0; i < allnodes.length; i++) {
+                var treebranch = allnodes[i]["data"]["kernel_revision"]["tree"] + "/" + allnodes[i]["data"]["kernel_revision"]["branch"];
+                if (unique_treebranch.indexOf(treebranch) == -1) {
+                    unique_treebranch.push(treebranch);
+                    info.push(allnodes[i]);
+                }
+            }
+            return info;
+        }
+
+        function submitcheckout(e) {
+            /*
+            {
+                "kind": "checkout",
+                "name": "checkout",
+                "path": [
+                    "checkout"
+                ],
+                "data": {
+                    "kernel_revision": {
+                        "tree": "kernelci",
+                        "url": "https://github.com/kernelci/linux.git",
+                        "branch": "staging-stable",
+                        "commit": "e3c676beb4192d174928e5a95476e00b98a915b9",
+                    }
+                },                    
+            }
+            */
+            e.preventDefault();
+            var form = document.getElementById("checkoutform");
+            var treebranch = document.getElementById("treebranch").value;
+            var commit = document.getElementById("commit").value;
+            var jobfilter = document.getElementById("jobfilter").value;
+
+            nodeinfo = checkoutnodesinfo();
+            var info = {};
+            for (var i = 0; i < nodeinfo.length; i++) {
+                var dk = nodeinfo[i]["data"]["kernel_revision"];
+                if (dk["tree"] + "/" + dk["branch"] == treebranch) {
+                    info = dk;
+                    break;
+                }
+            }
+            chknode = {}
+            chknode["kind"] = "checkout";
+            chknode["name"] = "checkout";
+            chknode["path"] = ["checkout"];
+            chknode["data"] = {};
+            chknode["data"]["kernel_revision"] = {};
+            chknode["data"]["kernel_revision"]["tree"] = info["tree"];
+            chknode["data"]["kernel_revision"]["url"] = info["url"];
+            chknode["data"]["kernel_revision"]["branch"] = info["branch"];
+            chknode["data"]["kernel_revision"]["commit"] = commit;
+
+            // parse jobfilter over comma and convert to array
+            jobfilter = jobfilter.split(",");
+            chknode["jobfilter"] = jobfilter;
+            // save all fields to local storage
+            localStorage.setItem("checkout", JSON.stringify(chknode));
+
+            // if required fields are empty, alert and return
+            if (treebranch == "" || commit == "" || jobfilter == "") {
+                alert("All fields are required");
+                return;
+            }
+            console.log('checkout', chknode);
+
+            // POST /latest/node
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", apiurl + "/latest/node", true);
+            xhr.setRequestHeader("Authorization", "Bearer " + localStorage.getItem("token"));
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    alert("Checkout submitted");
+                }
+                if (xhr.readyState == 4 && xhr.status == 401) {
+                    alert("Invalid token");
+                }
+            }
+            xhr.onerror = function () {
+                alert("Error submitting checkout");
+            }
+            xhr.send(JSON.stringify(chknode));
+
+        }
+
+    </script>
+</head>
+
+<body onload="load()">
+    <div id="menu">
+        <a class="menutab" id="home" href="#home">Home</a>
+        <a class="menutab" id="checkout" href="#checkout">Submit checkout</a>
+        <a class="menutab" id="logout" href="#logout">Logout</a>
+    </div>
+    <div id="login"></div>
+    <div id="checkoutform"></div>
+    <div id="popup"></div>
+</body>
+
+</html>
