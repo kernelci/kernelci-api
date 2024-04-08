@@ -10,6 +10,7 @@
 
 import os
 import re
+import hashlib
 from typing import List, Union
 from fastapi import (
     Depends,
@@ -17,7 +18,8 @@ from fastapi import (
     HTTPException,
     status,
     Request,
-    Form
+    Form,
+    Header
 )
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -314,6 +316,17 @@ async def authorize_user(node_id: str,
     return user
 
 
+def calculate_submitter(hdr: str):
+    """Calculate submitter hash from Auth header token"""
+    token = hdr.split(' ')[1]
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Token not provided"
+        )
+    return hashlib.md5(token.encode()).hexdigest()
+
+
 @app.get('/users', response_model=PageModel, tags=["user"],
          response_model_exclude={"items": {"__all__": {
                                     "hashed_password"}}})
@@ -549,6 +562,7 @@ def _translate_version_fields(node: Node):
 
 @app.post('/node', response_model=Node, response_model_by_alias=False)
 async def post_node(node: Node,
+                    authorization: str | None = Header(default=None),
                     current_user: User = Depends(get_current_user)):
     """Create a new node"""
     # [TODO] Remove translation below once we can use it in the pipeline
@@ -568,6 +582,9 @@ async def post_node(node: Node,
 
     await _verify_user_group_existence(node.user_groups)
     node.owner = current_user.username
+    # Subtract 'Bearer ' from the token
+    node.submitter = calculate_submitter(authorization)
+
     # The node is handled as a generic Node by the DB, regardless of its
     # specific kind. The concrete Node submodel (Kbuild, Checkout, etc.)
     # is only used for data format validation
@@ -624,22 +641,26 @@ async def put_node(node_id: str, node: Node,
     return obj
 
 
-async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy):
+async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy,
+                                          submitter: str):
     """Set node ownership information for a hierarchy of nodes"""
     if not hierarchy.node.owner:
         hierarchy.node.owner = user.username
+    hierarchy.node.submitter = submitter
     for node in hierarchy.child_nodes:
-        await _set_node_ownership_recursively(user, node)
+        await _set_node_ownership_recursively(user, node, submitter)
 
 
 @app.put('/nodes/{node_id}', response_model=List[Node],
          response_model_by_alias=False)
 async def put_nodes(
         node_id: str, nodes: Hierarchy,
+        authorization: str | None = Header(default=None),
         user: str = Depends(authorize_user)):
     """Add a hierarchy of nodes to an existing root node"""
     nodes.node.id = ObjectId(node_id)
-    await _set_node_ownership_recursively(user, nodes)
+    submitter = calculate_submitter(authorization)
+    await _set_node_ownership_recursively(user, nodes, submitter)
     obj_list = await db.create_hierarchy(nodes, Node)
     data = _get_node_event_data('updated', obj_list[0])
     attributes = {}
