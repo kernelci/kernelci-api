@@ -36,7 +36,7 @@ async def test_regression_handler(test_async_client):
     passed_node = {
         "name": "kver",
         "kind": "test",
-        "path": ["checkout", "kver"],
+        "path": "checkout/kver",
         "group": "kver",
         "parent": checkout_node["id"],
         "data": {
