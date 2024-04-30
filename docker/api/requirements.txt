@@ -6,7 +6,7 @@ fastapi-versioning==0.10.0
 MarkupSafe==2.0.1
 motor==3.3.2
 passlib==1.7.4
-pydantic==1.10.5
+pydantic==1.10.13
 pymongo-migrate==0.11.0
 python-jose[cryptography]==3.3.0
 redis==5.0.1
