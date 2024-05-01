@@ -134,6 +134,7 @@
             },
         ];
         var lava_urls = {
+            "lava-baylibre": "lava.baylibre.com",
             "lava-broonie": "lava.sirena.org.uk",
             "lava-collabora": "lava.collabora.dev",
             "lava-collabora-early-access": "staging.lava.collabora.dev",
@@ -354,7 +355,11 @@
                 nodeinfohtml += "<th>" + thnames[i] + "</th>";
             }
             nodeinfohtml += "</tr>";
-            // data            
+            // sort data items by created
+            data.items.sort(function(a, b) {
+                return new Date(b.created) - new Date(a.created);
+            });
+            // data
             for (var i = 0; i < data.items.length; i++) {
                 node = data.items[i];
                 // if fail, then add class fail
