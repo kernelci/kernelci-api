@@ -262,8 +262,6 @@
                     nodeinfohtml += "</pre>";
                     nodeinfo.innerHTML = nodeinfohtml;
                     console.log(data);
-                    // green line
-                    getgreenline();
                 }
             };
             request.onerror = function() {
@@ -521,49 +519,6 @@
             }
         }
     
-        function nodegreenline(lineNumber) {
-            // get nodeinfo div
-            var div = document.getElementById('nodeinfo');            
-            // make this line green
-            var lines = div.innerHTML.split("\n");
-            // remove old green
-            for (var i = 0; i < lines.length; i++) {
-                if (lines[i].indexOf("background-color: #ccffcc") != -1) {
-                    lines[i] = lines[i].replace("background-color: #ccffcc", "");
-                }
-            }
-            var line = lines[lineNumber - 1];
-            var linehtml = "<span style=\"background-color: #ccffcc\">" + line + "</span>";
-            lines[lineNumber - 1] = linehtml;
-            div.innerHTML = lines.join("\n");
-            console.log("div.innerHTML: " + div.innerHTML);
-        }
-
-        function getgreenline() {
-            // get url
-            var url = window.location.href;
-            // do we have #line=123 in the url? then highlight the line
-            if (url.indexOf("#line=") != -1) {
-                var line = url.split("#line=")[1];
-                // convert to int
-                line = parseInt(line);
-                nodegreenline(line);
-            }
-        }
-
-        // TODO: not very clean as doesnt remove span on re-click
-        function nodeclick(event) {
-            event.preventDefault();
-            var div = document.getElementById('nodeinfo');
-            var y = event.clientY - div.getBoundingClientRect().top; // Y position within the div
-            var lineHeight = parseInt(window.getComputedStyle(div).lineHeight);
-            var lineNumber = Math.floor(y / lineHeight) + 1; // Add 1 because lines are 1-indexed
-            nodegreenline(lineNumber);
-            // add to url the line number as #line=123
-            var currenturl = window.location.href;
-            var newurl = currenturl.split("#")[0] + "#line=" + lineNumber;
-            window.history.pushState("", "", newurl);
-        }
 
         function onLoad() {
             // do we have a node id in the url?
