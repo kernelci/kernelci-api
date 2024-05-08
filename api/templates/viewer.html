@@ -374,7 +374,7 @@
                 nodeinfohtml += "<td><a href=\"?node_id=" + node.id + "\">" + node.id + "</a>&nbsp;";
 
                 // add also arrow - direct link to search children objects of this node
-                nodeinfohtml += "<a href=\"?search=parent%3D" + node.id + "\">-></a></td>";
+                nodeinfohtml += "<a href=\"?search=parent%3D" + node.id + "\">(Child nodes)</a></td>";
                 nodeinfohtml += "</td>";
                 nodeinfohtml += "<td>" + node.kind + "</td>";
                 if (node.kind == "job" && node.data.platform != null) {
