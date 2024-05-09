@@ -437,7 +437,7 @@ async def delete_group(group_id: str,
 # -----------------------------------------------------------------------------
 # Nodes
 
-def _get_node_event_data(operation, node):
+def _get_node_event_data(operation, node, is_hierarchy=False):
     return {
         'op': operation,
         'id': str(node.id),
@@ -449,6 +449,7 @@ def _get_node_event_data(operation, node):
         'result': node.result,
         'owner': node.owner,
         'data': node.data,
+        'is_hierarchy': is_hierarchy,
     }
 
 
@@ -662,7 +663,7 @@ async def put_nodes(
     submitter = calculate_submitter(authorization)
     await _set_node_ownership_recursively(user, nodes, submitter)
     obj_list = await db.create_hierarchy(nodes, Node)
-    data = _get_node_event_data('updated', obj_list[0])
+    data = _get_node_event_data('updated', obj_list[0], True)
     attributes = {}
     if data.get('owner', None):
         attributes['owner'] = data['owner']
