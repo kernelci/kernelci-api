@@ -591,6 +591,8 @@ async def post_node(node: Node,
     obj = await db.create(node)
     data = _get_node_event_data('created', obj)
     attributes = {}
+    # publish 'build' event without setting owner
+    await pubsub.publish_cloudevent('build', data, attributes)
     if data.get('owner', None):
         attributes['owner'] = data['owner']
     await pubsub.publish_cloudevent('node', data, attributes)
@@ -635,6 +637,8 @@ async def put_node(node_id: str, node: Node,
     obj = await db.update(new_node_def)
     data = _get_node_event_data('updated', obj)
     attributes = {}
+    # publish 'build' event without setting owner
+    await pubsub.publish_cloudevent('build', data, attributes)
     if data.get('owner', None):
         attributes['owner'] = data['owner']
     await pubsub.publish_cloudevent('node', data, attributes)
