@@ -86,7 +86,6 @@ tool provided in the `kernelci-api` repository which has a wrapper script
 ```
 $ ./scripts/setup_admin_user --email EMAIL
 Creating kernelci-api_api_run ... done
-Creating admin group...
 Password for user 'admin':
 Creating admin user...
 ```
@@ -122,7 +121,7 @@ $ curl -X 'GET' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.KHkILtsJaCmueOfFCj79HGr6kHamuZFdB1Yz_5GqcC4'
 {"id":"615f30020eb7c3c6616e5ac3", "email": "admin@kernelci.org", "is_active":true, "is_superuser":true, "is_verified":true,
-"groups": [{"id":"648c07a70fccad400a122509","name":"admin"}], "username":"admin"}
+"groups": [], "username":"admin"}
 ```
 
 ### Setup SSH keys
