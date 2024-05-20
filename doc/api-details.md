@@ -68,13 +68,14 @@ $ curl -X 'POST'
 {'id': '615f30020eb7c3c6616e5ac3', 'email': 'test@kernelci.org', 'is_active':true, 'is_superuser':false, 'is_verified':false, 'username': 'test', 'groups': []}
 ```
 
-An user accout can be added to multiple user groups by providing user group names to request query parameter. All the admin users
-should be added to `admin` group by default.
-To create an admin user, provide username, email, password, `"groups": ["admin"]`, and `"is_superuser": 1` to request data dictionary.
+To create an admin user, provide username, email, password, and `"is_superuser": 1` to request data dictionary.
+A user account can be added to multiple user groups by providing a list of user group names to request dictionary.
+
+For example, the below command will create an admin user and add it to `kernelci` user group.
 
 ```
-$ curl -X 'POST' 'http://localhost:8001/latest/user/register' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"username": "test_admin", "email": "test-admin@kernelci.org", "password": "admin", "groups": ["admin"], "is_superuser": 1}'
-{'_id': '615f30020eb7c3c6616e5ac6', 'username': 'test_admin', 'email': 'test-admin@kernelci.org', 'is_active':true, 'is_superuser':true, 'is_verified':false, 'groups': [{'id':'648c07a70fccad400a122509','name':'admin'}]}
+$ curl -X 'POST' 'http://localhost:8001/latest/user/register' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"username": "test_admin", "email": "test-admin@kernelci.org", "password": "admin", "is_superuser": 1, "groups": ["kernelci"]}'
+{'_id': '615f30020eb7c3c6616e5ac6', 'username': 'test_admin', 'email': 'test-admin@kernelci.org', 'is_active':true, 'is_superuser':true, 'is_verified':false, 'groups': [{"id":"648ff894bd39930355ed16ad","name":"kernelci"}]}
 ```
 
 Another way of creating users is to use `kci user add` tool from kernelci-core.
