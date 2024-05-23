@@ -29,4 +29,7 @@ def test_subscribe_endpoint(mock_subscribe, test_client):
     )
     print("response.json()", response.json())
     assert response.status_code == 200
-    assert ('id', 'channel', 'user') == tuple(response.json().keys())
+    # verify that id, channel, user are mandatory keys in the response
+    assert "id" in response.json()
+    assert "channel" in response.json()
+    assert "user" in response.json()

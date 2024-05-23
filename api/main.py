@@ -11,7 +11,7 @@
 import os
 import re
 import hashlib
-from typing import List, Union
+from typing import List, Union, Optional
 from fastapi import (
     Depends,
     FastAPI,
@@ -19,7 +19,8 @@ from fastapi import (
     status,
     Request,
     Form,
-    Header
+    Header,
+    Query
 )
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -674,9 +675,13 @@ async def put_nodes(
 # Pub/Sub
 
 @app.post('/subscribe/{channel}', response_model=Subscription)
-async def subscribe(channel: str, user: User = Depends(get_current_user)):
+async def subscribe(channel: str, user: User = Depends(get_current_user),
+                    promisc: Optional[bool] = Query(None)):
     """Subscribe handler for Pub/Sub channel"""
-    return await pubsub.subscribe(channel, user.username)
+    options = {}
+    if promisc:
+        options['promiscuous'] = promisc
+    return await pubsub.subscribe(channel, user.username, options)
 
 
 @app.post('/unsubscribe/{sub_id}')

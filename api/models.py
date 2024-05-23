@@ -45,6 +45,9 @@ class Subscription(BaseModel):
         description=("Username of the user that created the "
                      "subscription (owner)")
     )
+    promiscuous: bool = Field(
+        description='Listen to all users messages',
+        default=False)
 
 
 class SubscriptionStats(Subscription):
