@@ -78,7 +78,7 @@ class PubSub:
             for channel in sub['redis_sub'].channels.keys():
                 self._channels.add(channel.decode())
 
-    async def subscribe(self, channel, user):
+    async def subscribe(self, channel, user, options=None):
         """Subscribe to a Pub/Sub channel
 
         Subscribe to a given channel and return a Subscription object.
@@ -87,6 +87,8 @@ class PubSub:
         async with self._lock:
             redis_sub = self._redis.pubsub()
             sub = Subscription(id=sub_id, channel=channel, user=user)
+            if options and options.get('promiscuous'):
+                sub.promiscuous = True
             await redis_sub.subscribe(channel)
             self._subscriptions[sub_id] = {'redis_sub': redis_sub,
                                            'sub': sub,
@@ -139,6 +141,12 @@ class PubSub:
             if msg is None:
                 continue
             msg_data = json.loads(msg['data'])
+            # If the subscription is promiscuous, return the message
+            # without checking the owner
+            if sub['sub'].promiscuous:
+                return msg
+            # If the subscription is not promiscuous, check the owner of the
+            # message
             if 'owner' in msg_data and msg_data['owner'] != sub['sub'].user:
                 continue
             return msg

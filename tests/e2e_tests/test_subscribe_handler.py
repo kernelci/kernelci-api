@@ -29,7 +29,10 @@ async def test_subscribe_node_channel(test_async_client):
     )
     pytest.node_channel_subscription_id = response.json()['id']
     assert response.status_code == 200
-    assert ('id', 'channel', 'user') == tuple(response.json().keys())
+    # only id, channel, user is mandatory in the response
+    assert 'id' in response.json()
+    assert 'channel' in response.json()
+    assert 'user' in response.json()
     assert response.json().get('channel') == 'node'
 
 
@@ -53,7 +56,10 @@ async def test_subscribe_test_channel(test_async_client):
     )
     pytest.test_channel_subscription_id = response.json()['id']
     assert response.status_code == 200
-    assert ('id', 'channel', 'user') == tuple(response.json().keys())
+    # only id, channel, user is mandatory in the response
+    assert 'id' in response.json()
+    assert 'channel' in response.json()
+    assert 'user' in response.json()
     assert response.json().get('channel') == 'test_channel'
 
 
@@ -78,5 +84,8 @@ async def test_subscribe_user_group_channel(test_async_client):
     )
     pytest.user_group_channel_subscription_id = response.json()['id']
     assert response.status_code == 200
-    assert ('id', 'channel', 'user') == tuple(response.json().keys())
+    # only id, channel, user is mandatory in the response
+    assert 'id' in response.json()
+    assert 'channel' in response.json()
+    assert 'user' in response.json()
     assert response.json().get('channel') == 'user_group'
