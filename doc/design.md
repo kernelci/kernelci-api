@@ -1,6 +1,6 @@
 ---
 title: "Design"
-date: 2023-09-01
+date: 2024-05-29
 description: "Overall API & Pipeline design"
 weight: 2
 ---
@@ -89,8 +89,7 @@ graph LR
 ```
 
 Each step is a client for the API and related storage solutions.  They are all
-implemented in Python, rely on the [KernelCI Core](/docs/core) tools and run in
-a separate `docker-compose` container.  Here's a summary of each step:
+implemented in Python, rely on the [KernelCI Core](/docs/legacy/core) tools and run in a separate `docker-compose` container.  Here's a summary of each step:
 
 ### Trigger
 
