@@ -2,7 +2,7 @@
 title: "Early Access"
 date: 2023-09-04
 description: "Beta-testing the new API"
-weight: 2
+weight: 5
 ---
 
 As per the [API Transition

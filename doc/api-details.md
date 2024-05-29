@@ -1,6 +1,6 @@
 ---
 title: "API details"
-date: 2023-09-27
+date: 2024-05-29
 description: "KernelCI API building blocks"
 weight: 3
 ---
@@ -16,7 +16,7 @@ setting things up and issuing low-level queries.
 ## Environment Variables
 
 General instructions about the environment file are described on the [local
-instance](https://kernelci.org/docs/api/local-instance/#create-the-environment-file)
+instance](../local-instance/#create-the-environment-file)
 page.  This section goes through all the environment variables used by the API.
 
 ### Set ALGORITHM and ACCESS_TOKEN_EXPIRE_MINUTES in environment file
@@ -47,7 +47,7 @@ users are allowed to create user accounts.
 The very first admin user needs to be created with
 [`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
 tool provided in the `kernelci-api` repository.
-[Here](/docs/api/local-instance/#create-an-admin-user-account) is a guide to
+[Here](../local-instance/#create-an-admin-user-account) is a guide to
 setup an admin user. We can use this admin user to create other user accounts.
 
 

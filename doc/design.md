@@ -1,8 +1,8 @@
 ---
 title: "Design"
-date: 2023-09-01
+date: 2024-05-29
 description: "Overall API & Pipeline design"
-weight: 1
+weight: 2
 ---
 
 ## API architecture
@@ -71,7 +71,7 @@ A few things **aren't changing**:
   several years and is providing good results.  We might just move it to a
   Cloud-based hosting such as Atlas for the future linux.kernelci.org
   deployment.
-* [Redis]((https://redis.io/)) is still being used internally as in-memory
+* [Redis](https://redis.io/) is still being used internally as in-memory
   database for various features in addition to the pub/sub channels
 
 ## Pipeline design
@@ -89,8 +89,7 @@ graph LR
 ```
 
 Each step is a client for the API and related storage solutions.  They are all
-implemented in Python, rely on the [KernelCI Core](/docs/core) tools and run in
-a separate `docker-compose` container.  Here's a summary of each step:
+implemented in Python, rely on the [KernelCI Core](/docs/legacy/core) tools and run in a separate `docker-compose` container.  Here's a summary of each step:
 
 ### Trigger
 
