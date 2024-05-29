@@ -71,7 +71,7 @@ A few things **aren't changing**:
   several years and is providing good results.  We might just move it to a
   Cloud-based hosting such as Atlas for the future linux.kernelci.org
   deployment.
-* [Redis]((https://redis.io/)) is still being used internally as in-memory
+* [Redis](https://redis.io/) is still being used internally as in-memory
   database for various features in addition to the pub/sub channels
 
 ## Pipeline design
