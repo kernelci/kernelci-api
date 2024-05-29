@@ -2,7 +2,7 @@
 title: "Local instance"
 date: 2024-05-22
 description: "Setting up a local KernelCI instance"
-weight: 5
+weight: 4
 ---
 
 This guide should provide all the basic information to set up a local
