@@ -1,6 +1,6 @@
 ---
 title: "Local instance"
-date: 2024-05-22
+date: 2024-05-29
 description: "Setting up a local KernelCI instance"
 weight: 4
 ---
@@ -96,7 +96,7 @@ Creating admin user...
 > instance such as an Atlas account using the `--mongo` command line argument.
 
 > **Note** For more details about how to create users via the raw API, see the
-> [API documentation](/docs/api/api-details/#users)
+> [API documentation](../api-details/#users)
 
 ### Create an admin API token
 
