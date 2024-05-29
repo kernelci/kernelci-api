@@ -2,7 +2,7 @@
 title: "Design"
 date: 2023-09-01
 description: "Overall API & Pipeline design"
-weight: 1
+weight: 2
 ---
 
 ## API architecture
