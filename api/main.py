@@ -344,7 +344,7 @@ async def get_users(request: Request,
     return paginated_resp
 
 
-@app.post("/user/update-password", response_model=UserRead, tags=["user"])
+@app.post("/user/update-password", tags=["user"])
 async def update_password(request: Request,
                           credentials: OAuth2PasswordRequestForm = Depends(),
                           new_password: str = Form(None)):
