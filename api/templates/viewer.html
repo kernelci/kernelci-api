@@ -339,7 +339,7 @@
             miscbuttons.style.display = "none";
             var nodeinfo = document.getElementById("nodesearchdiv");
             var nodeinfohtml = "<table class=\"nodesearch\">";
-            var thnames = ["id", "kind", "name", "state", "result", "created"];
+            var thnames = ["id", "kind", "name", "platform", "state", "result", "created"];
             // is data.kernel_revision present? then add to thnames: 
             // data.kernel_revision.tree, data.kernel_revision.branch, data.kernel_revision.commit
             if (data.items.length > 0) {
@@ -377,7 +377,13 @@
                 nodeinfohtml += "<a href=\"?search=parent%3D" + node.id + "\">-></a></td>";
                 nodeinfohtml += "</td>";
                 nodeinfohtml += "<td>" + node.kind + "</td>";
-                nodeinfohtml += "<td>" + node.name + "</td>";
+                if (node.kind == "job" && node.data.platform != null) {
+                    nodeinfohtml += "<td>" + node.name + "</td>";
+                    nodeinfohtml += "<td>" + node.data.platform + "</td>";
+                } else {
+                    nodeinfohtml += "<td>" + node.name + "</td>";
+                    nodeinfohtml += "<td>N/A</td>";
+                }
                 nodeinfohtml += "<td>" + node.state + "</td>";
                 nodeinfohtml += "<td>" + node.result + "</td>";
                 // if state not done, calculate age of node since created and add it
