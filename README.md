@@ -11,12 +11,12 @@ interface for KernelCI, to replace
 mainly based on [FastAPI](https://fastapi.tiangolo.com/), [Mongo
 DB](https://www.mongodb.com/) and [Redis](https://redis.io/).
 
-Please refer to the [architecture](https://kernelci.org/docs/api/overview/#api-architecture) for more details.
+Please refer to the [architecture](https://docs.kernelci.org/api_pipeline/api/design/#api-architecture) for more details.
 
 
 ## Getting started with docker-compose
 
-Please refer to [start Docker containers](https://kernelci.org/docs/api/local-instance/#start-docker-compose) of all the services.
+Please refer to [start Docker containers](https://docs.kernelci.org/api_pipeline/api/local-instance/#start-docker-compose) of all the services.
 
 Note that the FastAPI server is running on port 8000 inside the container, but
 it's exposed to the host via port 8001 to avoid conflicts with other services.
@@ -26,10 +26,10 @@ This can be adjusted for each setup in
 
 ## Authentication
 
-Generate a new key for [Authentication](https://kernelci.org/docs/api/local-instance/#create-the-environment-file)
+Generate a new key for [Authentication](https://docs.kernelci.org/api_pipeline/api/local-instance/#create-the-environment-file)
 ).
-After that, please refer to [create and add a user](https://kernelci.org/docs/api/local-instance/#create-an-admin-user-account) in Mongo DB.
-The user can also generate an [API token](https://kernelci.org/docs/api/local-instance/#create-an-admin-api-token) to use API endpoints.
+After that, please refer to [create and add a user](https://docs.kernelci.org/api_pipeline/api/local-instance/#create-an-admin-user-account) in Mongo DB.
+The user can also generate an [API token](https://docs.kernelci.org/api_pipeline/api/local-instance/#create-an-admin-pipeline-token) to use API endpoints.
 
 Ultimately, there will be a web frontend to provide a login form.  We don't
 have that yet as this new KernelCI API implementation is still in its early
