@@ -46,7 +46,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://kernelci.org"
-Documentation = "https://kernelci.org/docs"
+Documentation = "https://docs.kernelci.org"
 Repository = "https://github.com/kernelci/kernelci-api"
 
 [tool.setuptools]
