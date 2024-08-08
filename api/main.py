@@ -10,7 +10,6 @@
 
 import os
 import re
-import hashlib
 from typing import List, Union, Optional
 from fastapi import (
     Depends,
@@ -317,17 +316,6 @@ async def authorize_user(node_id: str,
     return user
 
 
-def calculate_submitter(hdr: str):
-    """Calculate submitter hash from Auth header token"""
-    token = hdr.split(' ')[1]
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Token not provided"
-        )
-    return hashlib.md5(token.encode()).hexdigest()
-
-
 @app.get('/users', response_model=PageModel, tags=["user"],
          response_model_exclude={"items": {"__all__": {
                                     "hashed_password"}}})
@@ -584,8 +572,9 @@ async def post_node(node: Node,
 
     await _verify_user_group_existence(node.user_groups)
     node.owner = current_user.username
-    # Subtract 'Bearer ' from the token
-    node.submitter = calculate_submitter(authorization)
+    # if node.submitter is not set, set it to "pipeline"
+    if not node.submitter:
+        node.submitter = "service:pipeline"
 
     # The node is handled as a generic Node by the DB, regardless of its
     # specific kind. The concrete Node submodel (Kbuild, Checkout, etc.)
@@ -661,7 +650,15 @@ async def put_nodes(
         user: str = Depends(authorize_user)):
     """Add a hierarchy of nodes to an existing root node"""
     nodes.node.id = ObjectId(node_id)
-    submitter = calculate_submitter(authorization)
+    # Retrieve the root node from the DB and submitter
+    node_from_id = await db.find_by_id(Node, node_id)
+    if not node_from_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Node not found with id: {node_id}"
+        )
+    submitter = node_from_id.submitter
+
     await _set_node_ownership_recursively(user, nodes, submitter)
     obj_list = await db.create_hierarchy(nodes, Node)
     data = _get_node_event_data('updated', obj_list[0], True)
