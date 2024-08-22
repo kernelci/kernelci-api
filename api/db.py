@@ -143,6 +143,8 @@ class Database:
             obj.parent = parent.id
         if obj.id:
             obj.update()
+            if obj.parent == obj.id:
+                raise ValueError("Parent cannot be the same as the object")
             res = await col.replace_one(
                 {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
             )
@@ -176,6 +178,8 @@ class Database:
             raise ValueError("Cannot update object with no id")
         col = self._get_collection(obj.__class__)
         obj.update()
+        if obj.parent == obj.id:
+            raise ValueError("Parent cannot be the same as the object")
         res = await col.replace_one(
             {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
         )
