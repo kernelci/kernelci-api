@@ -44,6 +44,7 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         parent=None,
         state="closing",
         result=None,
+        treeid="61bda8f2eb1a63d2b7152418",
     )
     mock_db_create.return_value = node_obj
 
@@ -52,6 +53,7 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         "kind": "checkout",
         "path": ["checkout"],
         "data": {"kernel_revision": revision_data},
+        "treeid": "61bda8f2eb1a63d2b7152418",
     }
     response = test_client.post(
         "node",
@@ -81,6 +83,7 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         'submitter',
         'state',
         'timeout',
+        'treeid',
         'updated',
         'user_groups',
     }
@@ -112,6 +115,7 @@ def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes,
         "parent": "61bda8f2eb1a63d2b7152410",
         "state": "closing",
         "result": None,
+        "treeid": "61bda8f2eb1a63d2b7152418",
     }
     node_obj_2 = {
         "id": "61bda8f2eb1a63d2b7152414",
@@ -130,6 +134,7 @@ def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes,
         "parent": "61bda8f2eb1a63d2b7152410",
         "state": "closing",
         "result": None,
+        "treeid": "61bda8f2eb1a63d2b7152414",
     }
     mock_db_find_by_attributes.return_value = PageModel(
         items=[node_obj_1, node_obj_2],
@@ -144,6 +149,7 @@ def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes,
         "data.kernel_revision.branch": "master",
         "state": "closing",
         "parent": "61bda8f2eb1a63d2b7152410",
+        "treeid": "61bda8f2eb1a63d2b7152418",
     }
     response = test_client.get(
         "nodes",
@@ -211,6 +217,7 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         parent=None,
         state="closing",
         result=None,
+        treeid="61bdaa8f2eb1a63d2b7152418",
     )
     mock_db_find_by_id.return_value = node_obj
 
@@ -235,6 +242,7 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         'submitter',
         'state',
         'timeout',
+        'treeid',
         'updated',
         'user_groups',
     }
@@ -284,6 +292,7 @@ def test_get_all_nodes(mock_db_find_by_attributes,
         "parent": None,
         "state": "closing",
         "result": None,
+        "treeid": "61bda8f2eb1a63d2b7152418",
     }
 
     node_obj_2 = {
@@ -305,6 +314,7 @@ def test_get_all_nodes(mock_db_find_by_attributes,
         "parent": None,
         "state": "closing",
         "result": None,
+        "treeid": "61bda8f2eb1a63d2b7152418",
     }
 
     node_obj_3 = {
@@ -326,6 +336,7 @@ def test_get_all_nodes(mock_db_find_by_attributes,
         "parent": None,
         "state": "closing",
         "result": None,
+        "treeid": "61bda8f2eb1a63d2b7152418",
     }
 
     mock_db_find_by_attributes.return_value = PageModel(
