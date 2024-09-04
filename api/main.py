@@ -633,13 +633,14 @@ async def put_node(node_id: str, node: Node,
 
 
 async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy,
-                                          submitter: str):
+                                          submitter: str, treeid: str):
     """Set node ownership information for a hierarchy of nodes"""
     if not hierarchy.node.owner:
         hierarchy.node.owner = user.username
     hierarchy.node.submitter = submitter
+    hierarchy.node.treeid = treeid
     for node in hierarchy.child_nodes:
-        await _set_node_ownership_recursively(user, node, submitter)
+        await _set_node_ownership_recursively(user, node, submitter, treeid)
 
 
 @app.put('/nodes/{node_id}', response_model=List[Node],
@@ -658,8 +659,9 @@ async def put_nodes(
             detail=f"Node not found with id: {node_id}"
         )
     submitter = node_from_id.submitter
+    treeid = node_from_id.treeid
 
-    await _set_node_ownership_recursively(user, nodes, submitter)
+    await _set_node_ownership_recursively(user, nodes, submitter, treeid)
     obj_list = await db.create_hierarchy(nodes, Node)
     data = _get_node_event_data('updated', obj_list[0], True)
     attributes = {}
