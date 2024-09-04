@@ -572,9 +572,6 @@ async def post_node(node: Node,
 
     await _verify_user_group_existence(node.user_groups)
     node.owner = current_user.username
-    # if node.submitter is not set, set it to "pipeline"
-    if not node.submitter:
-        node.submitter = "service:pipeline"
 
     # The node is handled as a generic Node by the DB, regardless of its
     # specific kind. The concrete Node submodel (Kbuild, Checkout, etc.)
