@@ -15,7 +15,7 @@ from fastapi import HTTPException, status
 from .config import EmailSettings
 
 
-class EmailSender:
+class EmailSender:  # pylint: disable=too-few-public-methods
     """Class to send email report using SMTP"""
     def __init__(self):
         self._settings = EmailSettings()
