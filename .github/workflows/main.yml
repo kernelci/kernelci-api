@@ -66,12 +66,7 @@ jobs:
 
       - name: Run pylint
         run: |
-          docker-compose -f test-docker-compose.yaml exec -T test pylint api.auth
-          docker-compose -f test-docker-compose.yaml exec -T test pylint api.db
-          docker-compose -f test-docker-compose.yaml exec -T test pylint api.main
-          docker-compose -f test-docker-compose.yaml exec -T test pylint api.models
-          docker-compose -f test-docker-compose.yaml exec -T test pylint api.pubsub
-          docker-compose -f test-docker-compose.yaml exec -T test pylint api.user_manager
+          docker-compose -f test-docker-compose.yaml exec -T test pylint --extension-pkg-whitelist=pydantic api/
           docker-compose -f test-docker-compose.yaml exec -T test pylint tests/unit_tests
           docker-compose -f test-docker-compose.yaml exec -T test pylint tests/e2e_tests
 
