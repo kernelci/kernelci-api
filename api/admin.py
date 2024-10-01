@@ -47,6 +47,11 @@ async def setup_admin_user(db, username, email):
 
 
 async def main(args):
+    """
+    Create database instance, initialize Beanie to use DB wrapper from
+    `fastapi-users`, and create an initial admin user with unique
+    index on `username` and `email` fields
+    """
     db = Database(args.mongo, args.database)
     await db.initialize_beanie()
     await db.create_indexes()
@@ -64,5 +69,5 @@ if __name__ == '__main__':
                         help="KernelCI database name")
     parser.add_argument('--email', required=True,
                         help="Admin user email address")
-    args = parser.parse_args()
-    sys.exit(0 if asyncio.run(main(args)) else 1)
+    arguments = parser.parse_args()
+    sys.exit(0 if asyncio.run(main(arguments)) else 1)
