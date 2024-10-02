@@ -569,6 +569,28 @@ async def get_nodes(request: Request):
 
 add_pagination(app)
 
+@app.get('/rawnodes', response_model=List[Node])
+async def get_rawnodes(request: Request):
+    """Get all the nodes if no request parameters have passed.
+    This is non-paginated version of get_nodes.
+    """
+    query_params = dict(request.query_params)
+
+    query_params = await translate_null_query_params(query_params)
+
+    try:
+        # Query using the base Node model, regardless of the specific
+        # node type
+        model = Node
+        translated_params = model.translate_fields(query_params)
+        resp = await db.find_by_attributes_nonpaginated(model, translated_params)
+        return resp
+    except KeyError as error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Node not found with the kind: {str(error)}"
+        ) from error
+
 
 @app.get('/count', response_model=int)
 async def get_nodes_count(request: Request):
