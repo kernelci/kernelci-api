@@ -149,6 +149,33 @@ class Database:
         query = self._prepare_query(attributes)
         return await paginate(collection=col, query_filter=query)
 
+    async def find_by_attributes_nonpaginated(self, model, attributes):
+        """Find objects with matching attributes
+
+        Find all objects with attributes matching the key/value pairs in the
+        attributes dictionary using pagination and return the paginated
+        response.
+        The response dictionary will include 'items', 'total', 'limit',
+        and 'offset' keys.
+        """
+        col = self._get_collection(model)
+        query = self._prepare_query(attributes)
+        # find "limit" and "offset" keys in the query, retrieve them and
+        # remove them from the query
+        limit = query.pop('limit', None)
+        offset = query.pop('offset', None)
+        # convert to int if limit and offset are strings
+        limit = int(limit) if limit is not None else None
+        offset = int(offset) if offset is not None else None
+        if limit is not None and offset is not None:
+            return await (col.find(query)
+                          .skip(offset).limit(limit).to_list(None))
+        if limit is not None:
+            return await col.find(query).limit(limit).to_list(None)
+        if offset is not None:
+            return await col.find(query).skip(offset).to_list(None)
+        return await col.find(query).to_list(None)
+
     async def count(self, model, attributes):
         """Count objects with matching attributes
 
