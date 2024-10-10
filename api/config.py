@@ -8,6 +8,7 @@
 from pydantic import BaseSettings, EmailStr
 
 
+# pylint: disable=too-few-public-methods
 class AuthSettings(BaseSettings):
     """Authentication settings"""
     secret_key: str
@@ -16,6 +17,7 @@ class AuthSettings(BaseSettings):
     access_token_expire_seconds: float = 315360000
 
 
+# pylint: disable=too-few-public-methods
 class PubSubSettings(BaseSettings):
     """Pub/Sub settings loaded from the environment"""
     cloud_events_source: str = "https://api.kernelci.org/"
@@ -24,6 +26,7 @@ class PubSubSettings(BaseSettings):
     keep_alive_period: int = 45
 
 
+# pylint: disable=too-few-public-methods
 class EmailSettings(BaseSettings):
     """Email settings"""
     smtp_host: str
