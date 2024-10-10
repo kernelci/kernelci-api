@@ -413,6 +413,27 @@
             nodeinfo.innerHTML = nodeinfohtml;
         }
 
+        function show_modal(message) {
+            var modal = document.getElementById("modal");
+            var modalcontent = document.getElementById("modalcontent");
+            modalcontent.innerHTML = message;
+            modal.style.display = "block";
+            var span = document.getElementsByClassName("close")[0];
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+        }
+
+        function hide_modal() {
+            var modal = document.getElementById("modal");
+            modal.style.display = "none";
+        }
+
         function process_search(conditions) {
             // urldecode
             //conditions = decodeURIComponent(conditions);
@@ -432,8 +453,10 @@
             console.log("url: " + url);
             // request API for node info
             var request = new XMLHttpRequest();
+            show_modal("Loading search results...");
             request.open('GET', url, true);
             request.onload = function() {
+                hide_modal();
                 console.log("request.status: " + request.status);
                 if (request.status >= 200 && request.status < 400) {
                     var data = JSON.parse(request.responseText);
@@ -444,6 +467,8 @@
             };
             request.onerror = function() {
                 // There was a connection error of some sort
+                hide_modal();
+                alert("Error: " + request.status);
             };
             request.send();
         }
@@ -552,6 +577,11 @@
 </head>
 <body onload="onLoad()">
 <!-- nice horizontal menu at top -->
+<div id="modal" class="modal" style="display: none;">
+    <div class="modal-content" id="modalcontent">
+        <span class="close">&times;</span>
+    </div>
+</div>
 <div id="menu">
 </div>
 <div id="requestinfo"></div>
