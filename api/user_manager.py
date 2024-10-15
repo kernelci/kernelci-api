@@ -6,7 +6,7 @@
 """User Manager"""
 
 from typing import Optional, Any, Dict
-from fastapi import Depends, Request
+from fastapi import Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_users import BaseUserManager
 from fastapi_users.db import (
@@ -68,7 +68,8 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         self.email_sender.create_and_send_email(subject, content, user.email)
 
     async def on_after_login(self, user: User,
-                             request: Optional[Request] = None):
+                             request: Optional[Request] = None,
+                             response: Optional[Response] = None):
         """Handler to execute after successful user login"""
         print(f"User {user.id} {user.username} logged in.")
 
