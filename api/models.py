@@ -12,12 +12,14 @@
 """Server-side model definitions"""
 
 from datetime import datetime
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, Dict, Any, List
 from pydantic import (
     BaseModel,
-    conlist,
     Field,
+    model_serializer,
+    field_validator,
 )
+from typing_extensions import Annotated
 from fastapi import Query
 from fastapi_pagination import LimitOffsetPage, LimitOffsetParams
 from fastapi_users.db import BeanieBaseUser
@@ -27,7 +29,6 @@ from beanie import (
     Document,
     PydanticObjectId,
 )
-from bson import ObjectId
 from kernelci.api.models_base import DatabaseModel, ModelId
 
 
@@ -56,6 +57,7 @@ class SubscriptionStats(Subscription):
         description='Timestamp of connection creation'
     )
     last_poll: Optional[datetime] = Field(
+        default=None,
         description='Timestamp when connection last polled for data'
     )
 
@@ -79,11 +81,19 @@ class UserGroup(DatabaseModel):
 class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
            DatabaseModel):
     """API User model"""
-    username: Indexed(str, unique=True)
-    groups: conlist(UserGroup, unique_items=True) = Field(
+    username: Annotated[str, Indexed(unique=True)]
+    groups: List[UserGroup] = Field(
         default=[],
-        description="A list of groups that user belongs to"
+        description="A list of groups that the user belongs to"
     )
+
+    @field_validator('groups')
+    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+        """Unique group constraint"""
+        unique_names = {group.name for group in groups}
+        if len(unique_names) != len(groups):
+            raise ValueError("Groups must have unique names.")
+        return groups
 
     class Settings(BeanieBaseUser.Settings):
         """Configurations"""
@@ -97,23 +107,66 @@ class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
             cls.Index('email', {'unique': True}),
         ]
 
+    @model_serializer(when_used='json')
+    def serialize_model(self) -> Dict[str, Any]:
+        """Serialize model by converting PyObjectId to string"""
+        values = self.__dict__.copy()
+        for field_name, value in values.items():
+            if isinstance(value, PydanticObjectId):
+                values[field_name] = str(value)
+        return values
+
 
 class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
     """Schema for reading a user"""
-    username: Indexed(str, unique=True)
-    groups: conlist(UserGroup, unique_items=True)
+    username: Annotated[str, Indexed(unique=True)]
+    groups: List[UserGroup] = Field(default=[])
+
+    @field_validator('groups')
+    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+        """Unique group constraint"""
+        unique_names = {group.name for group in groups}
+        if len(unique_names) != len(groups):
+            raise ValueError("Groups must have unique names.")
+        return groups
+
+    @model_serializer(when_used='json')
+    def serialize_model(self) -> Dict[str, Any]:
+        """Serialize model by converting PyObjectId to string"""
+        values = self.__dict__.copy()
+        for field_name, value in values.items():
+            if isinstance(value, PydanticObjectId):
+                values[field_name] = str(value)
+        return values
 
 
 class UserCreate(schemas.BaseUserCreate):
     """Schema for creating a user"""
-    username: Indexed(str, unique=True)
-    groups: Optional[conlist(str, unique_items=True)]
+    username: Annotated[str, Indexed(unique=True)]
+    groups: List[str] = Field(default=[])
+
+    @field_validator('groups')
+    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+        """Unique group constraint"""
+        unique_names = set(groups)
+        if len(unique_names) != len(groups):
+            raise ValueError("Groups must have unique names.")
+        return groups
 
 
 class UserUpdate(schemas.BaseUserUpdate):
     """Schema for updating a user"""
-    username: Optional[Indexed(str, unique=True)]
-    groups: Optional[conlist(str, unique_items=True)]
+    username: Annotated[Optional[str], Indexed(unique=True),
+                        Field(default=None)]
+    groups: List[str] = Field(default=[])
+
+    @field_validator('groups')
+    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+        """Unique group constraint"""
+        unique_names = set(groups)
+        if len(unique_names) != len(groups):
+            raise ValueError("Groups must have unique names.")
+        return groups
 
 
 # Pagination models
@@ -133,9 +186,3 @@ class PageModel(LimitOffsetPage[TypeVar("T")]):
     This model is required to serialize paginated model data response"""
 
     __params_type__ = CustomLimitOffsetParams
-
-    class Config:
-        """Configuration attributes for PageNode"""
-        json_encoders = {
-            ObjectId: str,
-        }

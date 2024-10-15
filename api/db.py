@@ -170,7 +170,7 @@ class Database:
             raise ValueError(f"Object cannot be created with id: {obj.id}")
         delattr(obj, 'id')
         col = self._get_collection(obj.__class__)
-        res = await col.insert_one(obj.dict(by_alias=True))
+        res = await col.insert_one(obj.model_dump(by_alias=True))
         obj.id = res.inserted_id
         return obj
 
