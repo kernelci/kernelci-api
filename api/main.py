@@ -22,6 +22,7 @@ from fastapi import (
     Header,
     Query
 )
+from contextlib import asynccontextmanager
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
@@ -51,6 +52,14 @@ from .models import (
     UserUpdate,
     UserGroup,
 )
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan functions for startup and shutdown events"""
+    await pubsub_startup()
+    await create_indexes()
+    await initialize_beanie()
 
 
 # List of all the supported API versions.  This is a placeholder until the API
@@ -105,8 +114,7 @@ class Metrics():
 
 metrics = Metrics()
 
-
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
@@ -119,20 +127,17 @@ fastapi_users_instance = FastAPIUsers[User, PydanticObjectId](
 user_manager = create_user_manager()
 
 
-@app.on_event('startup')
 async def pubsub_startup():
     """Startup event handler to create Pub/Sub object"""
     global pubsub  # pylint: disable=invalid-name
     pubsub = await PubSub.create()
 
 
-@app.on_event('startup')
 async def create_indexes():
     """Startup event handler to create database indexes"""
     await db.create_indexes()
 
 
-@app.on_event('startup')
 async def initialize_beanie():
     """Startup event handler to initialize Beanie"""
     await db.initialize_beanie()
@@ -535,7 +540,7 @@ def serialize_paginated_data(model, data: list):
     """
     serialized_data = []
     for obj in data:
-        serialized_data.append(model(**obj).dict())
+        serialized_data.append(model(**obj).model_dump(mode='json'))
     return serialized_data
 
 
