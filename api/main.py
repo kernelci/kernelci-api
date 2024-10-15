@@ -475,7 +475,7 @@ def serialize_paginated_data(model, data: list):
     """
     serialized_data = []
     for obj in data:
-        serialized_data.append(model(**obj).dict())
+        serialized_data.append(model(**obj).model_dump())
     return serialized_data
 
 
