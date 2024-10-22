@@ -15,6 +15,6 @@ def test_root_endpoint(test_client):
         HTTP Response Code 200 OK
         JSON with 'message' key
     """
-    response = test_client.get("/latest")
+    response = test_client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "KernelCI API"}
