@@ -5,7 +5,8 @@
 
 """Module settings"""
 
-from pydantic import BaseSettings, EmailStr
+from pydantic import EmailStr
+from pydantic_settings import BaseSettings
 
 
 # pylint: disable=too-few-public-methods

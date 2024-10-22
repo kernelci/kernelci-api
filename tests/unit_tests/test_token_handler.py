@@ -15,7 +15,8 @@ from api.models import User
 
 
 @pytest.mark.asyncio
-async def test_token_endpoint(test_async_client, mock_user_find):
+async def test_token_endpoint(test_async_client, mock_user_find,
+                              mock_beanie_user_update):
     """
     Test Case : Test KernelCI API /user/login endpoint
     Expected Result :
@@ -34,6 +35,8 @@ async def test_token_endpoint(test_async_client, mock_user_find):
         is_verified=True
     )
     mock_user_find.return_value = user
+    mock_beanie_user_update.return_value = user
+
     response = await test_async_client.post(
         "user/login",
         headers={
