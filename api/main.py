@@ -894,6 +894,7 @@ async def icons(icon_name: str):
     icon_path = os.path.join(root_dir, 'templates', icon_name)
     return FileResponse(icon_path)
 
+
 @app.get('/metrics')
 async def get_metrics():
     """Get metrics"""
