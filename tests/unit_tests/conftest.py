@@ -278,6 +278,15 @@ async def mock_beanie_get_user_by_id(mocker):
 
 
 @pytest.fixture
+async def mock_beanie_user_update(mocker):
+    """Mocks async call to external method to update user"""
+    async_mock = AsyncMock()
+    mocker.patch('fastapi_users_db_beanie.BeanieUserDatabase.update',
+                 side_effect=async_mock)
+    return async_mock
+
+
+@pytest.fixture
 def mock_auth_current_user(mocker):
     """
     Mocks async call to external method to get authenticated user
