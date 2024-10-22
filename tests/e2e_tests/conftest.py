@@ -19,8 +19,8 @@ DB_NAME = 'kernelci'
 
 db_client = AsyncIOMotorClient(DB_URL)
 db = db_client[DB_NAME]
-node_model_fields = set(Node.__fields__.keys())
-regression_model_fields = set(Regression.__fields__.keys())
+node_model_fields = set(Node.model_fields.keys())
+regression_model_fields = set(Regression.model_fields.keys())
 paginated_response_keys = {
     'items',
     'total',
@@ -42,7 +42,8 @@ async def db_create(collection, obj):
     """Database create method"""
     delattr(obj, 'id')
     col = db[collection]
-    res = await col.insert_one(obj.dict(by_alias=True))
+    # res = await col.insert_one(obj.dict(by_alias=True))
+    res = await col.insert_one(obj.model_dump(by_alias=True))
     obj.id = res.inserted_id
     return obj
 

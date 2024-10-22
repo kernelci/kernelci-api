@@ -42,6 +42,7 @@ async def test_node_pipeline(test_async_client):
 
     # Create a node
     node = {
+        "kind": "checkout",
         "name": "checkout",
         "path": ["checkout"],
         "data": {

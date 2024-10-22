@@ -33,7 +33,7 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         "describe": "v5.16-rc4-31-g2a987e65025e",
     }
 
-    revision_obj = Revision.parse_obj(revision_data)
+    revision_obj = Revision.model_validate(revision_data)
     node_obj = Node(
         id="61bda8f2eb1a63d2b7152418",
         kind="checkout",
