@@ -10,7 +10,8 @@ from bson import ObjectId
 from beanie import init_beanie
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
-from kernelci.api.models import Hierarchy, Node, parse_node_obj, EventHistory
+from redis import asyncio as aioredis
+from kernelci.api.models import EventHistory, Hierarchy, Node, parse_node_obj
 from .models import User, UserGroup
 
 
@@ -45,6 +46,8 @@ class Database:
 
     def __init__(self, service='mongodb://db:27017', db_name='kernelci'):
         self._motor = motor_asyncio.AsyncIOMotorClient(service)
+        # TBD: Make redis host configurable
+        self._redis = aioredis.from_url('redis://redis:6379')
         self._db = self._motor[db_name]
 
     async def initialize_beanie(self):
@@ -59,6 +62,38 @@ class Database:
     def _get_collection(self, model):
         col = self.COLLECTIONS[model]
         return self._db[col]
+
+    async def get_kv(self, namespace, key):
+        """
+        Get value from redis key-value store
+        Create a keyname by concatenating namespace and key
+        """
+        keyname = f"{namespace}:{key}"
+        return await self._redis.get(keyname)
+
+    async def set_kv(self, namespace, key, value):
+        """
+        Set value in redis key-value store
+        Create a keyname by concatenating namespace and key
+        """
+        keyname = f"{namespace}:{key}"
+        return await self._redis.set(keyname, value)
+
+    async def del_kv(self, namespace, key):
+        """
+        Delete key from redis key-value store
+        Create a keyname by concatenating namespace and key
+        """
+        keyname = f"{namespace}:{key}"
+        return await self._redis.delete(keyname)
+
+    async def exists_kv(self, namespace, key):
+        """
+        Check if key exists in redis key-value store
+        Create a keyname by concatenating namespace and key
+        """
+        keyname = f"{namespace}:{key}"
+        return await self._redis.exists(keyname)
 
     async def create_indexes(self):
         """Create indexes for models"""

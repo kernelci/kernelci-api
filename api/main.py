@@ -21,7 +21,8 @@ from fastapi import (
     Request,
     Form,
     Header,
-    Query
+    Query,
+    Body,
 )
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -778,6 +779,47 @@ async def put_nodes(
     evhist = _get_eventhistory(data)
     await db.create(evhist)
     return obj_list
+
+
+# -----------------------------------------------------------------------------
+# Key/Value namespace enabled store
+@app.get('/kv/{namespace}/{key}', response_model=Union[str, None])
+async def get_kv(namespace: str, key: str,
+                 user: User = Depends(get_current_user)):
+
+    """Get a key value pair from the store"""
+    metrics.add('http_requests_total', 1)
+    return await db.get_kv(namespace, key)
+
+
+@app.post('/kv/{namespace}/{key}', response_model=Optional[str])
+async def post_kv(namespace: str, key: str,
+                  value: Optional[str] = Body(default=None),
+                  user: User = Depends(get_current_user)):
+    """Set a key-value pair in the store
+    namespace and key are part of the URL
+    value is part of the request body.
+    If value is not provided, we need to call delete_kv to remove the key.
+    """
+    metrics.add('http_requests_total', 1)
+    if not value:
+        await db.del_kv(namespace, key)
+        return "OK"
+    ret = await db.set_kv(namespace, key, value)
+    if ret:
+        return "OK"
+    raise HTTPException(status_code=500, detail="Failed to set key-value pair")
+
+
+# Delete a key-value pair from the store
+@app.delete('/kv/{namespace}/{key}', response_model=Optional[str])
+async def delete_kv(namespace: str, key: str,
+                    user: User = Depends(get_current_user)):
+    """Delete a key-value pair from the store"""
+    metrics.add('http_requests_total', 1)
+    await db.del_kv(namespace, key)
+    response = "Key-value pair deleted successfully"
+    return response
 
 
 # -----------------------------------------------------------------------------
