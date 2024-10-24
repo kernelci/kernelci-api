@@ -12,7 +12,7 @@ from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
 from kernelci.api.models import Hierarchy, Node, parse_node_obj
 from .models import User, UserGroup
-
+from redis import asyncio as aioredis
 
 class Database:
     """Database abstraction class
@@ -44,6 +44,8 @@ class Database:
 
     def __init__(self, service='mongodb://db:27017', db_name='kernelci'):
         self._motor = motor_asyncio.AsyncIOMotorClient(service)
+        # TBD: Make redis host configurable
+        self._redis = aioredis.from_url('redis://redis:6379')
         self._db = self._motor[db_name]
 
     async def initialize_beanie(self):
@@ -58,6 +60,14 @@ class Database:
     def _get_collection(self, model):
         col = self.COLLECTIONS[model]
         return self._db[col]
+
+    def get_kv(self, namespace, key):
+        keyname = f"{namespace}:{key}"
+        return self._redis.get(keyname)
+
+    def set_kv(self, namespace, key, value):
+        keyname = f"{namespace}:{key}"
+        return self._redis.set(keyname, value)
 
     async def create_indexes(self):
         """Create indexes for models"""
