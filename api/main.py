@@ -765,6 +765,27 @@ async def put_nodes(
 
 
 # -----------------------------------------------------------------------------
+# Key/Value namespace enabled store
+@app.get('/kv/{namespace}/{key}', response_model=Union[str, None])
+async def get_kv(namespace: str, key: str,
+                 authorization: str | None = Header(default=None),
+                 user: str = Depends(authorize_user)):
+
+    """Get a key value pair from the store"""
+    metrics.add('http_requests_total', 1)
+    return await db.get_kv(namespace, key)
+
+
+@app.post('/kv/{namespace}/{key}', response_model=Union[dict, None])
+async def post_kv(namespace: str, key: str, value: str,
+                  authorization: str | None = Header(default=None),
+                  user: str = Depends(authorize_user)):
+    """Set a key value pair in the store"""
+    metrics.add('http_requests_total', 1)
+    return await db.set_kv(namespace, key, value)
+
+
+# -----------------------------------------------------------------------------
 # Pub/Sub
 
 @app.post('/subscribe/{channel}', response_model=Subscription)
