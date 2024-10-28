@@ -10,7 +10,7 @@ from bson import ObjectId
 from beanie import init_beanie
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
-from kernelci.api.models import Hierarchy, Node, parse_node_obj
+from kernelci.api.models import Hierarchy, Node, parse_node_obj, EventHistory
 from .models import User, UserGroup
 
 
@@ -26,6 +26,7 @@ class Database:
         User: 'user',
         Node: 'node',
         UserGroup: 'usergroup',
+        EventHistory: 'eventhistory',
     }
 
     OPERATOR_MAP = {
