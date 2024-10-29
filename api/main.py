@@ -12,6 +12,7 @@ import os
 import re
 from typing import List, Union, Optional
 import threading
+import traceback
 from contextlib import asynccontextmanager
 from fastapi import (
     Depends,
@@ -114,10 +115,23 @@ class Metrics():
 
 metrics = Metrics()
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, debug=True)
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
+
+
+@app.exception_handler(Exception)
+async def server_error(request: Request, error: Exception):
+    """
+    Global exception handler for all exceptions
+    """
+    print(f"Internal server error: {error} \n{traceback.format_exc()}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Internal server error (exception)"},
+    )
+
 
 auth_backend = auth.get_user_authentication_backend()
 fastapi_users_instance = FastAPIUsers[User, PydanticObjectId](
