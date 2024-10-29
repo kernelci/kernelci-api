@@ -665,8 +665,9 @@ async def put_node(node_id: str, node: Node,
     # Sanity checks
     # Note: do not update node ownership fields, don't update 'state'
     # until we've checked the state transition is valid.
-    update_data = node.dict(exclude={'user', 'user_groups', 'state'})
-    new_node_def = node_from_id.copy(update=update_data)
+    update_data = node.model_dump(
+        exclude={'owner', 'submitter', 'user_groups', 'state'})
+    new_node_def = node_from_id.model_copy(update=update_data)
     # 1- Parse and validate node to specific subtype
     specialized_node = parse_node_obj(new_node_def)
 
