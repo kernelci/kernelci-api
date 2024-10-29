@@ -37,6 +37,7 @@ from kernelci.api.models import (
     PublishEvent,
     parse_node_obj,
     KernelVersion,
+    EventHistory,
 )
 from .auth import Authentication
 from .db import Database
@@ -488,6 +489,15 @@ async def delete_group(group_id: str,
 
 
 # -----------------------------------------------------------------------------
+# EventHistory
+def _get_eventhistory(evdict):
+    """Get EventHistory object from dictionary"""
+    evhist = EventHistory()
+    evhist.data = evdict
+    return evhist
+
+
+# -----------------------------------------------------------------------------
 # Nodes
 
 def _get_node_event_data(operation, node, is_hierarchy=False):
@@ -650,6 +660,8 @@ async def post_node(node: Node,
     if data.get('owner', None):
         attributes['owner'] = data['owner']
     await pubsub.publish_cloudevent('node', data, attributes)
+    evhist = _get_eventhistory(data)
+    await db.create(evhist)
     return obj
 
 
@@ -695,6 +707,8 @@ async def put_node(node_id: str, node: Node,
     if data.get('owner', None):
         attributes['owner'] = data['owner']
     await pubsub.publish_cloudevent('node', data, attributes)
+    evhist = _get_eventhistory(data)
+    await db.create(evhist)
     return obj
 
 
@@ -735,6 +749,8 @@ async def put_nodes(
     if data.get('owner', None):
         attributes['owner'] = data['owner']
     await pubsub.publish_cloudevent('node', data, attributes)
+    evhist = _get_eventhistory(data)
+    await db.create(evhist)
     return obj_list
 
 
