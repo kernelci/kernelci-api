@@ -11,6 +11,7 @@
 import os
 import re
 from typing import List, Union, Optional
+from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import (
     Depends,
@@ -23,6 +24,7 @@ from fastapi import (
     Query,
     Body,
 )
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
@@ -452,9 +454,54 @@ def _get_eventhistory(evdict):
     return evhist
 
 
+# TBD: Restrict response by Pydantic model
+@app.get('/events')
+async def get_events(request: Request):
+    """Get all the events if no request parameters have passed.
+       Format: [{event1}, {event2}, ...] or if recursive is set to true,
+       then we add to each event the node information.
+       Get all the matching events otherwise.
+       Query parameters can be used to filter the events:
+       - limit: Number of events to return
+       - from: Start timestamp (unix epoch) to filter events
+       - kind: Event kind to filter events
+       - state: Event state to filter events
+       - recursive: Retrieve node together with event
+    This API endpoint is under development and may change in future.
+    """
+    metrics.add('http_requests_total', 1)
+    query_params = dict(request.query_params)
+    recursive = query_params.pop('recursive', None)
+    limit = query_params.pop('limit', None)
+    kind = query_params.pop('kind', None)
+    state = query_params.pop('state', None)
+    from_ts = query_params.pop('from', None)
+    if from_ts:
+        if isinstance(from_ts, str):
+            from_ts = datetime.fromisoformat(from_ts)
+        query_params['timestamp'] = {'$gt': from_ts}
+    if kind:
+        query_params['data.kind'] = kind
+    if state:
+        query_params['data.state'] = state
+    if limit:
+        query_params['limit'] = int(limit)
+    resp = await db.find_by_attributes_nonpaginated(EventHistory, query_params)
+    resp_list = []
+    for item in resp:
+        item['id'] = str(item['_id'])
+        item.pop('_id')
+        if recursive:
+            node = await db.find_by_id(Node, item['data']['id'])
+            if node:
+                item['node'] = node
+        resp_list.append(item)
+    json_comp = jsonable_encoder(resp_list)
+    return JSONResponse(content=json_comp)
+
+
 # -----------------------------------------------------------------------------
 # Nodes
-
 def _get_node_event_data(operation, node, is_hierarchy=False):
     return {
         'op': operation,
