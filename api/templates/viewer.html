@@ -90,6 +90,7 @@
         .nodesearch tr:hover {background-color: #ddd;}
         .nodesearch tr.fail {background-color: #ffcccc}
         .nodesearch tr.null {background-color: #ffffcc}
+        .nodesearch tr.jobfilter {border: 1px dashed red;}
 
         .nodesearch th {
             background-color: #4CAF50;
@@ -398,15 +399,24 @@
             // data
             for (var i = 0; i < data.items.length; i++) {
                 node = data.items[i];
+                trclass = "";
                 // if fail, then add class fail
                 if (node.result == "fail") {
-                    nodeinfohtml += "<tr class=\"fail\">";
+                    trclass = "fail";
                 } else if (node.result == null && node.state != "running") {
                     // null might be because job is still running, but if it is not - it is failure
-                    nodeinfohtml += "<tr class=\"null\">";
+                    trclass = "null";
+                }
+                // if node.jobfilter is set and not null, then add class jobfilter
+                if ("jobfilter" in node && node.jobfilter != null) {
+                    trclass += " jobfilter";
+                }
+                if (trclass != "") {
+                    nodeinfohtml += "<tr class=\"" + trclass + "\">";
                 } else {
                     nodeinfohtml += "<tr>";
                 }
+
                 nodeinfohtml += "<td><a href=\"?node_id=" + node.id + "\">" + node.id + "</a>&nbsp;";
 
                 // add also arrow - direct link to search children objects of this node
