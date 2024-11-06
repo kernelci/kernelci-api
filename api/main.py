@@ -27,7 +27,7 @@ from fastapi import (
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_pagination import add_pagination
+from fastapi_pagination import add_pagination, pagination_ctx
 from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
@@ -417,7 +417,9 @@ async def get_group(group_id: str):
     return await db.find_by_id(UserGroup, group_id)
 
 
-@app.delete('/group/{group_id}', response_model=PageModel)
+@app.delete('/group/{group_id}',
+            dependencies=[Depends(pagination_ctx(PageModel))],
+            status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(group_id: str,
                        current_user: User = Depends(get_current_superuser)):
     """Delete user group matching the provided group id"""
