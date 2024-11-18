@@ -4,7 +4,7 @@
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
-# pylint: disable=unused-argument disable=global-statement
+# pylint: disable=unused-argument,global-statement,too-many-lines
 
 """KernelCI API main module"""
 
