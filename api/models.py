@@ -12,11 +12,10 @@
 """Server-side model definitions"""
 
 from datetime import datetime
-from typing import Optional, TypeVar, Dict, Any, List
+from typing import Optional, TypeVar, List
 from pydantic import (
     BaseModel,
     Field,
-    model_serializer,
     field_validator,
 )
 from typing_extensions import Annotated
@@ -107,15 +106,6 @@ class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
             cls.Index('email', {'unique': True}),
         ]
 
-    @model_serializer(when_used='json')
-    def serialize_model(self) -> Dict[str, Any]:
-        """Serialize model by converting PyObjectId to string"""
-        values = self.__dict__.copy()
-        for field_name, value in values.items():
-            if isinstance(value, PydanticObjectId):
-                values[field_name] = str(value)
-        return values
-
 
 class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
     """Schema for reading a user"""
@@ -129,15 +119,6 @@ class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
         if len(unique_names) != len(groups):
             raise ValueError("Groups must have unique names.")
         return groups
-
-    @model_serializer(when_used='json')
-    def serialize_model(self) -> Dict[str, Any]:
-        """Serialize model by converting PyObjectId to string"""
-        values = self.__dict__.copy()
-        for field_name, value in values.items():
-            if isinstance(value, PydanticObjectId):
-                values[field_name] = str(value)
-        return values
 
 
 class UserCreate(schemas.BaseUserCreate):
