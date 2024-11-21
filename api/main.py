@@ -52,7 +52,9 @@ from .models import (
     User,
     UserRead,
     UserCreate,
+    UserCreateRequest,
     UserUpdate,
+    UserUpdateRequest,
     UserGroup,
 )
 from .metrics import Metrics
@@ -157,7 +159,7 @@ register_router = fastapi_users_instance.get_register_router(
 
 @app.post("/user/register", response_model=UserRead, tags=["user"],
           response_model_by_alias=False)
-async def register(request: Request, user: UserCreate,
+async def register(request: Request, user: UserCreateRequest,
                    current_user: User = Depends(get_current_superuser)):
     """User registration route
 
@@ -183,9 +185,11 @@ async def register(request: Request, user: UserCreate,
                     detail=f"User group does not exist with name: \
     {group_name}")
             groups.append(group)
-    user.groups = groups
+    user_create = UserCreate(**(user.model_dump(
+         exclude={'groups'}, exclude_none=True)))
+    user_create.groups = groups
     created_user = await register_router.routes[0].endpoint(
-        request, user, user_manager)
+        request, user_create, user_manager)
     # Update user to be an admin user explicitly if requested as
     # `fastapi-users` register route does not allow it
     if user.is_superuser:
@@ -233,7 +237,7 @@ app.add_api_route(
 
 @app.patch("/user/me", response_model=UserRead, tags=["user"],
            response_model_by_alias=False)
-async def update_me(request: Request, user: UserUpdate,
+async def update_me(request: Request, user: UserUpdateRequest,
                     current_user: User = Depends(get_current_user)):
     """User update route
 
@@ -258,15 +262,17 @@ async def update_me(request: Request, user: UserUpdate,
                     detail=f"User group does not exist with name: \
     {group_name}")
             groups.append(group)
+    user_update = UserUpdate(**(user.model_dump(
+         exclude={'groups'}, exclude_none=True)))
     if groups:
-        user.groups = groups
+        user_update.groups = groups
     return await users_router.routes[1].endpoint(
-        request, user, current_user, user_manager)
+        request, user_update, current_user, user_manager)
 
 
 @app.patch("/user/{user_id}", response_model=UserRead, tags=["user"],
            response_model_by_alias=False)
-async def update_user(user_id: str, request: Request, user: UserUpdate,
+async def update_user(user_id: str, request: Request, user: UserUpdateRequest,
                       current_user: User = Depends(get_current_superuser)):
     """Router to allow admin users to update other user account"""
     metrics.add('http_requests_total', 1)
@@ -295,11 +301,14 @@ async def update_user(user_id: str, request: Request, user: UserUpdate,
                     detail=f"User group does not exist with name: \
     {group_name}")
             groups.append(group)
+    user_update = UserUpdate(**(user.model_dump(
+         exclude={'groups'}, exclude_none=True)))
+
     if groups:
-        user.groups = groups
+        user_update.groups = groups
 
     updated_user = await users_router.routes[3].endpoint(
-        user, request, user_from_id, user_manager
+        user_update, request, user_from_id, user_manager
     )
     # Update user to be an admin user explicitly if requested as
     # `fastapi-users` user update route does not allow it
