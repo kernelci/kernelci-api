@@ -39,8 +39,8 @@ In case of using different services or configurations, `REDIS_HOST` and `MONGO_S
 
 ## Users
 
-`User` model objects can be created using `/user` endpoint. Only admin
-users are allowed to create user accounts.
+This section describes API user accounts and various endpoints for
+user management.
 
 ### Create an admin user
 
@@ -51,7 +51,7 @@ tool provided in the `kernelci-api` repository.
 setup an admin user. We can use this admin user to create other user accounts.
 
 
-### Create user using endpoint
+### Create user using endpoint (Admin only)
 
 Now, we can use above created admin user to create regular users and other
 admin users using `/user/register` API endpoint.  We need to provide token to the endpoint for the authorization.
@@ -79,6 +79,175 @@ $ curl -X 'POST' 'http://localhost:8001/latest/user/register' -H 'accept: applic
 ```
 
 Another way of creating users is to use `kci user add` tool from kernelci-core.
+
+
+### Verify user account
+
+A user account needs to be verified before a user token can be retrieved
+for the account.
+Send API request to `POST /user/request-verify-token` endpoint to receive
+a verification token for provided email address:
+
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/latest/user/request-verify-token' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "email": "test@kernelci.org"
+```
+
+The user will receive a verification token via email.
+Now, request `POST /user/verify` endpoint and provide the verification
+token in the request dictionary.
+
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/latest/user/verify' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "token": "<VERIFICATION-TOKEN-RECEIVED-BY-EMAIL>"
+}'
+{"id":"615f30020eb7c3c6616e5ac3","email":"test@kernelci.org","is_active":true,"is_superuser":false,"is_verified":true,"username":"test","groups":[]}
+```
+`is_verified:true` in the response above denotes that a user account
+has been verified successfully. The user will also receive an email
+confirming the verification.
+
+
+### Get authorization token
+
+After successful user verification, the user can retrieve authorization
+token to use certain API endpoints requiring user authorization.
+
+```
+$ curl -X 'POST' \
+'http://localhost:8001/latest/user/login' \
+-H 'accept: application/json' \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-d 'username=test&password=test'
+```
+This will return an authorization bearer token.
+
+
+### Get all existing users
+
+To get information of all added user accounts, user `GET /users` request.
+
+```
+$ curl -X 'GET' \
+'http://localhost:8001/latest/users' \
+-H 'accept: application/json' \
+-H 'Authorization: <USER-AUTHORIZATION-TOKEN>'
+{"items":[{"id":"6526448e7d140ee220971a0e","email":"admin@gmail.com","is_active":true,"is_superuser":true,"is_verified":true,"username":"admin","groups":[]},{"id":"615f30020eb7c3c6616e5ac3","email":"test-user@kernelci.org","is_active":true,"is_superuser":true,"is_verified":false,"username":"test-user","groups":[{"id":"648ff894bd39930355ed16ad","name":"kernelci"}]}],"total":2,"limit":50,"offset":0}
+```
+
+
+### Get user account matching user ID
+
+To get user by ID, use `/user` endpoint with user ID as a path parameter:
+```
+$ curl -X 'GET' \
+'http://localhost:8001/latest/user/6526448e7d140ee220971a0e' \
+-H 'accept: application/json' \
+-H 'Content-Type: application/json' \
+-H 'Authorization: Bearer <USER-AUTHORIZATION-TOKEN>'
+{"id":"6526448e7d140ee220971a0e","email":"admin@gmail.com","is_active":true,"is_superuser":true,"is_verified":true,"username":"admin","groups":[]}
+```
+
+
+### Reset password
+
+A user can reset password for the account in case the password is forgotten or lost.
+
+First, send request to `POST /user/forgot-password` endpoint with the
+user email address:
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/latest/user/forgot-password' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "email": "test@kernelci.org"
+}'
+```
+
+The user will receive password reset token via email. The token should
+be sent to `POST /user/reset-password` request along with the new password to be set for the account:
+```
+$ curl -X 'POST' \T' \
+  'http://localhost:8001/latest/user/reset-password' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "token": "PASSWORD-RESET-TOKEN-RECEIVED-BY-EMAIL",
+  "password": "<new-password>"
+}'
+```
+The user will receive an email confirming a successful password reset.
+
+
+### Update user password
+
+A user can update password for the account with the request to
+`/user/update-password` endpoint. Please supply current password and new
+password along with the username for the account:
+
+```
+$ curl -X 'POST' \
+'http://localhost:8001/latest/user/update-password' \
+-H 'accept: application/json' \
+-H 'Content-Type: application/x-www-form-urlencoded' \
+-d 'username=test&password=<current-password>&new_password=<new-password>'
+```
+
+
+### Update own user account
+
+A user can update certain information for its own account, such as
+`email`, `username`, `password`, and `groups` with a `PATCH /user/me` request.
+For example,
+```
+$ curl -X 'PATCH' \
+'http://localhost:8001/latest/user/me' \
+-H 'accept: application/json' \
+-H 'Content-Type: application/json' \
+-H 'Authorization: Bearer <USER-AUTHORIZATION-TOKEN>' \
+-d '{
+  "password": "<new-password-to-be-set>",
+  "email": "<new-email-to-be-set>",
+}'
+```
+
+Please note that user management fields such as `is_useruser`, `is_verified`, and `is_active` can not be updated by this request for security purposes.
+
+
+### Update an existing user account (Admin only)
+
+Admin users can update other existing user accounts using a `PATCH /user/<user-id>` request.
+
+For example, the below command will update an existing `test` user with a new email address and add it to `kernelci` user group.
+
+```
+$ curl -X 'PATCH' \
+'http://localhost:8001/latest/user/615f30020eb7c3c6616e5ac3' \
+-H 'accept: application/json' \
+-H 'Content-Type: application/json' \
+-H 'Authorization: Bearer <ADMIN-USER-AUTHORIZATION-TOKEN>' \
+-d '{"email": "test-user@kernelci.org", "groups": ["kernelci"]}'
+```
+
+
+### Delete user matching user ID (Admin only)
+
+Only admin users can delete existing user account by providing user ID to
+`DELETE /user/<user-id>` endpoint:
+```
+$ curl -X 'DELETE' \
+'http://localhost:8001/latest/user/658d1edecf0bce203d594f1c' \
+-H 'Authorization: Bearer <ADMIN-USER-AUTHORIZATION-TOKEN>'
+```
 
 
 ## Nodes
