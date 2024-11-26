@@ -250,6 +250,53 @@ $ curl -X 'DELETE' \
 ```
 
 
+## User groups
+
+User accounts can be added to different user groups. This section
+explains different API endpoints for user group management operations.
+
+### Create a user group (Admin only)
+
+Admin users can create user groups using `POST /group` endpoint:
+```
+$ curl -X 'POST' \
+'http://localhost:8001/group' \
+-H 'accept: application/json' \
+-H 'Content-Type: application/json' \
+-H 'Authorization: Bearer <ADMIN-USER-AUTHORIZATION-TOKEN>' \
+-d '{"name": "test-user-group"}'
+```
+
+
+### Get all existing user groups
+
+Get all existing user groups using `GET /groups` endpoint:
+```
+$ curl 'http://localhost:8001/groups'
+{"items":[{"id":"648ff894bd39930355ed16ad","name":"kernelci"},{"id":"6704f354ffaa8f6fa017faa3","name":"test"}],"total":2,"limit":50,"offset":0}
+```
+
+
+### Get user group matching ID
+
+To get user group by ID, use `/group` endpoint with group ID as a path parameter:
+```
+$ curl 'http://localhost:8001/group/648ff894bd39930355ed16ad'
+{"id":"648ff894bd39930355ed16ad","name":"kernelci"}
+```
+
+
+### Delete user group matching ID (Admin only)
+
+Only admin users can delete existing user groups by providing group ID to
+`DELETE /group/<group-id>` endpoint:
+```
+$ curl -X 'DELETE' \
+'http://localhost:8001/group/6704f354ffaa8f6fa017faa3' \
+-H 'Authorization: Bearer <ADMIN-USER-AUTHORIZATION-TOKEN>'
+```
+
+
 ## Nodes
 
 `Node` objects form the basis of the API models to represent tests runs,
