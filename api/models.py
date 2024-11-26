@@ -121,8 +121,8 @@ class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
         return groups
 
 
-class UserCreate(schemas.BaseUserCreate):
-    """Schema for creating a user"""
+class UserCreateRequest(schemas.BaseUserCreate):
+    """Create user request schema for API router"""
     username: Annotated[str, Indexed(unique=True)]
     groups: List[str] = Field(default=[])
 
@@ -135,8 +135,22 @@ class UserCreate(schemas.BaseUserCreate):
         return groups
 
 
-class UserUpdate(schemas.BaseUserUpdate):
-    """Schema for updating a user"""
+class UserCreate(schemas.BaseUserCreate):
+    """Schema used for sending create user request to 'fastapi-users' router"""
+    username: Annotated[str, Indexed(unique=True)]
+    groups: List[UserGroup] = Field(default=[])
+
+    @field_validator('groups')
+    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+        """Unique group constraint"""
+        unique_names = {group.name for group in groups}
+        if len(unique_names) != len(groups):
+            raise ValueError("Groups must have unique names.")
+        return groups
+
+
+class UserUpdateRequest(schemas.BaseUserUpdate):
+    """Update user request schema for API router"""
     username: Annotated[Optional[str], Indexed(unique=True),
                         Field(default=None)]
     groups: List[str] = Field(default=[])
@@ -145,6 +159,21 @@ class UserUpdate(schemas.BaseUserUpdate):
     def validate_groups(cls, groups):   # pylint: disable=no-self-argument
         """Unique group constraint"""
         unique_names = set(groups)
+        if len(unique_names) != len(groups):
+            raise ValueError("Groups must have unique names.")
+        return groups
+
+
+class UserUpdate(schemas.BaseUserUpdate):
+    """Schema used for sending update user request to 'fastapi-users' router"""
+    username: Annotated[Optional[str], Indexed(unique=True),
+                        Field(default=None)]
+    groups: List[UserGroup] = Field(default=[])
+
+    @field_validator('groups')
+    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+        """Unique group constraint"""
+        unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
             raise ValueError("Groups must have unique names.")
         return groups
