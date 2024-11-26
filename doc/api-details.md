@@ -371,6 +371,16 @@ $ curl 'http://localhost:8001/latest/nodes?kind=kbuild&name__re=x86'
 
 returns all Kbuild nodes with the string "x86" in the node name.
 
+API also supports multiple operator queries for the same field name.
+For example, date range queries can be triggered as below:
+
+```
+$ curl 'https://localhost:8001/nodes?created__gt=2024-02-26T13:21:55.301000&created__lt=2024-11-01&kind=checkout'
+```
+The above query will return all the checkout nodes in the specific
+date range provided, i.e., nodes created between `2024-02-26T13:21:55.301000` and `2024-11-01` date-time range.
+
+
 Nodes with `null` fields can also be retrieved using the endpoint.
 For example, the below command will get all the nodes with `parent` field set to `null`:
 
