@@ -59,6 +59,7 @@ from .models import (
     UserGroup,
 )
 from .metrics import Metrics
+from pydantic import BaseModel
 
 
 @asynccontextmanager
@@ -769,6 +770,55 @@ async def put_node(node_id: str, node: Node,
         evhist = _get_eventhistory(data)
         await db.create(evhist)
     return obj
+
+
+class NodeUpdateRequest(BaseModel):
+    nodes: List[str]
+    field: str
+    value: str
+
+
+@app.put('/batch/nodeset', response_model=int)
+async def put_batch_nodeset(data: NodeUpdateRequest,
+                            user: str = Depends(get_current_user)):
+    """
+    Set a field to a value for multiple nodes
+    TBD: Make db.bulkupdate to update multiple nodes in one go
+    """
+    metrics.add('http_requests_total', 1)
+    updated = 0
+    nodes = data.nodes
+    field = data.field
+    value = data.value
+    for node_id in nodes:
+        node_from_id = await db.find_by_id(Node, node_id)
+        if not node_from_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Node not found with id: {node_id}"
+            )
+        # verify ownership
+        if not user.username == node_from_id.owner:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized to complete the operation"
+            )
+        # right now we support only field:
+        # processed_by_kcidb_bridge, also value should be boolean
+        if field == 'processed_by_kcidb_bridge':
+            if value == 'true' or value == 'True':
+                value = True
+            elif value == 'false' or value == 'False':
+                value = False
+            setattr(node_from_id, field, value)
+            await db.update(node_from_id)
+            updated += 1
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Field not supported"
+            )
+    return updated
 
 
 async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy,
