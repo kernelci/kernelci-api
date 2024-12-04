@@ -714,7 +714,8 @@ async def post_node(node: Node,
 
 @app.put('/node/{node_id}', response_model=Node, response_model_by_alias=False)
 async def put_node(node_id: str, node: Node,
-                   user: str = Depends(authorize_user)):
+                   user: str = Depends(authorize_user),
+                   noevent: Optional[bool] = Query(None)):
     """Update an already added node"""
     metrics.add('http_requests_total', 1)
     node.id = ObjectId(node_id)
@@ -763,9 +764,10 @@ async def put_node(node_id: str, node: Node,
     attributes = {}
     if data.get('owner', None):
         attributes['owner'] = data['owner']
-    await pubsub.publish_cloudevent('node', data, attributes)
-    evhist = _get_eventhistory(data)
-    await db.create(evhist)
+    if not noevent:
+        await pubsub.publish_cloudevent('node', data, attributes)
+        evhist = _get_eventhistory(data)
+        await db.create(evhist)
     return obj
 
 
