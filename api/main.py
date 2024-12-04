@@ -10,6 +10,7 @@
 
 import os
 import re
+import asyncio
 from typing import List, Union, Optional
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -598,6 +599,13 @@ async def get_nodes(request: Request):
 add_pagination(app)
 
 
+async def db_find_node_nonpaginated(query_params):
+    """Find all the matching nodes without pagination"""
+    model = Node
+    translated_params = model.translate_fields(query_params)
+    return await db.find_by_attributes_nonpaginated(model, translated_params)
+
+
 @app.get('/nodes/fast', response_model=List[Node])
 async def get_nodes_fast(request: Request):
     """Get all the nodes if no request parameters have passed.
@@ -611,11 +619,11 @@ async def get_nodes_fast(request: Request):
 
     try:
         # Query using the base Node model, regardless of the specific
-        # node type
-        model = Node
-        translated_params = model.translate_fields(query_params)
-        resp = await db.find_by_attributes_nonpaginated(model,
-                                                        translated_params)
+        # node type, use asyncio.wait_for with timeout 30 seconds
+        resp = await asyncio.wait_for(
+            db_find_node_nonpaginated(query_params),
+            timeout=15
+        )
         return resp
     except KeyError as error:
         raise HTTPException(
