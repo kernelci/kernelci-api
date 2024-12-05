@@ -797,12 +797,9 @@ async def put_batch_nodeset(data: NodeUpdateRequest,
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Node not found with id: {node_id}"
             )
-        # verify ownership
+        # verify ownership, and ignore if not owner
         if not user.username == node_from_id.owner:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unauthorized to complete the operation"
-            )
+            continue
         # right now we support only field:
         # processed_by_kcidb_bridge, also value should be boolean
         if field == 'processed_by_kcidb_bridge':
