@@ -42,6 +42,7 @@ from kernelci.api.models import (
     KernelVersion,
     EventHistory,
 )
+from pydantic import BaseModel
 from .auth import Authentication
 from .db import Database
 from .pubsub import PubSub
@@ -59,7 +60,7 @@ from .models import (
     UserGroup,
 )
 from .metrics import Metrics
-from pydantic import BaseModel
+
 
 
 @asynccontextmanager
@@ -747,6 +748,11 @@ async def put_node(node_id: str, node: Node,
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=message
         )
+    # if state changes, reset processed_by_kcidb_bridge flag
+    if node.state != new_node_def.state:
+        new_node_def.processed_by_kcidb_bridge = False
+    # Now we can update the state
+    new_node_def.state = node.state
 
     # KCIDB flags are reset on any update, because this means we need
     # to reprocess updated node.
@@ -755,9 +761,6 @@ async def put_node(node_id: str, node: Node,
     new_flag = node.processed_by_kcidb_bridge
     if old_flag == new_flag:
         new_node_def.processed_by_kcidb_bridge = False
-
-    # Now we can update the state
-    new_node_def.state = node.state
 
     # Update node in the DB
     obj = await db.update(new_node_def)
@@ -773,6 +776,7 @@ async def put_node(node_id: str, node: Node,
 
 
 class NodeUpdateRequest(BaseModel):
+    """Request model for updating multiple nodes"""
     nodes: List[str]
     field: str
     value: str
@@ -803,9 +807,9 @@ async def put_batch_nodeset(data: NodeUpdateRequest,
         # right now we support only field:
         # processed_by_kcidb_bridge, also value should be boolean
         if field == 'processed_by_kcidb_bridge':
-            if value == 'true' or value == 'True':
+            if value in ['true', 'True']:
                 value = True
-            elif value == 'false' or value == 'False':
+            elif value in ['false', 'False']:
                 value = False
             setattr(node_from_id, field, value)
             await db.update(node_from_id)
