@@ -747,6 +747,12 @@ async def put_node(node_id: str, node: Node,
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=message
         )
+    # if state changes, reset processed_by_kcidb_bridge flag
+    if node.state != new_node_def.state:
+        new_node_def.processed_by_kcidb_bridge = False
+    # Now we can update the state
+    new_node_def.state = node.state
+
 
     # KCIDB flags are reset on any update, because this means we need
     # to reprocess updated node.
@@ -756,8 +762,6 @@ async def put_node(node_id: str, node: Node,
     if old_flag == new_flag:
         new_node_def.processed_by_kcidb_bridge = False
 
-    # Now we can update the state
-    new_node_def.state = node.state
 
     # Update node in the DB
     obj = await db.update(new_node_def)
