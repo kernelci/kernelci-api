@@ -1114,10 +1114,9 @@ def traceback_exception_handler(request: Request, exc: Exception):
     )
 
 
-"""Workaround to use global exception handlers for versioned API.
-The issue has already been reported here:
-https://github.com/DeanWay/fastapi-versioning/issues/30
-"""
+# Workaround to use global exception handlers for versioned API.
+# The issue has already been reported here:
+# https://github.com/DeanWay/fastapi-versioning/issues/30
 for sub_app in versioned_app.routes:
     if hasattr(sub_app.app, "add_exception_handler"):
         sub_app.app.add_exception_handler(
