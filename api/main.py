@@ -62,7 +62,6 @@ from .models import (
 from .metrics import Metrics
 
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
     """Lifespan functions for startup and shutdown events"""
