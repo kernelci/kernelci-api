@@ -34,6 +34,7 @@ from bson import ObjectId, errors
 from pymongo.errors import DuplicateKeyError
 from fastapi_users import FastAPIUsers
 from beanie import PydanticObjectId
+from pydantic import BaseModel
 from kernelci.api.models import (
     Node,
     Hierarchy,
@@ -42,7 +43,6 @@ from kernelci.api.models import (
     KernelVersion,
     EventHistory,
 )
-from pydantic import BaseModel
 from .auth import Authentication
 from .db import Database
 from .pubsub import PubSub
@@ -60,7 +60,6 @@ from .models import (
     UserGroup,
 )
 from .metrics import Metrics
-
 
 
 @asynccontextmanager
@@ -714,6 +713,17 @@ async def post_node(node: Node,
     return obj
 
 
+def is_same_flags(old_node, new_node):
+    """ Compare processed_by_kcidb_bridge flags
+    Returns True if flags are same, False otherwise
+    """
+    old_flag = old_node.processed_by_kcidb_bridge
+    new_flag = new_node.processed_by_kcidb_bridge
+    if old_flag == new_flag:
+        return True
+    return False
+
+
 @app.put('/node/{node_id}', response_model=Node, response_model_by_alias=False)
 async def put_node(node_id: str, node: Node,
                    user: str = Depends(authorize_user),
@@ -757,9 +767,7 @@ async def put_node(node_id: str, node: Node,
     # KCIDB flags are reset on any update, because this means we need
     # to reprocess updated node.
     # So reset flag, unless flag is changed in the request
-    old_flag = node_from_id.processed_by_kcidb_bridge
-    new_flag = node.processed_by_kcidb_bridge
-    if old_flag == new_flag:
+    if is_same_flags(node_from_id, node):
         new_node_def.processed_by_kcidb_bridge = False
 
     # Update node in the DB
