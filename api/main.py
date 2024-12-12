@@ -11,6 +11,7 @@
 import os
 import re
 import asyncio
+import traceback
 from typing import List, Union, Optional
 from datetime import datetime
 from contextlib import asynccontextmanager
@@ -1101,6 +1102,18 @@ versioned_app = VersionedFastAPI(
     )
 
 
+# traceback_exception_handler is a global exception handler that will be
+# triggered for all exceptions that are not handled by specific exception
+def traceback_exception_handler(request: Request, exc: Exception):
+    """Global exception handler to print traceback"""
+    print(f"Exception: {exc}")
+    traceback.print_exception(type(exc), exc, exc.__traceback__)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"message": "Internal server error, check container logs"}
+    )
+
+
 """Workaround to use global exception handlers for versioned API.
 The issue has already been reported here:
 https://github.com/DeanWay/fastapi-versioning/issues/30
@@ -1112,6 +1125,10 @@ for sub_app in versioned_app.routes:
         )
         sub_app.app.add_exception_handler(
             errors.InvalidId, invalid_id_exception_handler
+        )
+        # print traceback for all other exceptions
+        sub_app.app.add_exception_handler(
+            Exception, traceback_exception_handler
         )
 
 
