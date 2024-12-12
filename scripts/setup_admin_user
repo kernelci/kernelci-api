@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# is docker-compose exists? if not use docker compose
+if [ -z "$(which docker-compose)" ]; then
+    echo "docker-compose is not installed, using docker compose"
+    DOCKER_COMPOSE="docker compose"
+else
+    DOCKER_COMPOSE="docker-compose"
+fi
+
 set -e
 
-docker-compose run api python3 -m api.admin $*
+${DOCKER_COMPOSE} run api python3 -m api.admin $*
 
 exit 0
