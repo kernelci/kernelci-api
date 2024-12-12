@@ -12,7 +12,7 @@ import os
 import re
 import asyncio
 import traceback
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Any
 from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import (
@@ -82,8 +82,22 @@ db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
 
+
+class CustomObjectId(PydanticObjectId):
+    @classmethod
+    def __get_pydantic_json_schema__(cls, core_schema: Any, handler: GetCoreSchemaHandler) -> dict[str, Any]:
+        json_schema = handler(core_schema)
+        # Indicate that this field should be treated like a string
+        # with a pattern matching a 24-character hex string
+        json_schema.update({
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{24}$"
+        })
+        return json_schema
+
+
 auth_backend = auth.get_user_authentication_backend()
-fastapi_users_instance = FastAPIUsers[User, PydanticObjectId](
+fastapi_users_instance = FastAPIUsers[User, CustomObjectId](
     get_user_manager,
     [auth_backend],
 )
