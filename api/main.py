@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
 API_VERSIONS = ['v0']
 
 metrics = Metrics()
-app = FastAPI(lifespan=lifespan, debug=True)
+app = FastAPI(lifespan=lifespan, debug=True, docs_url=None, redoc_url=None)
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
