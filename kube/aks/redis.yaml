@@ -22,6 +22,11 @@ spec:
       containers:
         - name: redis
           image: redis:6.2
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
           ports:
             - containerPort: 6379
 ---

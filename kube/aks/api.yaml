@@ -23,6 +23,10 @@ spec:
         - name: api
           image: kernelci/api
           imagePullPolicy: Always
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
           ports:
             - containerPort: 8000
           command:
