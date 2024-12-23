@@ -13,9 +13,10 @@ requires-python = ">=3.10"
 license = {text = "LGPL-2.1-or-later"}
 dependencies = [
   "cloudevents == 1.9.0",
+  "beanie == 1.28.0",
   "fastapi[all] == 0.115.0",
   "fastapi-pagination == 0.12.30",
-  "fastapi-users[beanie, oauth] == 13.0.0",
+  "fastapi-users[beanie, oauth] == 14.0.0",
   "fastapi-versioning == 0.10.0",
   "MarkupSafe == 2.0.1",
   "motor == 3.6.0",
