@@ -57,7 +57,7 @@ spec:
   - ReadWriteOnce
   resources:
     requests:
-      storage: 15Gi
+      storage: 30Gi
   storageClassName: managed-csi-premium
   volumeMode: Filesystem
   volumeName: pvc-254329bd-3d3c-4601-a3f6-c8733db3aab5
@@ -76,7 +76,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   capacity:
-    storage: 15Gi
+    storage: 30Gi
   claimRef:
     apiVersion: v1
     kind: PersistentVolumeClaim
