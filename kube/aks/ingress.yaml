@@ -1,7 +1,7 @@
 ---
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2023 Collabora Limited
+# Copyright (C) 2023-2025 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 
 apiVersion: networking.k8s.io/v1
@@ -17,10 +17,21 @@ spec:
   ingressClassName: ingressclass-api
   tls:
     - hosts:
-        - kernelci-api.eastus.cloudapp.azure.com
+        - kernelci-api.westus3.cloudapp.azure.com
+        - api.kernelci.org
       secretName: api-tls
   rules:
-    - host: kernelci-api.eastus.cloudapp.azure.com
+    - host: kernelci-api.westus3.cloudapp.azure.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: api
+                port:
+                  number: 8000
+            path: /
+            pathType: Prefix
+    - host: api.kernelci.org
       http:
         paths:
           - backend:
