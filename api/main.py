@@ -61,6 +61,7 @@ from .models import (
     UserGroup,
 )
 from .metrics import Metrics
+from .maintenance import purge_old_nodes
 
 
 @asynccontextmanager
@@ -1086,6 +1087,17 @@ async def get_metrics():
     for key, value in all_metrics.items():
         response += f'{key}{{instance="api"}} {value}\n'
     return PlainTextResponse(response)
+
+
+@app.get('/maintenance/purge-old-nodes')
+async def purge_old_nodes(current_user: User = Depends(get_current_superuser)):
+    """Purge old nodes from the database
+    This is a maintenance operation and should be performed
+    only by superusers.
+    """
+    metrics.add('http_requests_total', 1)
+    await purge_old_nodes()
+    return "OK"
 
 
 versioned_app = VersionedFastAPI(
