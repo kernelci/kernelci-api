@@ -5,22 +5,36 @@ description: "Staging API"
 weight: 5
 ---
 
-Maestro has a staging instance running for development purposes.
-It allows users to request an account on the new KernelCI API to give it a try. You can also enable your
-trees, builds, and tests on it. Here is the
-[developer documentation](https://docs.kernelci.org/maestro/pipeline/developer-documentation/) for the same.
+Maestro maintains a staging instance for development purposes.
 
-[Staging
-deployment](https://github.com/kernelci/kernelci-api/tree/main/kube/aks)
-can already run a pipeline with KUnit, kselftest, kernel builds
-and boot tests. So please give it a go and create issues on
-GitHub and ask questions on the [mailing
-list](mailto:kernelci@lists.linux.dev), IRC `#kernelci` on libera.chat
-or [Slack](https://kernelci.slack.com) with whatever you may find.
+This environment allows you to test the latest changes and features before they are 
+merged into the production KernelCI API.
+If you contribute to the kernelci-core, kernelci-pipeline, or kernelci-api repositories and
+open a pull request, staging will automatically incorporate your changes (provided you're on the [contributor list](https://github.com/kernelci/kernelci-deploy/blob/main/data/staging.ini))
+and deploy them to the staging instance. This enables you to test your changes
+and receive feedback from other contributors before merging into the production API.
+The staging instance updates every 8 hours or can be manually triggered by
+the sysadmin team. You can also exclude a pull request from deployment by adding the `staging-skip` label.
+It is highly recommended to set such label if your pull request is not ready for
+deployment and might break the staging instance.
+
+The staging deployment runs only
+kernelci-stable, kernelci-mainline, and kernelci-next branches by default, which are mirrors of 
+Linux kernel trees. If you need to test changes with a different tree or are adding a new
+tree, you can use the [kci-dev](https://github.com/kernelci/kci-dev) tool to trigger jobs on the staging instance.
+The staging instance is not intended for production use and stability is not
+guaranteed. Occasional crashes are expected.
+
+Please try it out and report any issues on
+GitHub or ask questions through the [available contacts](https://kernelci.org/community-contact/).
+
+[Developer documentation](https://docs.kernelci.org/maestro/pipeline/developer-documentation/)
 
 ## Requesting a user account
 
-Anyone interested is very much encouraged to request an account.
+If your workflow requires authenticated access to the API (you need to submit your own nodes),
+you need to request a user account.  This is done via the KernelCI GitHub
+repository.  The user account will be created for you by the sysadmin team.
 
 It can be done in two simple steps:
 
