@@ -10,6 +10,6 @@ fi
 
 set -e
 
-${DOCKER_COMPOSE} run api python3 -m api.admin $*
+${DOCKER_COMPOSE} run --rm api python3 -m api.admin $*
 
 exit 0
