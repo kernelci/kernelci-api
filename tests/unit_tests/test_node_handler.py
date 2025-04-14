@@ -87,6 +87,7 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         'treeid',
         'updated',
         'user_groups',
+        'processed_by_kcidb_bridge',
     }
 
 
@@ -247,6 +248,7 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         'treeid',
         'updated',
         'user_groups',
+        'processed_by_kcidb_bridge',
     }
 
 
