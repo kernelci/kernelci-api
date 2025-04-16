@@ -11,8 +11,8 @@ This environment allows you to test the latest changes and features before they 
 merged into the production KernelCI API.
 If you contribute to the kernelci-core, kernelci-pipeline, or kernelci-api repositories and
 open a pull request, staging will automatically incorporate your changes (provided you're on the [contributor list](https://github.com/kernelci/kernelci-deploy/blob/main/data/staging.ini))
-and deploy them to the staging instance. This enables you to test your changes
-and receive feedback from other contributors before merging into the production API.
+and deploy them to the staging instance. This enables you to receive feedback
+from other contributors before merging changes into the production API.
 The staging instance updates every 8 hours or can be manually triggered by
 the sysadmin team. You can also exclude a pull request from deployment by adding the `staging-skip` label.
 It is highly recommended to set such label if your pull request is not ready for
