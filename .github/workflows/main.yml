@@ -101,7 +101,7 @@ jobs:
           pip install -r docker/api/requirements-tests.txt
 
       - if: env.CHANGED_FILES
-        uses: marian-code/python-lint-annotate@v3
+        uses: marian-code/python-lint-annotate@v4
         with:
           python-root-list: ${{ env.CHANGED_FILES }}
           use-black: false
