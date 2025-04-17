@@ -334,6 +334,10 @@ async def authorize_user(node_id: str,
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Node not found with id: {node_id}"
         )
+    # users staging.kernelci.org and production are superusers
+    # TBD: This is HACK until qualcomm can migrate to direct KCIDB
+    if user.username in ['staging.kernelci.org', 'production']:
+        return user
     if not user.username == node_from_id.owner:
         if not any(group.name in node_from_id.user_groups
                    for group in user.groups):
