@@ -16,7 +16,7 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
@@ -51,10 +51,14 @@ jobs:
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get update
-          sudo apt-get install -y docker-compose docker.io
+          sudo apt install apt-transport-https ca-certificates curl software-properties-common -y
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -          
+          sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+          sudo apt-get update
+          sudo apt install docker-ce docker-ce-cli containerd.io -y
 
       - name: Build docker images
-        run: docker-compose -f test-docker-compose.yaml build --no-cache
+        run: docker compose -f test-docker-compose.yaml build --no-cache
 
       - name: Run pycodestyle
         run: |
@@ -62,18 +66,18 @@ jobs:
 
       - name: Run API containers
         run: |
-          docker-compose -f test-docker-compose.yaml up -d test
+          docker compose -f test-docker-compose.yaml up -d test
 
       - name: Run pylint
         run: |
-          docker-compose -f test-docker-compose.yaml exec -T test pylint --extension-pkg-whitelist=pydantic api/
-          docker-compose -f test-docker-compose.yaml exec -T test pylint tests/unit_tests
-          docker-compose -f test-docker-compose.yaml exec -T test pylint tests/e2e_tests
+          docker compose -f test-docker-compose.yaml exec -T test pylint --extension-pkg-whitelist=pydantic api/
+          docker compose -f test-docker-compose.yaml exec -T test pylint tests/unit_tests
+          docker compose -f test-docker-compose.yaml exec -T test pylint tests/e2e_tests
 
       - name: Stop docker containers
         if: always()
         run: |
-          docker-compose -f test-docker-compose.yaml down
+          docker compose -f test-docker-compose.yaml down
 
   lint:
     runs-on: ubuntu-22.04
