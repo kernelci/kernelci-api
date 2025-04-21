@@ -484,6 +484,7 @@ async def get_events(request: Request):
        - from: Start timestamp (unix epoch) to filter events
        - kind: Event kind to filter events
        - state: Event state to filter events
+       - result: Event result to filter events
        - recursive: Retrieve node together with event
     This API endpoint is under development and may change in future.
     """
@@ -493,6 +494,7 @@ async def get_events(request: Request):
     limit = query_params.pop('limit', None)
     kind = query_params.pop('kind', None)
     state = query_params.pop('state', None)
+    result = query_params.pop('result', None)
     from_ts = query_params.pop('from', None)
     if from_ts:
         if isinstance(from_ts, str):
@@ -502,6 +504,8 @@ async def get_events(request: Request):
         query_params['data.kind'] = kind
     if state:
         query_params['data.state'] = state
+    if result:
+        query_params['data.result'] = result
     if limit:
         query_params['limit'] = int(limit)
     resp = await db.find_by_attributes_nonpaginated(EventHistory, query_params)
