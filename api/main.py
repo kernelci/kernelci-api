@@ -819,7 +819,9 @@ async def put_batch_nodeset(data: NodeUpdateRequest,
                 detail=f"Node not found with id: {node_id}"
             )
         # verify ownership, and ignore if not owner
-        if not user.username == node_from_id.owner:
+        if not user.username == node_from_id.owner\
+           and user.username != 'production' and\
+           user.username != 'staging.kernelci.org':
             continue
         # right now we support only field:
         # processed_by_kcidb_bridge, also value should be boolean
