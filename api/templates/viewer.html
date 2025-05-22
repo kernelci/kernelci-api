@@ -189,12 +189,16 @@
             // hide&clean nodeinfo and requestinfo
             var nodeinfo = document.getElementById("nodeinfo");
             nodeinfo.innerHTML = "";
+            nodeinfo.style.display = "none";
             var requestinfo = document.getElementById("requestinfo");
             requestinfo.innerHTML = "";
+            requestinfo.style.display = "none";
             var miscbuttons = document.getElementById("miscbuttons");
             miscbuttons.innerHTML = "";
+            miscbuttons.style.display = "none";
             var nodesearchdiv = document.getElementById("nodesearchdiv");
             nodesearchdiv.innerHTML = "";
+            nodesearchdiv.style.display = "none";
         }
 
         function miscclick(event) {
@@ -215,6 +219,7 @@
         function addmiscbuttons(data, raw) {
             var miscbuttons = document.getElementById("miscbuttons");
             var miscbuttonshtml = "";
+            miscbuttons.style.display = "block";
             // do we have parent? then add button to display parent
             if (data.parent != null) {
                 miscbuttonshtml += "<button id=\"parentbutton\" class=\"misc\" href=\"?node_id=" + data.parent + "\">Parent</button>";
@@ -294,6 +299,7 @@
                     addmiscbuttons(data, request.responseText);
                     var nodeinfo = document.getElementById("nodeinfo");
                     var nodeinfohtml = "";
+                    nodeinfo.style.display = "block";
                     // add pre tag to display json
                     nodeinfohtml += "<pre>";
                     nodeinfohtml += fancydisplayjson(request.responseText);
@@ -375,6 +381,7 @@
             miscbuttons.innerHTML = "";
             miscbuttons.style.display = "none";
             var nodeinfo = document.getElementById("nodesearchdiv");
+            nodeinfo.style.display = "block";
             var nodeinfohtml = "<table class=\"nodesearch\">";
             var thnames = ["id", "kind", "name", "platform", "state", "result", "created"];
             // is data.kernel_revision present? then add to thnames: 
@@ -542,6 +549,7 @@
             // clear nodeinfo
             var nodeinfo = document.getElementById("nodeinfo");
             nodeinfo.innerHTML = "";
+            nodeinfo.style.display = "none";
         }
 
         function displayMenu() {
@@ -625,9 +633,9 @@
 </div>
 <div id="menu">
 </div>
-<div id="requestinfo"></div>
-<div id="miscbuttons"></div>
-<div id="nodeinfo"></div>
-<div id="nodesearchdiv"></div>
+<div id="requestinfo" style="display: none;"></div>
+<div id="miscbuttons" style="display: none;"></div>
+<div id="nodeinfo" style="display: none;"></div>
+<div id="nodesearchdiv" style="display: none;"></div>
 </body>
 </html>
