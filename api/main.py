@@ -386,86 +386,6 @@ async def update_password(request: Request,
     )
 
 
-# -----------------------------------------------------------------------------
-# User groups
-
-
-@app.post('/group', response_model=UserGroup, response_model_by_alias=False)
-async def post_user_group(
-        group: UserGroup,
-        current_user: User = Depends(get_current_superuser)):
-    """Create new user group"""
-    metrics.add('http_requests_total', 1)
-    try:
-        obj = await db.create(group)
-    except DuplicateKeyError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Group '{group.name}' already exists. \
-Use a different group name."
-        ) from error
-    await pubsub.publish_cloudevent('user_group', {'op': 'created',
-                                                   'id': str(obj.id)})
-    return obj
-
-
-@app.get('/groups', response_model=PageModel)
-async def get_user_groups(request: Request):
-    """Get all the user groups if no request parameters have passed.
-       Get all the matching user groups otherwise."""
-    metrics.add('http_requests_total', 1)
-    query_params = dict(request.query_params)
-
-    # Drop pagination parameters from query as they're already in arguments
-    for pg_key in ['limit', 'offset']:
-        query_params.pop(pg_key, None)
-
-    paginated_resp = await db.find_by_attributes(UserGroup, query_params)
-    paginated_resp.items = serialize_paginated_data(
-        UserGroup, paginated_resp.items)
-    return paginated_resp
-
-
-@app.get('/group/{group_id}', response_model=Union[UserGroup, None],
-         response_model_by_alias=False)
-async def get_group(group_id: str):
-    """Get user group information from the provided group id"""
-    metrics.add('http_requests_total', 1)
-    return await db.find_by_id(UserGroup, group_id)
-
-
-@app.delete('/group/{group_id}',
-            dependencies=[Depends(pagination_ctx(PageModel))],
-            status_code=status.HTTP_204_NO_CONTENT)
-async def delete_group(group_id: str,
-                       current_user: User = Depends(get_current_superuser)):
-    """Delete user group matching the provided group id"""
-    metrics.add('http_requests_total', 1)
-    group_from_id = await db.find_by_id(UserGroup, group_id)
-    if not group_from_id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Group not found with id: {group_id}"
-        )
-    # Remove users from the group before deleting it
-    users = await db.find_by_attributes(
-        User, {"groups.name": group_from_id.name})
-    for user in users.items:
-        user['groups'].remove(group_from_id)
-        await db.update(User(**user))
-
-    # Remove group from user groups that are permitted to update node
-    nodes = await db.find_by_attributes(
-        Node, {"user_groups": group_from_id.name})
-    for node in nodes.items:
-        node['user_groups'].remove(group_from_id.name)
-        await db.update(Node(**node))
-
-    await db.delete_by_id(UserGroup, group_id)
-
-
-# -----------------------------------------------------------------------------
-# EventHistory
 def _get_eventhistory(evdict):
     """Get EventHistory object from dictionary"""
     evhist = EventHistory()
@@ -1100,7 +1020,7 @@ async def get_metrics():
 
 
 @app.get('/maintenance/purge-old-nodes')
-async def purge_old_nodes(current_user: User = Depends(get_current_superuser)):
+async def purge_handler(current_user: User = Depends(get_current_superuser)):
     """Purge old nodes from the database
     This is a maintenance operation and should be performed
     only by superusers.
