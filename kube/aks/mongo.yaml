@@ -97,6 +97,6 @@ spec:
           operator: In
           values:
           - ""
-  persistentVolumeReclaimPolicy: Delete
+  persistentVolumeReclaimPolicy: Retain
   storageClassName: managed-csi-premium
   volumeMode: Filesystem
