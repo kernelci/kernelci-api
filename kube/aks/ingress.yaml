@@ -13,6 +13,9 @@ metadata:
   namespace: kernelci-api
   annotations:
     cert-manager.io/cluster-issuer: all-issuer
+    nginx.ingress.kubernetes.io/compression-level: "6"  # 1-9, higher = better compression
+    nginx.ingress.kubernetes.io/compression-types: "application/json text/html text/plain application/javascript text/css application/x-javascript"  # MIME types to compress
+    nginx.ingress.kubernetes.io/compression-min-length: "1000"  # bytes
 spec:
   ingressClassName: ingressclass-api
   tls:
