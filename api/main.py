@@ -429,6 +429,13 @@ async def get_events(request: Request):
         query_params['data.result'] = result
     if limit:
         query_params['limit'] = int(limit)
+    # limit recursive to 1000
+    if recursive and (not limit or int(limit) > 1000):
+        # generate error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Recursive limit is too large, max is 1000"
+        )
     resp = await db.find_by_attributes_nonpaginated(EventHistory, query_params)
     resp_list = []
     for item in resp:
