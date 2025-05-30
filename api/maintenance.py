@@ -16,7 +16,8 @@ from pymongo import MongoClient
 
 def purge_ids(db, collection, ids):
     """
-    Delete documents from the specified collection in the database by their IDs.
+    Delete documents from the specified collection in the database
+    by their IDs.
 
     Args:
         db: The MongoDB database instance.
@@ -24,12 +25,15 @@ def purge_ids(db, collection, ids):
         ids (list): List of document IDs to delete.
     """
     print("Purging", len(ids), "from", collection)
-    db[collection].delete_many({"_id": {"$in": ids}})
+    db[collection].delete_many({
+        "_id": {"$in": ids}
+    })
 
 
 def connect_to_db():
     """
-    Connect to the MongoDB database using the MONGO_SERVICE environment variable.
+    Connect to the MongoDB database using the MONGO_SERVICE environment
+    variable.
 
     Returns:
         db: The 'kernelci' MongoDB database instance.
@@ -46,15 +50,19 @@ def connect_to_db():
 
 async def purge_old_nodes(age_days=180):
     """
-    Purge nodes from the 'nodes' collection that are older than the specified number of days.
+    Purge nodes from the 'nodes' collection that are older than the
+    specified number of days.
 
     Args:
-        age_days (int, optional): The age in days to use as the threshold for deletion.
+        age_days (int, optional): The age in days to use as the
+        threshold for deletion.
             Defaults to 180.
     """
     date_end = datetime.datetime.today() - datetime.timedelta(days=age_days)
     db = connect_to_db()
-    nodes = db["nodes"].find({"created": {"$lt": date_end}})
+    nodes = db["nodes"].find({
+        "created": {"$lt": date_end}
+    })
     # We need to delete node in chunks of 1000,
     # to not block the main thread for too long
     del_batch = []
