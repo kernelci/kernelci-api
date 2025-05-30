@@ -556,6 +556,11 @@ async def get_nodes_fast(request: Request):
             timeout=15
         )
         return resp
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Timeout while fetching nodes"
+        )
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
