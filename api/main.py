@@ -1,8 +1,9 @@
 # SPDX-License-Identifier: LGPL-2.1-or-later
 #
-# Copyright (C) 2021-2023 Collabora Limited
+# Copyright (C) 2021-2025 Collabora Limited
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
+# Author: Denys Fedoryshchenko <denys.f@collabora.com>
 
 # pylint: disable=unused-argument,global-statement,too-many-lines
 
