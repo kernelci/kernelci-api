@@ -29,10 +29,9 @@ from fastapi import (
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_pagination import add_pagination, pagination_ctx
+from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
-from pymongo.errors import DuplicateKeyError
 from fastapi_users import FastAPIUsers
 from beanie import PydanticObjectId
 from pydantic import BaseModel
