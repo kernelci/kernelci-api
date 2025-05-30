@@ -1,14 +1,34 @@
-from pymongo import MongoClient
+"""
+This module provides maintenance utilities for the KernelCI API, including
+functions to purge old nodes from the database and manage MongoDB connections.
+"""
 import datetime
 import os
+from pymongo import MongoClient
 
 
 def purge_ids(db, collection, ids):
+    """
+    Delete documents from the specified collection in the database by their IDs.
+
+    Args:
+        db: The MongoDB database instance.
+        collection (str): The name of the collection to purge from.
+        ids (list): List of document IDs to delete.
+    """
     print("Purging", len(ids), "from", collection)
     db[collection].delete_many({"_id": {"$in": ids}})
 
 
 def connect_to_db():
+    """
+    Connect to the MongoDB database using the MONGO_SERVICE environment variable.
+
+    Returns:
+        db: The 'kernelci' MongoDB database instance.
+    Raises:
+        ValueError: If the MONGO_SERVICE environment variable is not set.
+    """
     mongo_service = os.environ["MONGO_SERVICE"]
     if not mongo_service:
         raise ValueError("MONGO_SERVICE environment variable is not set")
@@ -18,6 +38,13 @@ def connect_to_db():
 
 
 async def purge_old_nodes(age_days=180):
+    """
+    Purge nodes from the 'nodes' collection that are older than the specified number of days.
+
+    Args:
+        age_days (int, optional): The age in days to use as the threshold for deletion.
+            Defaults to 180.
+    """
     date_end = datetime.datetime.today() - datetime.timedelta(days=age_days)
     db = connect_to_db()
     nodes = db["nodes"].find({"created": {"$lt": date_end}})
