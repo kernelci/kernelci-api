@@ -23,6 +23,9 @@ spec:
         - name: wait-for-mongo
           image: busybox
           command: ["sh", "-c", "until nc -z mongo.kernelci-api.svc.cluster.local 27017; do echo waiting for mongo; sleep 2; done"]
+        - name: wait-for-redis
+          image: busybox
+          command: ["sh", "-c", "until nc -z redis.kernelci-api.svc.cluster.local 6379; do echo waiting for redis; sleep 2; done"]
       containers:
         - name: api
           image: kernelci/kernelci:api
