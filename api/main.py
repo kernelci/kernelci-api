@@ -28,7 +28,7 @@ from fastapi import (
     Body,
 )
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
@@ -132,7 +132,10 @@ async def invalid_id_exception_handler(
 async def root():
     """Root endpoint handler"""
     metrics.add('http_requests_total', 1)
-    return {"message": "KernelCI API"}
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    index_path = os.path.join(root_dir, 'templates', 'index.html')
+    with open(index_path, 'r', encoding='utf-8') as file:
+        return HTMLResponse(file.read())
 
 # -----------------------------------------------------------------------------
 # Users
