@@ -37,6 +37,8 @@ class Database:
         'gte': '$gte',
         'ne': '$ne',
         're': '$regex',
+        'in': '$in',
+        'nin': '$nin',
     }
 
     BOOL_VALUE_MAP = {
@@ -138,6 +140,9 @@ class Database:
                 for op_name, op_value in value.items():
                     op_key = self.OPERATOR_MAP.get(op_name)
                     if op_key:
+                        if op_key in ('$in', '$nin'):
+                            # Create a list of values from ',' separated string
+                            op_value = op_value.split(",")
                         if isinstance(op_value, str) and op_value.isdecimal():
                             op_value = int(op_value)
                         if translated_attributes.get(key):
