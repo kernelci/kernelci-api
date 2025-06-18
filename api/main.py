@@ -28,7 +28,12 @@ from fastapi import (
     Body,
 )
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse, HTMLResponse
+from fastapi.responses import (
+    JSONResponse,
+    PlainTextResponse,
+    FileResponse,
+    HTMLResponse
+)
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
