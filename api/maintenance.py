@@ -48,7 +48,7 @@ def connect_to_db():
     return db
 
 
-async def purge_old_nodes(age_days=180):
+async def purge_old_nodes(age_days=180, batch_size=1000):
     """
     Purge nodes from the 'nodes' collection that are older than the
     specified number of days.
@@ -63,13 +63,22 @@ async def purge_old_nodes(age_days=180):
     nodes = db["nodes"].find({
         "created": {"$lt": date_end}
     })
-    # We need to delete node in chunks of 1000,
+    # We need to delete node in chunks of {batch_size}
     # to not block the main thread for too long
+    deleted = 0
     del_batch = []
     for node in nodes:
         del_batch.append(node["_id"])
-        if len(del_batch) == 1000:
+        if len(del_batch) == batch_size:
+            deleted += len(del_batch)
             purge_ids(db, "nodes", del_batch)
             del_batch = []
     if del_batch:
+        deleted += len(del_batch)
         purge_ids(db, "nodes", del_batch)
+    db = {
+        'response': 'ok',
+        'deleted': deleted,
+        'age_days': age_days
+    }
+    return db
