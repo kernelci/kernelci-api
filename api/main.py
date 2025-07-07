@@ -1040,14 +1040,18 @@ async def get_metrics():
 
 
 @app.get('/maintenance/purge-old-nodes')
-async def purge_handler(current_user: User = Depends(get_current_superuser)):
+async def purge_handler(current_user: User = Depends(get_current_superuser),
+                        days: int = 180,
+                        batch_size: int = 1000):
     """Purge old nodes from the database
     This is a maintenance operation and should be performed
     only by superusers.
+    Accepts GET parameters:
+    - days: Number of days to keep nodes, default is 180.
+    - batch_size: Number of nodes to delete in one batch, default is 1000.
     """
     metrics.add('http_requests_total', 1)
-    await purge_old_nodes()
-    return "OK"
+    return await purge_old_nodes(age_days=days, batch_size=batch_size)
 
 
 versioned_app = VersionedFastAPI(
