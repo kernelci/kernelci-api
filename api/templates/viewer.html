@@ -185,6 +185,44 @@
             return jsonhtml;
         }
 
+        async function decompressBlob(arrayBuffer) {
+            let ds = new DecompressionStream('gzip');
+            let blob = new Blob([arrayBuffer]);
+            let reader = blob.stream().pipeThrough(ds).getReader();
+            let result = '';
+            let decoder = new TextDecoder();
+            let done, value;
+            while ({ done, value } = await reader.read(), !done) {
+                result += decoder.decode(value, { stream: true });
+            }
+            return result;
+        }
+
+        function requestShowGzippedFile(url) {
+            // request the gzipped file, browser will transparently decompress it
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.responseType = "arraybuffer";
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    var arrayBuffer = xhr.response;
+                    decompressBlob(arrayBuffer).then(function(decompressed) {
+                        // show modal with decompressed content
+                        var modal = document.getElementById("filecontent");
+                        var modalcontent = document.getElementById("filecontentbody");
+                        modalcontent.innerHTML = "<pre>" + decompressed + "</pre>";
+                        modal.style.display = "block";
+                        var span = modal.querySelector(".close");
+                        span.onclick = function() {
+                            modal.style.display = "none";
+                            modalcontent.innerHTML = "";
+                        }
+                    });
+                }
+            };
+            xhr.send();
+        }
+
         function cleardivs() {
             // hide&clean nodeinfo and requestinfo
             var nodeinfo = document.getElementById("nodeinfo");
@@ -244,6 +282,7 @@
             miscbuttonshtml += "</select>";
             // add download button
             miscbuttonshtml += "<button id=\"downloadbutton\" class=\"download\" href=\"\" onclick=\"\">Download</button>";
+            miscbuttonshtml += "<button id=\"viewbutton\" class=\"view\" href=\"\" onclick=\"\">View</button>";
 
             var node_data = data.data;
             if (node_data != null && node_data.runtime != null) {
@@ -277,7 +316,20 @@
                     window.open(url, '_blank');
                 });
             };
-
+            // add onclick event listener to all view buttons
+            links = document.getElementsByClassName("view");
+            for (var i = 0; i < links.length; i++) {
+                links[i].addEventListener("click", function(event) {
+                    console.log("viewbutton clicked, uri: " + document.getElementById("artifacts").value);
+                    event.preventDefault();
+                    var url = document.getElementById("artifacts").value;
+                    // is artifact filename log.txt.gz? then open it in modal window and decompress it, view as text
+                    if (url.endsWith("log.txt.gz")) {
+                        // request the gzipped file, browser will transparently decompress it
+                        requestShowGzippedFile(url);
+                    }
+                });
+            };
         }
 
 
@@ -628,6 +680,12 @@
 <!-- nice horizontal menu at top -->
 <div id="modal" class="modal" style="display: none;">
     <div class="modal-content" id="modalcontent">
+    </div>
+    <span class="close">&times;</span>
+</div>
+<!-- modal for displaying file content -->
+<div id="filecontent" class="modal" style="display: none;">
+    <div class="modal-content" id="filecontentbody">
     </div>
     <span class="close">&times;</span>
 </div>
