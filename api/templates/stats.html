@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KernelCI API Statistics</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS, TODO: check for latest version -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons, same here, check for latest version -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .stats-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .stats-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .form-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        .btn-generate {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border: none;
+            padding: 12px 30px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-generate:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(238, 90, 36, 0.4);
+        }
+        .stat-item {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            color: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 15px;
+            transition: transform 0.3s;
+        }
+        .stat-item:hover {
+            transform: translateY(-3px);
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .result-breakdown {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            margin: 5px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .result-pass {
+            background-color: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .result-fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        .result-incomplete {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+        .result-null {
+            background-color: #e2e3e5;
+            color: #383d41;
+            border-left: 4px solid #6c757d;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="stats-container">
+            <h1 class="text-center mb-4">
+                <i class="bi bi-graph-up"></i> KernelCI Statistics
+            </h1>
+            
+            <div class="form-section">
+                <h3 class="mb-3"><i class="bi bi-sliders"></i> Filter Options</h3>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="duration" class="form-label">Duration</label>
+                        <select class="form-select" id="duration">
+                            <option value="24h">Last 24 hours</option>
+                            <option value="48h">Last 48 hours</option>
+                            <option value="7d">Last 7 days</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="kind" class="form-label">Kind</label>
+                        <select class="form-select" id="kind">
+                            <option value="kbuild">Kernel Builds</option>
+                            <option value="job">Test Jobs</option>
+                            <option value="checkout">Checkouts</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3 d-flex align-items-end">
+                        <button type="button" class="btn btn-generate btn-primary w-100" id="generateBtn">
+                            <i class="bi bi-play-circle"></i> Generate Statistics
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loadingSection" class="text-center loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Fetching statistics...</p>
+            </div>
+
+            <div id="statsResults" style="display: none;">
+                <div class="stats-card fade-in">
+                    <h4 class="mb-4"><i class="bi bi-bar-chart"></i> Statistics Overview</h4>
+                    
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="stat-item">
+                                <div class="stat-number" id="totalNodes">-</div>
+                                <div class="stat-label">Total Nodes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="result-breakdown">
+                        <h5 class="mb-3"><i class="bi bi-pie-chart"></i> Results Breakdown</h5>
+                        <div id="resultsContainer">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        var apiurl;
+        
+        function initializeAPI() {
+            // Get API URL from current page URL, similar to viewer.html
+            var pagebaseurl = window.location.href.split('?')[0];
+            apiurl = pagebaseurl.replace('/stats', '');
+        }
+
+        function getDurationFilter(duration) {
+            var dateobj = new Date();
+            
+            switch(duration) {
+                case '24h':
+                    dateobj.setDate(dateobj.getDate() - 1);
+                    break;
+                case '48h':
+                    dateobj.setDate(dateobj.getDate() - 2);
+                    break;
+                case '7d':
+                    dateobj.setDate(dateobj.getDate() - 7);
+                    break;
+            }
+            
+            return dateobj.toISOString().split('.')[0];
+        }
+
+        function showLoading() {
+            $('#loadingSection').show();
+            $('#statsResults').hide();
+        }
+
+        function hideLoading() {
+            $('#loadingSection').hide();
+        }
+
+        function displayStatistics(data) {
+            hideLoading();
+            
+            // Calculate statistics
+            var totalNodes = data.items.length;
+            var resultStats = {};
+            var listNodesResult = {};
+            
+            // Count results
+            data.items.forEach(function(node) {
+                var result = node.result || 'null';
+                resultStats[result] = (resultStats[result] || 0) + 1;
+                // Store node in array, so we can generate a list later
+                if (!listNodesResult[result]) {
+                    listNodesResult[result] = [];
+                }
+                listNodesResult[result].push(node);
+            });
+
+            // Update total nodes
+            $('#totalNodes').text(totalNodes);
+
+            // Update results breakdown
+            var resultsHtml = '';
+            var resultClasses = {
+                'pass': 'result-pass',
+                'fail': 'result-fail', 
+                'incomplete': 'result-incomplete',
+                'null': 'result-null'
+            };
+
+            var resultIcons = {
+                'pass': 'bi-check-circle',
+                'fail': 'bi-x-circle',
+                'incomplete': 'bi-clock',
+                'null': 'bi-question-circle'
+            };
+
+            // Sort results for consistent display
+            Object.keys(resultStats).sort().forEach(function(result) {
+                var count = resultStats[result];
+                var className = resultClasses[result] || 'result-null';
+                var icon = resultIcons[result] || 'bi-question-circle';
+                var percentage = totalNodes > 0 ? ((count / totalNodes) * 100).toFixed(1) : 0;
+                
+                resultsHtml += `
+                    <div class="result-item ${className}" id="result-${result}">
+                        <span><i class="${icon}"></i> ${result}</span>
+                        <span><strong>${count}</strong> (${percentage}%)</span>
+                    </div>
+                `;
+            });
+
+            $('#resultsContainer').html(resultsHtml);
+            // Add click handlers to result items, so we can show nodes for each result
+            Object.keys(resultStats).forEach(function(result) {
+                $('#result-' + result).click(function() {
+                    var nodes = listNodesResult[result] || [];
+                    if (nodes.length > 0) {
+                        var nodeListHtml = '<ul class="list-group">';
+                        nodes.forEach(function(node) {
+                            nodeListHtml += `<li class="list-group-item">
+                                <strong><a href="/viewer?node_id=${node.id}" target="_blank">${node.name}</a></strong> - ${node.created} - ${node.result || 'null'}
+                            </li>`;
+                        });
+                        nodeListHtml += '</ul>';
+                        $('#resultsContainer').append(`
+                            <div class="mt-3">
+                                <h6>Nodes with result "${result}":</h6>
+                                ${nodeListHtml}
+                            </div>
+                        `);
+                    } else {
+                        $('#resultsContainer').append(`
+                            <div class="mt-3">
+                                <p>No nodes found with result "${result}".</p>
+                            </div>
+                        `);
+                    }
+                });
+            });
+            $('#statsResults').show().addClass('fade-in');
+        }
+
+        function generateStatistics() {
+            var duration = $('#duration').val();
+            var kind = $('#kind').val();
+            
+            showLoading();
+            
+            // Build API URL with filters
+            var dateFilter = getDurationFilter(duration);
+            var url = apiurl + '/latest/nodes?kind=' + encodeURIComponent(kind) + 
+                     '&created__gt=' + encodeURIComponent(dateFilter) + 
+                     '&limit=1000';
+            
+            console.log('Fetching statistics from:', url);
+            
+            $.ajax({
+                url: url,
+                method: 'GET',
+                success: function(data) {
+                    displayStatistics(data);
+                },
+                error: function(xhr, status, error) {
+                    hideLoading();
+                    console.error('Error fetching statistics:', error);
+                    alert('Error fetching statistics: ' + error);
+                }
+            });
+        }
+
+        // Initialize on page load
+        $(document).ready(function() {
+            initializeAPI();
+            
+            $('#generateBtn').click(function() {
+                generateStatistics();
+            });
+            
+            // Generate initial statistics
+            generateStatistics();
+        });
+    </script>
+</body>
+</html>

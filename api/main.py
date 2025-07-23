@@ -1013,6 +1013,23 @@ async def manage():
         return PlainTextResponse(file.read(), headers=hdr)
 
 
+@app.get('/stats')
+async def stats_page():
+    """Serve simple HTML page to view infrastructure statistics"""
+    metrics.add('http_requests_total', 1)
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    stats_path = os.path.join(root_dir, 'templates', 'stats.html')
+    with open(stats_path, 'r', encoding='utf-8') as file:
+        # set header to text/html and no-cache stuff
+        hdr = {
+            'Content-Type': 'text/html',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
+        return PlainTextResponse(file.read(), headers=hdr)
+
+
 @app.get('/icons/{icon_name}')
 async def icons(icon_name: str):
     """Serve icons from /static/icons"""
