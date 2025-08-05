@@ -8,7 +8,7 @@
 import asyncio
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from redis import asyncio as aioredis
 from cloudevents.http import CloudEvent, to_json
 from .models import Subscription, SubscriptionStats
@@ -225,3 +225,24 @@ class PubSub:
             )
             subscriptions.append(stats)
         return subscriptions
+
+    async def cleanup_stale_subscriptions(self, max_age_minutes=30):
+        """Remove subscriptions not polled recently"""
+        cutoff = datetime.utcnow() - timedelta(minutes=max_age_minutes)
+        stale_ids = []
+
+        async with self._lock:
+            for sub_id, sub_data in self._subscriptions.items():
+                last_poll = sub_data.get('last_poll')
+                if last_poll and last_poll < cutoff:
+                    stale_ids.append(sub_id)
+
+        # Clean up stale subscriptions (internal call, no user check)
+        for sub_id in stale_ids:
+            try:
+                await self.unsubscribe(sub_id)
+            except KeyError:
+                # Already removed
+                pass
+
+        return len(stale_ids)

@@ -68,6 +68,10 @@ from .models import (
 from .metrics import Metrics
 from .maintenance import purge_old_nodes
 
+SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES = 15  # How often to run cleanup task
+SUBSCRIPTION_MAX_AGE_MINUTES = 15           # Max age before stale
+SUBSCRIPTION_CLEANUP_RETRY_MINUTES = 1      # Retry interval if cleanup fails
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
@@ -100,6 +104,25 @@ async def pubsub_startup():
     """Startup event handler to create Pub/Sub object"""
     global pubsub  # pylint: disable=invalid-name
     pubsub = await PubSub.create()
+
+
+async def subscription_cleanup_task():
+    """Background task to cleanup stale subscriptions"""
+    while True:
+        try:
+            await asyncio.sleep(SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES * 60)
+            cleaned = await pubsub.cleanup_stale_subscriptions(
+                SUBSCRIPTION_MAX_AGE_MINUTES)
+            if cleaned > 0:
+                print(f"Cleaned up {cleaned} stale subscriptions")
+        except (ConnectionError, OSError, RuntimeError) as e:
+            print(f"Subscription cleanup error: {e}")
+            await asyncio.sleep(SUBSCRIPTION_CLEANUP_RETRY_MINUTES * 60)
+
+
+async def start_background_tasks():
+    """Start background cleanup tasks"""
+    asyncio.create_task(subscription_cleanup_task())
 
 
 async def create_indexes():
@@ -1081,6 +1104,7 @@ versioned_app = VersionedFastAPI(
             pubsub_startup,
             create_indexes,
             initialize_beanie,
+            start_background_tasks,
         ]
     )
 
