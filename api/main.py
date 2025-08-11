@@ -114,6 +114,7 @@ async def subscription_cleanup_task():
             cleaned = await pubsub.cleanup_stale_subscriptions(
                 SUBSCRIPTION_MAX_AGE_MINUTES)
             if cleaned > 0:
+                metrics.add('subscriptions_cleaned', 1)
                 print(f"Cleaned up {cleaned} stale subscriptions")
         except (ConnectionError, OSError, RuntimeError) as e:
             print(f"Subscription cleanup error: {e}")
