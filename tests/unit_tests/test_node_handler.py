@@ -88,6 +88,7 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         'updated',
         'user_groups',
         'processed_by_kcidb_bridge',
+        'retry_counter',
     }
 
 
@@ -249,6 +250,7 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         'updated',
         'user_groups',
         'processed_by_kcidb_bridge',
+        'retry_counter',
     }
 
 
