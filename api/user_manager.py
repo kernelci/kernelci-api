@@ -13,14 +13,14 @@ from fastapi_users.db import (
     BeanieUserDatabase,
     ObjectIDIDMixin,
 )
-from beanie import PydanticObjectId
 import jinja2
 from .models import User
+from kernelci.api.models_base import PyObjectId
 from .config import AuthSettings
 from .email_sender import EmailSender
 
 
-class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
+class UserManager(ObjectIDIDMixin, BaseUserManager[User, PyObjectId]):
     """User management logic"""
     settings = AuthSettings()
     reset_password_token_secret = settings.secret_key

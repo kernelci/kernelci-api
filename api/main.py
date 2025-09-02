@@ -39,8 +39,9 @@ from fastapi_pagination import add_pagination
 from fastapi_versioning import VersionedFastAPI
 from bson import ObjectId, errors
 from fastapi_users import FastAPIUsers
-from beanie import PydanticObjectId
 from pydantic import BaseModel
+from typing import Any
+from kernelci.api.models_base import PyObjectId
 from kernelci.api.models import (
     Node,
     Hierarchy,
@@ -73,6 +74,8 @@ SUBSCRIPTION_MAX_AGE_MINUTES = 15           # Max age before stale
 SUBSCRIPTION_CLEANUP_RETRY_MINUTES = 1      # Retry interval if cleanup fails
 
 
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
     """Lifespan functions for startup and shutdown events"""
@@ -87,13 +90,16 @@ async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
 API_VERSIONS = ['v0']
 
 metrics = Metrics()
-app = FastAPI(lifespan=lifespan, debug=True, docs_url=None, redoc_url=None)
+app = FastAPI(
+    lifespan=lifespan,
+    debug=True
+)
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
 
 auth_backend = auth.get_user_authentication_backend()
-fastapi_users_instance = FastAPIUsers[User, PydanticObjectId](
+fastapi_users_instance = FastAPIUsers[User, PyObjectId](
     get_user_manager,
     [auth_backend],
 )

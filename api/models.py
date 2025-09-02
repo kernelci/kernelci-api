@@ -26,9 +26,8 @@ from fastapi_users import schemas
 from beanie import (
     Indexed,
     Document,
-    PydanticObjectId,
 )
-from kernelci.api.models_base import DatabaseModel, ModelId
+from kernelci.api.models_base import DatabaseModel, ModelId, PyObjectId
 
 
 # PubSub model definitions
@@ -107,7 +106,7 @@ class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
         ]
 
 
-class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
+class UserRead(schemas.BaseUser[PyObjectId], ModelId):
     """Schema for reading a user"""
     username: Annotated[str, Indexed(unique=True)]
     groups: List[UserGroup] = Field(default=[])
