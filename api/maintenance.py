@@ -50,7 +50,7 @@ def connect_to_db():
 
 async def purge_old_nodes(age_days=180, batch_size=1000):
     """
-    Purge nodes from the 'nodes' collection that are older than the
+    Purge nodes from the 'node' collection that are older than the
     specified number of days.
 
     Args:
@@ -60,7 +60,7 @@ async def purge_old_nodes(age_days=180, batch_size=1000):
     """
     date_end = datetime.datetime.today() - datetime.timedelta(days=age_days)
     db = connect_to_db()
-    nodes = db["nodes"].find({
+    nodes = db["node"].find({
         "created": {"$lt": date_end}
     })
     # We need to delete node in chunks of {batch_size}
@@ -71,11 +71,11 @@ async def purge_old_nodes(age_days=180, batch_size=1000):
         del_batch.append(node["_id"])
         if len(del_batch) == batch_size:
             deleted += len(del_batch)
-            purge_ids(db, "nodes", del_batch)
+            purge_ids(db, "node", del_batch)
             del_batch = []
     if del_batch:
         deleted += len(del_batch)
-        purge_ids(db, "nodes", del_batch)
+        purge_ids(db, "node", del_batch)
     db = {
         'response': 'ok',
         'deleted': deleted,
