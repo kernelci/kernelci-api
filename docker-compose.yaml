@@ -22,7 +22,7 @@ services:
 
   db:
     container_name: 'kernelci-api-db'
-    image: 'mongo:5.0'
+    image: 'mongo:8'
     command: '--wiredTigerCacheSizeGB=1.5'
     ports:
       - '${MONGO_HOST_PORT:-8017}:27017'
