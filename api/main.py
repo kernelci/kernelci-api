@@ -51,7 +51,7 @@ from kernelci.api.models import (
 )
 from .auth import Authentication
 from .db import Database
-from .pubsub import PubSub
+from .pubsub_mongo import PubSub
 from .user_manager import get_user_manager, create_user_manager
 from .models import (
     PageModel,
@@ -418,11 +418,8 @@ async def update_password(request: Request,
     )
 
 
-def _get_eventhistory(evdict):
-    """Get EventHistory object from dictionary"""
-    evhist = EventHistory()
-    evhist.data = evdict
-    return evhist
+# EventHistory is now stored by pubsub.publish_cloudevent()
+# No need for separate _get_eventhistory function
 
 
 # TBD: Restrict response by Pydantic model
@@ -681,9 +678,8 @@ async def post_node(node: Node,
     attributes = {}
     if data.get('owner', None):
         attributes['owner'] = data['owner']
+    # publish_cloudevent now stores to eventhistory collection
     await pubsub.publish_cloudevent('node', data, attributes)
-    evhist = _get_eventhistory(data)
-    await db.create(evhist)
     return obj
 
 
@@ -751,9 +747,8 @@ async def put_node(node_id: str, node: Node,
     if data.get('owner', None):
         attributes['owner'] = data['owner']
     if not noevent:
+        # publish_cloudevent now stores to eventhistory collection
         await pubsub.publish_cloudevent('node', data, attributes)
-        evhist = _get_eventhistory(data)
-        await db.create(evhist)
     return obj
 
 
@@ -842,9 +837,8 @@ async def put_nodes(
     attributes = {}
     if data.get('owner', None):
         attributes['owner'] = data['owner']
+    # publish_cloudevent now stores to eventhistory collection
     await pubsub.publish_cloudevent('node', data, attributes)
-    evhist = _get_eventhistory(data)
-    await db.create(evhist)
     return obj_list
 
 
@@ -894,12 +888,32 @@ async def delete_kv(namespace: str, key: str,
 
 @app.post('/subscribe/{channel}', response_model=Subscription)
 async def subscribe(channel: str, user: User = Depends(get_current_user),
-                    promisc: Optional[bool] = Query(None)):
-    """Subscribe handler for Pub/Sub channel"""
+                    promisc: Optional[bool] = Query(None),
+                    subscriber_id: Optional[str] = Query(
+                        None,
+                        description="Unique subscriber ID for durable "
+                                    "delivery. If provided, missed events "
+                                    "will be delivered on reconnection. "
+                                    "Without this, events are "
+                                    "fire-and-forget."
+                    )):
+    """Subscribe handler for Pub/Sub channel
+
+    Args:
+        channel: Channel name to subscribe to
+        promisc: If true, receive all messages regardless of owner
+        subscriber_id: Optional unique ID for durable event delivery.
+            When provided, the subscriber's position is tracked and
+            missed events are delivered on reconnection. Use a stable
+            identifier like "scheduler-prod-1" or "dashboard-main".
+            Without subscriber_id, standard fire-and-forget pub/sub.
+    """
     metrics.add('http_requests_total', 1)
     options = {}
     if promisc:
         options['promiscuous'] = promisc
+    if subscriber_id:
+        options['subscriber_id'] = subscriber_id
     return await pubsub.subscribe(channel, user.username, options)
 
 
