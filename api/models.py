@@ -61,6 +61,43 @@ class SubscriptionStats(Subscription):
     )
 
 
+# MongoDB-based durable Pub/Sub models
+# Note: Event storage uses EventHistory model from kernelci-core
+# (stored in 'eventhistory' collection with sequence_id, channel, owner fields)
+
+class SubscriberState(BaseModel):
+    """Tracks subscriber position for durable event delivery
+
+    Only created when subscriber_id is provided during subscription.
+    Enables catch-up on missed events after reconnection.
+    """
+    subscriber_id: str = Field(
+        description='Unique subscriber identifier (client-provided)'
+    )
+    channel: str = Field(
+        description='Subscribed channel name'
+    )
+    user: str = Field(
+        description='Username of subscriber (for ownership validation)'
+    )
+    promiscuous: bool = Field(
+        default=False,
+        description='If true, receive all messages regardless of owner'
+    )
+    last_event_id: int = Field(
+        default=0,
+        description='Last acknowledged event ID (implicit ACK on next poll)'
+    )
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow,
+        description='Subscription creation timestamp'
+    )
+    last_poll: Optional[datetime] = Field(
+        default=None,
+        description='Last poll timestamp (used for stale cleanup)'
+    )
+
+
 # User model definitions
 
 class UserGroup(DatabaseModel):
