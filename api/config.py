@@ -25,6 +25,10 @@ class PubSubSettings(BaseSettings):
     redis_host: str = "redis"
     redis_db_number: int = 1
     keep_alive_period: int = 45
+    # MongoDB durable pub/sub settings
+    event_ttl_days: int = 7  # Auto-delete events after N days
+    max_catchup_events: int = 1000  # Max events to deliver on reconnect
+    subscriber_state_ttl_days: int = 30  # Cleanup unused subscriber states
 
 
 # pylint: disable=too-few-public-methods
