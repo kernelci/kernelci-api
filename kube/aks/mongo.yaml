@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: mongo
-          image: mongo:6
+          image: mongo:8
           resources:
             requests:
               memory: "10Gi"
