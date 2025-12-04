@@ -3,6 +3,10 @@
 # Copyright (C) 2025 Collabora Limited
 # Author: Denys Fedoryshchenko <denys.f@collabora.com>
 
+# pylint: disable=duplicate-code
+# Note: This module intentionally shares interface code with pubsub.py
+# as both implement the same PubSub API contract
+
 """MongoDB-based Pub/Sub implementation with optional durable delivery
 
 This module provides a hybrid Pub/Sub implementation:
@@ -310,7 +314,7 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         ce = CloudEvent(attributes=attributes, data=event.get('data', {}))
         return to_json(ce).decode('utf-8')
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments
     async def _get_missed_events(self, channel: str, after_seq_id: int,
                                  owner_filter: Optional[str] = None,
                                  promiscuous: bool = False,
@@ -388,7 +392,7 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
         return sub
 
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments
     async def _setup_durable_subscription(
             self, sub_id: int, subscriber_id: str,
             channel: str, user: str, promiscuous: bool):
