@@ -43,7 +43,7 @@ tests = [
 dev = [
   "kernelci-api[tests]",
   "pycodestyle == 2.8.0",
-  "pylint == 3.1.0",
+  "pylint == 4.0.4",
 ]
 
 [project.urls]
