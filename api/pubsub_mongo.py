@@ -201,6 +201,11 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
             [('channel', ASCENDING), ('sequence_id', ASCENDING)],
             name='channel_sequence_id'
         )
+        # Compound index for filtered event queries (kind + timestamp)
+        await event_col.create_index(
+            [('data.kind', ASCENDING), ('timestamp', ASCENDING)],
+            name='kind_timestamp'
+        )
 
         # Subscriber state indexes
         # Unique index on subscriber_id
