@@ -102,6 +102,19 @@ each event document but do not affect existing queries:
 Existing queries filtering on `timestamp`, `data.kind`, `data.state`, etc.
 continue to work unchanged.
 
+Supported query parameters for `/events`:
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `from` | string (ISO timestamp) | Return events with `timestamp` greater than this value. |
+| `kind` | string | Filter by `data.kind` (e.g., `job`, `node`). |
+| `state` | string | Filter by `data.state`. |
+| `result` | string | Filter by `data.result`. |
+| `limit` | integer | Maximum number of events to return. |
+| `recursive` | bool | Attach related node info to each event (max `limit` 1000). |
+| `id` | string (Mongo ObjectId) | Filter by a single event document id. |
+| `ids` | string (comma‑separated ObjectIds) | Filter by multiple event document ids. |
+
 ## Subscriber ID Guidelines
 
 The `subscriber_id` should be:
