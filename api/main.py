@@ -435,6 +435,7 @@ async def get_events(request: Request):
        - kind: Event kind to filter events
        - state: Event state to filter events
        - result: Event result to filter events
+       - id / ids: Event document id(s) to filter events
        - recursive: Retrieve node together with event
     This API endpoint is under development and may change in future.
     """
@@ -446,6 +447,39 @@ async def get_events(request: Request):
     state = query_params.pop('state', None)
     result = query_params.pop('result', None)
     from_ts = query_params.pop('from', None)
+    # Support filtering by MongoDB _id.
+    # Accept `id=<hex>` for a single id or `ids=a,b,c` for multiple ids.
+    # Using `id` as query param is safe here because we remove it from the
+    # filter before passing to Mongo.
+    event_id = query_params.pop('id', None)
+    event_ids = query_params.pop('ids', None)
+    if event_id and event_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide either id or ids, not both"
+        )
+    if event_id:
+        try:
+            query_params['_id'] = ObjectId(event_id)
+        except (errors.InvalidId, TypeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid id format"
+            ) from exc
+    elif event_ids:
+        try:
+            ids_list = [ObjectId(x.strip()) for x in event_ids.split(',') if x.strip()]
+        except (errors.InvalidId, TypeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid ids format"
+            ) from exc
+        if not ids_list:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ids must contain at least one id"
+            )
+        query_params['_id'] = {'$in': ids_list}
     if from_ts:
         if isinstance(from_ts, str):
             from_ts = datetime.fromisoformat(from_ts)
