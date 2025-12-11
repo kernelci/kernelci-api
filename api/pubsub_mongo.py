@@ -188,19 +188,10 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         sub_col = self._mongo_db[self.SUBSCRIBER_STATE_COLLECTION]
 
         # Event history indexes
-        # TTL index for auto-cleanup (7 days = 604800 seconds)
-        # Note: If index already exists with different TTL, this is a no-op.
-        # Migration handles dropping the old index first.
-        await event_col.create_index(
-            'timestamp',
-            expireAfterSeconds=604800,
-            name='ttl_timestamp'
-        )
-        # Compound index for efficient pub/sub catch-up queries
-        await event_col.create_index(
-            [('channel', ASCENDING), ('sequence_id', ASCENDING)],
-            name='channel_sequence_id'
-        )
+        # Note: Standard indexes (TTL on timestamp, channel+sequence_id) are
+        # managed by the EventHistory model and created via db.create_indexes().
+        # We only need to add the custom index for filtered event queries.
+
         # Compound index for filtered event queries (kind + timestamp)
         await event_col.create_index(
             [('data.kind', ASCENDING), ('timestamp', ASCENDING)],
