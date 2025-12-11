@@ -112,8 +112,12 @@ Supported query parameters for `/events`:
 | `result` | string | Filter by `data.result`. |
 | `limit` | integer | Maximum number of events to return. |
 | `recursive` | bool | Attach related node info to each event (max `limit` 1000). |
-| `id` | string (Mongo ObjectId) | Filter by a single event document id. |
+| `id` | string (Mongo ObjectId) | Filter by a single event document id (top‑level `id` in `/events` response). |
 | `ids` | string (comma‑separated ObjectIds) | Filter by multiple event document ids. |
+| `node_id` | string | Filter events by affected node id (alias for `data.id`). |
+
+Note: `id`/`ids` refer to the event history document id, not the node id. To get
+events about a node, use `node_id` (or `data.id`).
 
 ## Subscriber ID Guidelines
 

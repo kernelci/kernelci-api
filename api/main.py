@@ -436,6 +436,7 @@ async def get_events(request: Request):
        - state: Event state to filter events
        - result: Event result to filter events
        - id / ids: Event document id(s) to filter events
+       - node_id: Node id to filter events (alias for data.id)
        - recursive: Retrieve node together with event
     This API endpoint is under development and may change in future.
     """
@@ -447,6 +448,14 @@ async def get_events(request: Request):
     state = query_params.pop('state', None)
     result = query_params.pop('result', None)
     from_ts = query_params.pop('from', None)
+    node_id = query_params.pop('node_id', None)
+    if node_id:
+        if 'data.id' in query_params:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Provide either node_id or data.id, not both"
+            )
+        query_params['data.id'] = node_id
     # Support filtering by MongoDB _id.
     # Accept `id=<hex>` for a single id or `ids=a,b,c` for multiple ids.
     # Using `id` as query param is safe here because we remove it from the
