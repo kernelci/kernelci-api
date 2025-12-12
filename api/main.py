@@ -422,46 +422,13 @@ async def update_password(request: Request,
 # No need for separate _get_eventhistory function
 
 
-# TBD: Restrict response by Pydantic model
-@app.get('/events')
-async def get_events(request: Request):
-    """Get all the events if no request parameters have passed.
-       Format: [{event1}, {event2}, ...] or if recursive is set to true,
-       then we add to each event the node information.
-       Get all the matching events otherwise.
-       Query parameters can be used to filter the events:
-       - limit: Number of events to return
-       - from: Start timestamp (unix epoch) to filter events
-       - kind: Event kind to filter events
-       - state: Event state to filter events
-       - result: Event result to filter events
-       - id / ids: Event document id(s) to filter events
-       - node_id: Node id to filter events (alias for data.id)
-       - recursive: Retrieve node together with event
-    This API endpoint is under development and may change in future.
+def _parse_event_id_filter(query_params: dict, event_id: str,
+                           event_ids: str) -> None:
+    """Parse and validate event id/ids filter parameters.
+
+    Modifies query_params in place to add _id filter.
+    Raises HTTPException on validation errors.
     """
-    metrics.add('http_requests_total', 1)
-    query_params = dict(request.query_params)
-    recursive = query_params.pop('recursive', None)
-    limit = query_params.pop('limit', None)
-    kind = query_params.pop('kind', None)
-    state = query_params.pop('state', None)
-    result = query_params.pop('result', None)
-    from_ts = query_params.pop('from', None)
-    node_id = query_params.pop('node_id', None)
-    if node_id:
-        if 'data.id' in query_params:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Provide either node_id or data.id, not both"
-            )
-        query_params['data.id'] = node_id
-    # Support filtering by MongoDB _id.
-    # Accept `id=<hex>` for a single id or `ids=a,b,c` for multiple ids.
-    # Using `id` as query param is safe here because we remove it from the
-    # filter before passing to Mongo.
-    event_id = query_params.pop('id', None)
-    event_ids = query_params.pop('ids', None)
     if event_id and event_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -490,6 +457,34 @@ async def get_events(request: Request):
                 detail="ids must contain at least one id"
             )
         query_params['_id'] = {'$in': ids_list}
+
+
+def _build_events_query(query_params: dict) -> tuple:
+    """Extract and process event query parameters.
+
+    Returns (recursive, processed_query_params).
+    Raises HTTPException on validation errors.
+    """
+    recursive = query_params.pop('recursive', None)
+    limit = query_params.pop('limit', None)
+    kind = query_params.pop('kind', None)
+    state = query_params.pop('state', None)
+    result = query_params.pop('result', None)
+    from_ts = query_params.pop('from', None)
+    node_id = query_params.pop('node_id', None)
+    event_id = query_params.pop('id', None)
+    event_ids = query_params.pop('ids', None)
+
+    if node_id:
+        if 'data.id' in query_params:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Provide either node_id or data.id, not both"
+            )
+        query_params['data.id'] = node_id
+
+    _parse_event_id_filter(query_params, event_id, event_ids)
+
     if from_ts:
         if isinstance(from_ts, str):
             from_ts = datetime.fromisoformat(from_ts)
@@ -502,13 +497,38 @@ async def get_events(request: Request):
         query_params['data.result'] = result
     if limit:
         query_params['limit'] = int(limit)
-    # limit recursive to 1000
+
     if recursive and (not limit or int(limit) > 1000):
-        # generate error
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Recursive limit is too large, max is 1000"
         )
+
+    return recursive, query_params
+
+
+# TBD: Restrict response by Pydantic model
+@app.get('/events')
+async def get_events(request: Request):
+    """Get all the events if no request parameters have passed.
+       Format: [{event1}, {event2}, ...] or if recursive is set to true,
+       then we add to each event the node information.
+       Get all the matching events otherwise.
+       Query parameters can be used to filter the events:
+       - limit: Number of events to return
+       - from: Start timestamp (unix epoch) to filter events
+       - kind: Event kind to filter events
+       - state: Event state to filter events
+       - result: Event result to filter events
+       - id / ids: Event document id(s) to filter events
+       - node_id: Node id to filter events (alias for data.id)
+       - recursive: Retrieve node together with event
+    This API endpoint is under development and may change in future.
+    """
+    metrics.add('http_requests_total', 1)
+    query_params = dict(request.query_params)
+    recursive, query_params = _build_events_query(query_params)
+
     resp = await db.find_by_attributes_nonpaginated(EventHistory, query_params)
     resp_list = []
     for item in resp:
