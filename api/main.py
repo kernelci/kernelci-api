@@ -422,6 +422,91 @@ async def update_password(request: Request,
 # No need for separate _get_eventhistory function
 
 
+def _parse_event_id_filter(query_params: dict, event_id: str,
+                           event_ids: str) -> None:
+    """Parse and validate event id/ids filter parameters.
+
+    Modifies query_params in place to add _id filter.
+    Raises HTTPException on validation errors.
+    """
+    if event_id and event_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide either id or ids, not both"
+        )
+    if event_id:
+        try:
+            query_params['_id'] = ObjectId(event_id)
+        except (errors.InvalidId, TypeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid id format"
+            ) from exc
+    elif event_ids:
+        try:
+            ids_list = [ObjectId(x.strip())
+                        for x in event_ids.split(',') if x.strip()]
+        except (errors.InvalidId, TypeError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid ids format"
+            ) from exc
+        if not ids_list:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="ids must contain at least one id"
+            )
+        query_params['_id'] = {'$in': ids_list}
+
+
+def _build_events_query(query_params: dict) -> tuple:
+    """Extract and process event query parameters.
+
+    Returns (recursive, processed_query_params).
+    Raises HTTPException on validation errors.
+    """
+    recursive = query_params.pop('recursive', None)
+    limit = query_params.pop('limit', None)
+    kind = query_params.pop('kind', None)
+    state = query_params.pop('state', None)
+    result = query_params.pop('result', None)
+    from_ts = query_params.pop('from', None)
+    node_id = query_params.pop('node_id', None)
+    event_id = query_params.pop('id', None)
+    event_ids = query_params.pop('ids', None)
+
+    if node_id:
+        if 'data.id' in query_params:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Provide either node_id or data.id, not both"
+            )
+        query_params['data.id'] = node_id
+
+    _parse_event_id_filter(query_params, event_id, event_ids)
+
+    if from_ts:
+        if isinstance(from_ts, str):
+            from_ts = datetime.fromisoformat(from_ts)
+        query_params['timestamp'] = {'$gt': from_ts}
+    if kind:
+        query_params['data.kind'] = kind
+    if state:
+        query_params['data.state'] = state
+    if result:
+        query_params['data.result'] = result
+    if limit:
+        query_params['limit'] = int(limit)
+
+    if recursive and (not limit or int(limit) > 1000):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Recursive limit is too large, max is 1000"
+        )
+
+    return recursive, query_params
+
+
 # TBD: Restrict response by Pydantic model
 @app.get('/events')
 async def get_events(request: Request):
@@ -435,36 +520,15 @@ async def get_events(request: Request):
        - kind: Event kind to filter events
        - state: Event state to filter events
        - result: Event result to filter events
+       - id / ids: Event document id(s) to filter events
+       - node_id: Node id to filter events (alias for data.id)
        - recursive: Retrieve node together with event
     This API endpoint is under development and may change in future.
     """
     metrics.add('http_requests_total', 1)
     query_params = dict(request.query_params)
-    recursive = query_params.pop('recursive', None)
-    limit = query_params.pop('limit', None)
-    kind = query_params.pop('kind', None)
-    state = query_params.pop('state', None)
-    result = query_params.pop('result', None)
-    from_ts = query_params.pop('from', None)
-    if from_ts:
-        if isinstance(from_ts, str):
-            from_ts = datetime.fromisoformat(from_ts)
-        query_params['timestamp'] = {'$gt': from_ts}
-    if kind:
-        query_params['data.kind'] = kind
-    if state:
-        query_params['data.state'] = state
-    if result:
-        query_params['data.result'] = result
-    if limit:
-        query_params['limit'] = int(limit)
-    # limit recursive to 1000
-    if recursive and (not limit or int(limit) > 1000):
-        # generate error
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Recursive limit is too large, max is 1000"
-        )
+    recursive, query_params = _build_events_query(query_params)
+
     resp = await db.find_by_attributes_nonpaginated(EventHistory, query_params)
     resp_list = []
     for item in resp:
@@ -1109,19 +1173,17 @@ async def purge_handler(current_user: User = Depends(get_current_superuser),
     return await purge_old_nodes(age_days=days, batch_size=batch_size)
 
 
-versioned_app = VersionedFastAPI(
-        app,
-        version_format='{major}',
-        prefix_format='/v{major}',
-        enable_latest=True,
-        default_version=(0, 0),
-        on_startup=[
-            pubsub_startup,
-            create_indexes,
-            initialize_beanie,
-            start_background_tasks,
-        ]
-    )
+versioned_app = VersionedFastAPI(app,
+                                 version_format='{major}',
+                                 prefix_format='/v{major}',
+                                 enable_latest=True,
+                                 default_version=(0, 0),
+                                 on_startup=[
+                                     pubsub_startup,
+                                     create_indexes,
+                                     initialize_beanie,
+                                     start_background_tasks,
+                                 ])
 
 
 # traceback_exception_handler is a global exception handler that will be

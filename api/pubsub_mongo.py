@@ -92,7 +92,8 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         # In-memory subscription tracking (for fire-and-forget mode)
         # {sub_id: {'sub': Subscription, 'redis_sub': PubSub,
         #           'subscriber_id': str|None, ...}}
-        self._subscriptions: Dict[int, Dict[str, Any]] = {}
+        self._subscriptions: Dict[int, Dict[str, Any]] = \
+            {}
         self._channels = set()
         self._lock = asyncio.Lock()
         self._keep_alive_timer = None
@@ -188,18 +189,14 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         sub_col = self._mongo_db[self.SUBSCRIBER_STATE_COLLECTION]
 
         # Event history indexes
-        # TTL index for auto-cleanup (7 days = 604800 seconds)
-        # Note: If index already exists with different TTL, this is a no-op.
-        # Migration handles dropping the old index first.
+        # Note: Standard indexes (TTL on timestamp, channel+sequence_id) are
+        # managed by the EventHistory model and created via db.create_indexes()
+        # We only need to add the custom index for filtered event queries.
+
+        # Compound index for filtered event queries (kind + timestamp)
         await event_col.create_index(
-            'timestamp',
-            expireAfterSeconds=604800,
-            name='ttl_timestamp'
-        )
-        # Compound index for efficient pub/sub catch-up queries
-        await event_col.create_index(
-            [('channel', ASCENDING), ('sequence_id', ASCENDING)],
-            name='channel_sequence_id'
+            [('data.kind', ASCENDING), ('timestamp', ASCENDING)],
+            name='kind_timestamp'
         )
 
         # Subscriber state indexes
@@ -315,7 +312,7 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         return to_json(ce).decode('utf-8')
 
     # pylint: disable=too-many-arguments
-    async def _get_missed_events(self, channel: str, after_seq_id: int,
+    async def _get_missed_events(self, channel: str, after_seq_id: int, *,
                                  owner_filter: Optional[str] = None,
                                  promiscuous: bool = False,
                                  limit: int = None) -> List[Dict]:
@@ -387,7 +384,7 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         # If subscriber_id provided, set up durable subscription
         if subscriber_id:
             await self._setup_durable_subscription(
-                sub_id, subscriber_id, channel, user, promiscuous
+                sub_id, subscriber_id, channel, user, promiscuous=promiscuous
             )
 
         return sub
@@ -395,7 +392,7 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
     # pylint: disable=too-many-arguments
     async def _setup_durable_subscription(
             self, sub_id: int, subscriber_id: str,
-            channel: str, user: str, promiscuous: bool):
+            channel: str, user: str, *, promiscuous: bool):
         """Set up or restore durable subscription state"""
         col = self._mongo_db[self.SUBSCRIBER_STATE_COLLECTION]
         existing = await col.find_one({'subscriber_id': subscriber_id})
