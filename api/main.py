@@ -477,7 +477,8 @@ async def get_events(request: Request):
             ) from exc
     elif event_ids:
         try:
-            ids_list = [ObjectId(x.strip()) for x in event_ids.split(',') if x.strip()]
+            ids_list = [ObjectId(x.strip())
+                        for x in event_ids.split(',') if x.strip()]
         except (errors.InvalidId, TypeError) as exc:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -1152,19 +1153,17 @@ async def purge_handler(current_user: User = Depends(get_current_superuser),
     return await purge_old_nodes(age_days=days, batch_size=batch_size)
 
 
-versioned_app = VersionedFastAPI(
-        app,
-        version_format='{major}',
-        prefix_format='/v{major}',
-        enable_latest=True,
-        default_version=(0, 0),
-        on_startup=[
-            pubsub_startup,
-            create_indexes,
-            initialize_beanie,
-            start_background_tasks,
-        ]
-    )
+versioned_app = VersionedFastAPI(app,
+                                 version_format='{major}',
+                                 prefix_format='/v{major}',
+                                 enable_latest=True,
+                                 default_version=(0, 0),
+                                 on_startup=[
+                                     pubsub_startup,
+                                     create_indexes,
+                                     initialize_beanie,
+                                     start_background_tasks,
+                                 ])
 
 
 # traceback_exception_handler is a global exception handler that will be
