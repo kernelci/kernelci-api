@@ -92,7 +92,8 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         # In-memory subscription tracking (for fire-and-forget mode)
         # {sub_id: {'sub': Subscription, 'redis_sub': PubSub,
         #           'subscriber_id': str|None, ...}}
-        self._subscriptions: Dict[int, Dict[str, Any]] = {}
+        self._subscriptions: Dict[int, Dict[str, Any]] = \
+            {}
         self._channels = set()
         self._lock = asyncio.Lock()
         self._keep_alive_timer = None
@@ -189,7 +190,7 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
         # Event history indexes
         # Note: Standard indexes (TTL on timestamp, channel+sequence_id) are
-        # managed by the EventHistory model and created via db.create_indexes().
+        # managed by the EventHistory model and created via db.create_indexes()
         # We only need to add the custom index for filtered event queries.
 
         # Compound index for filtered event queries (kind + timestamp)
