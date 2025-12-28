@@ -17,6 +17,7 @@ import pytest
 @pytest.mark.order(3)
 @pytest.mark.asyncio
 async def test_invite_and_accept_user(test_async_client):
+    """Test user invite flow: invite, accept, and login."""
     username = "invited_user"
     password = "test"
     email = "invited@kernelci.org"
@@ -69,4 +70,3 @@ async def test_invite_and_accept_user(test_async_client):
     )
     assert response.status_code == 200
     assert response.json().keys() == {"access_token", "token_type"}
-
