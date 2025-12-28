@@ -31,6 +31,11 @@ Generate a new key for [Authentication](https://docs.kernelci.org/api_pipeline/a
 After that, please refer to [create and add a user](https://docs.kernelci.org/api_pipeline/api/local-instance/#create-an-admin-user-account) in Mongo DB.
 The user can also generate an [API token](https://docs.kernelci.org/api_pipeline/api/local-instance/#create-an-admin-pipeline-token) to use API endpoints.
 
+For simple user management (invite, accept, login, whoami), use the helper
+script `scripts/usermanager.py`. It accepts an optional
+`usermanager.toml` config file (including multiple instances) or
+`KCI_API_URL` / `KCI_API_TOKEN` / `KCI_API_INSTANCE` environment variables.
+
 Ultimately, there will be a web frontend to provide a login form.  We don't
 have that yet as this new KernelCI API implementation is still in its early
 stages.

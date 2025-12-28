@@ -13,8 +13,10 @@ import os
 import re
 import asyncio
 import traceback
+import secrets
+import ipaddress
 from typing import List, Union, Optional
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
 from fastapi import (
     Depends,
@@ -41,6 +43,8 @@ from bson import ObjectId, errors
 from fastapi_users import FastAPIUsers
 from beanie import PydanticObjectId
 from pydantic import BaseModel
+from jose import jwt
+from jose.exceptions import JWTError
 from kernelci.api.models import (
     Node,
     Hierarchy,
@@ -61,12 +65,17 @@ from .models import (
     UserRead,
     UserCreate,
     UserCreateRequest,
+    UserInviteRequest,
+    UserInviteResponse,
     UserUpdate,
     UserUpdateRequest,
     UserGroup,
+    InviteAcceptRequest,
+    InviteUrlResponse,
 )
 from .metrics import Metrics
 from .maintenance import purge_old_nodes
+from .config import AuthSettings
 
 SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES = 15  # How often to run cleanup task
 SUBSCRIPTION_MAX_AGE_MINUTES = 15           # Max age before stale
@@ -182,6 +191,168 @@ def get_current_superuser(user: User = Depends(
     return user
 
 
+async def _resolve_user_groups(group_names: List[str]) -> List[UserGroup]:
+    groups: List[UserGroup] = []
+    for group_name in group_names:
+        group = await db.find_one(UserGroup, name=group_name)
+        if not group:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"User group does not exist with name: {group_name}",
+            )
+        groups.append(group)
+    return groups
+
+
+def _create_invite_token(user: User) -> str:
+    settings = AuthSettings()
+    now = datetime.now(timezone.utc)
+    exp = now + timedelta(seconds=settings.invite_token_expire_seconds)
+    payload = {
+        "sub": str(user.id),
+        "email": user.email,
+        "purpose": "invite",
+        "iat": int(now.timestamp()),
+        "exp": int(exp.timestamp()),
+    }
+    return jwt.encode(
+        payload,
+        settings.secret_key,
+        algorithm=settings.algorithm,
+    )
+
+
+def _decode_invite_token(token: str) -> dict:
+    settings = AuthSettings()
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+        )
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired invite token",
+        ) from exc
+    if payload.get("purpose") != "invite":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid invite token",
+        )
+    return payload
+
+
+def _resolve_public_base_url(request: Request) -> str:
+    settings = AuthSettings()
+    if settings.public_base_url:
+        return settings.public_base_url.rstrip("/")
+
+    def _is_proxy_addr() -> bool:
+        client = request.client
+        if not client or not client.host:
+            return False
+        try:
+            ip_addr = ipaddress.ip_address(client.host)
+        except ValueError:
+            return False
+        return not ip_addr.is_global
+
+    forwarded_host = None
+    forwarded_proto = None
+    forwarded_header = request.headers.get("forwarded")
+    if forwarded_header and _is_proxy_addr():
+        first_hop = forwarded_header.split(",", 1)[0]
+        for pair in first_hop.split(";"):
+            if "=" not in pair:
+                continue
+            key, value = pair.split("=", 1)
+            key = key.strip().lower()
+            value = value.strip().strip('"')
+            if key == "host":
+                forwarded_host = value
+            elif key == "proto":
+                forwarded_proto = value
+
+    if _is_proxy_addr():
+        forwarded_host = forwarded_host or request.headers.get(
+            "x-forwarded-host"
+        )
+        forwarded_proto = forwarded_proto or request.headers.get(
+            "x-forwarded-proto"
+        )
+
+    if forwarded_host:
+        scheme = forwarded_proto or request.url.scheme
+        return f"{scheme}://{forwarded_host}".rstrip("/")
+
+    return str(request.base_url).rstrip("/")
+
+
+def _accept_invite_url(public_base_url: str) -> str:
+    return f"{public_base_url}/user/accept-invite"
+
+
+async def _find_existing_user_for_invite(
+        invite: UserInviteRequest,
+) -> User | None:
+    existing_by_username = await db.find_one(User, username=invite.username)
+    if existing_by_username:
+        return existing_by_username
+    return await db.find_one(User, email=invite.email)
+
+
+def _validate_invite_resend(existing_user: User, invite: UserInviteRequest):
+    if not invite.resend_if_exists:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already exists",
+        )
+    if existing_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already verified",
+        )
+    if existing_user.username != invite.username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Existing user has a different username",
+        )
+    if existing_user.email != invite.email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Existing user has a different email",
+        )
+
+
+async def _create_user_for_invite(
+        request: Request,
+        invite: UserInviteRequest,
+) -> User:
+    groups: List[UserGroup] = []
+    if invite.groups:
+        groups = await _resolve_user_groups(invite.groups)
+
+    random_password = secrets.token_urlsafe(32)
+    user_create = UserCreate(
+        username=invite.username,
+        email=invite.email,
+        password=random_password,
+        is_superuser=invite.is_superuser,
+    )
+    user_create.groups = groups
+
+    created_user = await register_router.routes[0].endpoint(
+        request, user_create, user_manager)
+
+    if invite.is_superuser:
+        user_from_id = await db.find_by_id(User, created_user.id)
+        user_from_id.is_superuser = True
+        created_user = await db.update(user_from_id)
+
+    return created_user
+
+
 app.include_router(
     fastapi_users_instance.get_auth_router(auth_backend,
                                            requires_verification=True),
@@ -204,44 +375,139 @@ async def register(request: Request, user: UserCreateRequest,
     This handler will convert them to `UserGroup` objects and
     insert user object to database.
     """
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="User registration is disabled; use /user/invite instead.",
+    )
+
+
+@app.get("/user/invite", response_class=HTMLResponse, include_in_schema=False)
+async def invite_user_page():
+    """Web UI for inviting a user (admin token required)"""
     metrics.add('http_requests_total', 1)
-    existing_user = await db.find_one(User, username=user.username)
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    page_path = os.path.join(root_dir, 'templates', 'invite.html')
+    with open(page_path, 'r', encoding='utf-8') as file:
+        return HTMLResponse(file.read())
+
+
+@app.post("/user/invite", response_model=UserInviteResponse, tags=["user"],
+          response_model_by_alias=False)
+async def invite_user(request: Request, invite: UserInviteRequest,
+                      current_user: User = Depends(get_current_superuser)):
+    """Invite a user (admin-only)
+
+    Creates the user with a random password and sends a single invite link
+    to set a password and verify the account.
+    """
+    metrics.add('http_requests_total', 1)
+    existing_user = await _find_existing_user_for_invite(invite)
     if existing_user:
+        _validate_invite_resend(existing_user, invite)
+        created_user = existing_user
+    else:
+        created_user = await _create_user_for_invite(request, invite)
+
+    public_base_url = _resolve_public_base_url(request)
+    accept_invite_url = _accept_invite_url(public_base_url)
+    token = _create_invite_token(created_user)
+    invite_url = f"{accept_invite_url}?token={token}"
+
+    email_sent = False
+    if invite.send_email:
+        try:
+            await user_manager.send_invite_email(
+                created_user,
+                token,
+                invite_url,
+            )
+            email_sent = True
+        except Exception as exc:  # pylint: disable=broad-exception-caught
+            print(f"Failed to send invite email: {exc}")
+
+    return UserInviteResponse(
+        user=created_user,
+        email_sent=email_sent,
+        public_base_url=public_base_url,
+        accept_invite_url=accept_invite_url,
+        invite_url=invite_url if invite.return_token else None,
+        token=token if invite.return_token else None,
+    )
+
+
+@app.get(
+    "/user/accept-invite",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def accept_invite_page():
+    """Web UI for accepting an invite (sets password + verifies)"""
+    metrics.add('http_requests_total', 1)
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    page_path = os.path.join(root_dir, 'templates', 'accept-invite.html')
+    with open(page_path, 'r', encoding='utf-8') as file:
+        return HTMLResponse(file.read())
+
+
+@app.get("/user/invite/url", response_model=InviteUrlResponse, tags=["user"])
+async def invite_url_preview(request: Request,
+                             current_user: User = Depends(
+                                 get_current_superuser)):
+    """Preview the resolved public URL used in invite links (admin-only)"""
+    metrics.add('http_requests_total', 1)
+    public_base_url = _resolve_public_base_url(request)
+    return InviteUrlResponse(
+        public_base_url=public_base_url,
+        accept_invite_url=_accept_invite_url(public_base_url),
+    )
+
+
+@app.post("/user/accept-invite", response_model=UserRead, tags=["user"],
+          response_model_by_alias=False)
+async def accept_invite(accept: InviteAcceptRequest):
+    """Accept an invite token, set password, and verify the user"""
+    metrics.add('http_requests_total', 1)
+    payload = _decode_invite_token(accept.token)
+    user_id = payload.get("sub")
+    email = payload.get("email")
+
+    user_from_id = await db.find_by_id(User, user_id)
+    if not user_from_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    if not user_from_id.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists",
+            detail="User is inactive",
         )
-    groups = []
-    if user.groups:
-        for group_name in user.groups:
-            group = await db.find_one(UserGroup, name=group_name)
-            if not group:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"User group does not exist with name: \
-    {group_name}")
-            groups.append(group)
-    user_create = UserCreate(**(user.model_dump(
-         exclude={'groups'}, exclude_none=True)))
-    user_create.groups = groups
-    created_user = await register_router.routes[0].endpoint(
-        request, user_create, user_manager)
-    # Update user to be an admin user explicitly if requested as
-    # `fastapi-users` register route does not allow it
-    if user.is_superuser:
-        user_from_id = await db.find_by_id(User, created_user.id)
-        user_from_id.is_superuser = True
-        created_user = await db.update(user_from_id)
-    return created_user
+    if user_from_id.email != email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid invite token",
+        )
+    if user_from_id.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invite already accepted",
+        )
+
+    user_from_id.hashed_password = user_manager.password_helper.hash(
+        accept.password
+    )
+    user_from_id.is_verified = True
+    updated_user = await db.update(user_from_id)
+
+    try:
+        await user_manager.send_invite_accepted_email(updated_user)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        print(f"Failed to send invite accepted email: {exc}")
+    return updated_user
 
 
 app.include_router(
     fastapi_users_instance.get_reset_password_router(),
-    prefix="/user",
-    tags=["user"],
-)
-app.include_router(
-    fastapi_users_instance.get_verify_router(UserRead),
     prefix="/user",
     tags=["user"],
 )

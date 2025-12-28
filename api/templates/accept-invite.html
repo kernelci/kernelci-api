@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KernelCI API - Accept Invite</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; max-width: 42rem; }
+    label { display: block; margin: 0.75rem 0 0.25rem; }
+    input { width: 100%; padding: 0.6rem; font-size: 1rem; }
+    button { margin-top: 1rem; padding: 0.6rem 1rem; font-size: 1rem; cursor: pointer; }
+    pre { background: #111; color: #eee; padding: 1rem; overflow: auto; }
+    .muted { color: #555; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <h1>Accept invite</h1>
+  <p class="muted">Set your password to activate your account.</p>
+
+  <label for="password">New password</label>
+  <input id="password" type="password" autocomplete="new-password" />
+
+  <button id="submit">Activate account</button>
+
+  <h2>Result</h2>
+  <pre id="result">{}</pre>
+
+  <script>
+    const result = document.getElementById("result");
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    if (!token) {
+      result.textContent = JSON.stringify({ error: "Missing token" }, null, 2);
+    }
+
+    document.getElementById("submit").addEventListener("click", async (e) => {
+      e.preventDefault();
+      const password = document.getElementById("password").value;
+      if (!token) {
+        alert("Missing token");
+        return;
+      }
+      if (!password) {
+        alert("Missing password");
+        return;
+      }
+      try {
+        const resp = await fetch(window.location.pathname, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Accept": "application/json" },
+          body: JSON.stringify({ token, password })
+        });
+        const data = await resp.json().catch(() => ({}));
+        result.textContent = JSON.stringify({ status: resp.status, data }, null, 2);
+      } catch (err) {
+        result.textContent = JSON.stringify({ error: String(err) }, null, 2);
+      }
+    });
+  </script>
+</body>
+</html>
+

@@ -125,6 +125,61 @@ $ curl -X 'GET' \
 "groups": [], "username":"admin"}
 ```
 
+### Invite a user
+
+User registration is invite-only. Use the admin token to create an invite:
+
+```
+```
+
+Create a small config file for the helper script (save as
+`usermanager.toml` in the repo root or
+`~/.config/kernelci/usermanager.toml`). This supports multiple instances:
+
+```
+default_instance = "local"
+
+[instances.local]
+url = "http://localhost:8001/latest"
+token = "<ADMIN-AUTHORIZATION-TOKEN>"
+```
+
+Then run:
+
+```
+$ ./scripts/usermanager.py invite \
+  --username alice \
+  --email alice@example.org \
+  --return-token
+```
+
+Send the returned `invite_url` to the user. The user accepts the invite and
+sets a password:
+
+```
+$ ./scripts/usermanager.py accept-invite \
+  --token "<INVITE-TOKEN>"
+```
+
+Curl equivalent for the invite call:
+
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/latest/user/invite' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <ADMIN-AUTHORIZATION-TOKEN>' \
+  -d '{
+  "username": "alice",
+  "email": "alice@example.org",
+  "groups": [],
+  "is_superuser": false,
+  "send_email": false,
+  "return_token": true,
+  "resend_if_exists": false
+}'
+```
+
 ### Setup SSH keys
 
 SSH container in the API can be used to upload files remotely to the storage

@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Optional, TypeVar, List
 from pydantic import (
     BaseModel,
+    EmailStr,
     Field,
     field_validator,
 )
@@ -214,6 +215,53 @@ class UserUpdate(schemas.BaseUserUpdate):
         if len(unique_names) != len(groups):
             raise ValueError("Groups must have unique names.")
         return groups
+
+
+# Invite-only user onboarding models
+
+class UserInviteRequest(BaseModel):
+    """Admin invite request schema for API router"""
+
+    username: Annotated[str, Indexed(unique=True)]
+    email: EmailStr
+    groups: List[str] = Field(default=[])
+    is_superuser: bool = False
+    send_email: bool = True
+    return_token: bool = False
+    resend_if_exists: bool = False
+
+    @field_validator('groups')
+    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+        """Unique group constraint"""
+        unique_names = set(groups)
+        if len(unique_names) != len(groups):
+            raise ValueError("Groups must have unique names.")
+        return groups
+
+
+class InviteAcceptRequest(BaseModel):
+    """Accept invite request schema for API router"""
+
+    token: str
+    password: str
+
+
+class UserInviteResponse(BaseModel):
+    """Invite response schema"""
+
+    user: UserRead
+    email_sent: bool
+    public_base_url: str
+    accept_invite_url: str
+    invite_url: Optional[str] = None
+    token: Optional[str] = None
+
+
+class InviteUrlResponse(BaseModel):
+    """Resolved public URL info for invite/accept endpoints"""
+
+    public_base_url: str
+    accept_invite_url: str
 
 
 # Pagination models

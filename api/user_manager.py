@@ -45,25 +45,14 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         """Handler to execute after successful user registration"""
         print(f"User {user.id} {user.username} has registered.")
 
-    async def on_after_request_verify(self, user: User, token: str,
-                                      request: Optional[Request] = None):
-        """Handler to execute after successful verification request"""
-        template = self._template_env.get_template("email-verification.jinja2")
-        subject = "Email verification Token for KernelCI API account"
-        content = template.render(
-            username=user.username, token=token
-        )
-        self.email_sender.create_and_send_email(subject, content, user.email)
-
-    async def on_after_verify(self, user: User,
-                              request: Optional[Request] = None):
-        """Handler to execute after successful user verification"""
-        print(f"Verification successful for user {user.id} {user.username}")
-        template = self._template_env.get_template(
-            "email-verification-successful.jinja2")
-        subject = "Email verification successful for KernelCI API account"
+    async def send_invite_email(self, user: User, token: str, invite_url: str):
+        """Send an invite email containing a link to accept the invite"""
+        template = self._template_env.get_template("invite-email.jinja2")
+        subject = "You have been invited to KernelCI API"
         content = template.render(
             username=user.username,
+            invite_url=invite_url,
+            token=token,
         )
         self.email_sender.create_and_send_email(subject, content, user.email)
 
@@ -93,6 +82,13 @@ class UserManager(ObjectIDIDMixin, BaseUserManager[User, PydanticObjectId]):
         content = template.render(
             username=user.username,
         )
+        self.email_sender.create_and_send_email(subject, content, user.email)
+
+    async def send_invite_accepted_email(self, user: User):
+        """Send a confirmation email after invite acceptance"""
+        template = self._template_env.get_template("invite-accepted.jinja2")
+        subject = "Welcome to KernelCI API"
+        content = template.render(username=user.username)
         self.email_sender.create_and_send_email(subject, content, user.email)
 
     async def on_after_update(self, user: User, update_dict: Dict[str, Any],
