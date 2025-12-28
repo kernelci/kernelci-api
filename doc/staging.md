@@ -40,8 +40,8 @@ It can be done in two simple steps:
 
 * Create an "API Staging Access" [issue on
   GitHub](https://github.com/kernelci/kernelci-project/issues/new/choose)
-* Wait for an email confirmation of your user account which should contain a
-  randomly-generated password as well as an AzureFiles token
+* Wait for an email confirmation of your user account which should contain an
+  invite link (and an AzureFiles token if applicable)
 
 > **Tip**: If you don't have a GitHub account, please send an email to
     [kernelci-sysadmin@groups.io](mailto:kernelci-sysadmin@groups.io) instead.
@@ -82,33 +82,37 @@ From now on, all the shell commands are run **from within the same container**
 so the prompt `kernelci@3215c7c7b590:~$` is being replaced with `$` to make it
 easier to read.
 
-* Once you've received your confirmation email with your randomly-generated
-  password, you should change it to use your own arbitrary one instead:
+* Once you've received your confirmation email, open the invite link and set
+  your password. You can use the helper script from this repository (set
+  `--api-url` or configure a `staging` instance in `usermanager.toml` and use
+  `--instance staging`):
 
 ```sh
-$ kci user password update <your-username>
-Current password:
-New password:
-Retype new password:
+$ ./scripts/usermanager.py accept-invite \
+  --api-url "https://staging.kernelci.org/latest" \
+  --token "<INVITE-TOKEN>"
 ```
 
-* Then verify your email address by providing verification token
-sent to your email:
+Or via curl:
 
 ```sh
-$ kci user verify <your-email>
-Sending verification token to <your-email>
-Verification token: <verification-token>
-Email verification successful!
+$ curl -X 'POST' \
+  'https://staging.kernelci.org/latest/user/accept-invite' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "token": "<INVITE-TOKEN>",
+  "password": "<new-password>"
+}'
 ```
 
 * Then create an API token by providing your username and new
   password:
 
 ```sh
-$ kci user token <your-username>
-Password:
-"<your-api-token-here>"
+$ ./scripts/usermanager.py login \
+  --api-url "https://staging.kernelci.org/latest" \
+  --username <your-username>
 ```
 
 * Store your API token in a `kernelci.toml` file, for example:

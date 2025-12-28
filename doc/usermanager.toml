@@ -1,0 +1,10 @@
+# Example configuration for scripts/usermanager.py
+default_instance = "local"
+
+[instances.local]
+url = "http://localhost:8001/latest"
+token = "<admin-or-user-token>"
+
+[instances.staging]
+url = "https://staging.kernelci.org/latest"
+token = "<admin-or-user-token>"

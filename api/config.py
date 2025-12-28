@@ -16,6 +16,8 @@ class AuthSettings(BaseSettings):
     algorithm: str = "HS256"
     # Set to None so tokens don't expire
     access_token_expire_seconds: float = 315360000
+    invite_token_expire_seconds: int = 60 * 60 * 24 * 7  # 7 days
+    public_base_url: str | None = None
 
 
 # pylint: disable=too-few-public-methods

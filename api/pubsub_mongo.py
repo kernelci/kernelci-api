@@ -311,7 +311,6 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         ce = CloudEvent(attributes=attributes, data=event.get('data', {}))
         return to_json(ce).decode('utf-8')
 
-    # pylint: disable=too-many-arguments
     async def _get_missed_events(self, channel: str, after_seq_id: int, *,
                                  owner_filter: Optional[str] = None,
                                  promiscuous: bool = False,
@@ -384,15 +383,18 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         # If subscriber_id provided, set up durable subscription
         if subscriber_id:
             await self._setup_durable_subscription(
-                sub_id, subscriber_id, channel, user, promiscuous=promiscuous
+                sub_id,
+                subscriber_id,
+                channel=channel,
+                user=user,
+                promiscuous=promiscuous,
             )
 
         return sub
 
-    # pylint: disable=too-many-arguments
     async def _setup_durable_subscription(
             self, sub_id: int, subscriber_id: str,
-            channel: str, user: str, *, promiscuous: bool):
+            *, channel: str, user: str, promiscuous: bool):
         """Set up or restore durable subscription state"""
         col = self._mongo_db[self.SUBSCRIBER_STATE_COLLECTION]
         existing = await col.find_one({'subscriber_id': subscriber_id})

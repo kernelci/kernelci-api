@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KernelCI API - Invite User</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; max-width: 46rem; }
+    label { display: block; margin: 0.75rem 0 0.25rem; }
+    input, textarea { width: 100%; padding: 0.6rem; font-size: 1rem; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .actions { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    button { padding: 0.6rem 1rem; font-size: 1rem; cursor: pointer; }
+    pre { background: #111; color: #eee; padding: 1rem; overflow: auto; }
+    .muted { color: #555; font-size: 0.95rem; }
+  </style>
+</head>
+<body>
+  <h1>Invite user</h1>
+  <p class="muted">Requires an admin bearer token. This page stores it in localStorage.</p>
+
+  <label for="token">Admin bearer token</label>
+  <input id="token" type="password" placeholder="Bearer token" />
+
+  <div class="row">
+    <div>
+      <label for="username">Username</label>
+      <input id="username" type="text" autocomplete="off" />
+    </div>
+    <div>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="off" />
+    </div>
+  </div>
+
+  <label for="groups">Groups (comma-separated)</label>
+  <input id="groups" type="text" placeholder="kernelci, example" />
+
+  <div class="row">
+    <div>
+      <label for="is_superuser">Superuser</label>
+      <input id="is_superuser" type="checkbox" />
+    </div>
+    <div>
+      <label for="resend">Resend if exists (unverified)</label>
+      <input id="resend" type="checkbox" />
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="saveToken">Save token</button>
+    <button id="invite">Send invite</button>
+  </div>
+
+  <h2>Result</h2>
+  <pre id="result">{}</pre>
+
+  <script>
+    const tokenInput = document.getElementById("token");
+    const result = document.getElementById("result");
+    const showPreview = async () => {
+      const token = (localStorage.getItem("admin_token") || tokenInput.value).trim();
+      if (!token) return;
+      try {
+        const resp = await fetch("/user/invite/url", {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Authorization": "Bearer " + token
+          }
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (resp.ok && data && data.accept_invite_url) {
+          result.textContent = JSON.stringify({ preview: data }, null, 2);
+        }
+      } catch (_) {}
+    };
+
+    tokenInput.value = localStorage.getItem("admin_token") || "";
+    document.getElementById("saveToken").addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.setItem("admin_token", tokenInput.value.trim());
+      result.textContent = JSON.stringify({ ok: true, saved: true }, null, 2);
+      showPreview();
+    });
+
+    showPreview();
+
+    document.getElementById("invite").addEventListener("click", async (e) => {
+      e.preventDefault();
+      const token = (localStorage.getItem("admin_token") || tokenInput.value).trim();
+      if (!token) {
+        alert("Missing admin token");
+        return;
+      }
+      const groups = document.getElementById("groups").value
+        .split(",")
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      const payload = {
+        username: document.getElementById("username").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        groups,
+        is_superuser: document.getElementById("is_superuser").checked,
+        resend_if_exists: document.getElementById("resend").checked,
+        send_email: true,
+        return_token: true
+      };
+
+      try {
+        const resp = await fetch(window.location.pathname, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify(payload)
+        });
+        const data = await resp.json().catch(() => ({}));
+        result.textContent = JSON.stringify({ status: resp.status, data }, null, 2);
+      } catch (err) {
+        result.textContent = JSON.stringify({ error: String(err) }, null, 2);
+      }
+    });
+  </script>
+</body>
+</html>

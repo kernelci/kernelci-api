@@ -51,75 +51,202 @@ tool provided in the `kernelci-api` repository.
 setup an admin user. We can use this admin user to create other user accounts.
 
 
-### Create user using endpoint (Admin only)
+### Invite user (Admin only, required)
 
-Now, we can use above created admin user to create regular users and other
-admin users using `/user/register` API endpoint.  We need to provide token to the endpoint for the authorization.
+The recommended onboarding flow is invite-only:
 
-To create a regular user, provide username, email address, and password to request data dictionary.
+1. Admin creates (or re-sends) an invite using `POST /user/invite`
+2. User opens the invite link and sets a password (this also verifies the account)
 
-```
-$ curl -X 'POST'
-  'http://localhost:8001/latest/user/register' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' \
-  -d '{"username":"test", "email": "test@kernelci.org", "password": "test"}'
-{'id': '615f30020eb7c3c6616e5ac3', 'email': 'test@kernelci.org', 'is_active':true, 'is_superuser':false, 'is_verified':false, 'username': 'test', 'groups': []}
-```
-
-To create an admin user, provide username, email, password, and `"is_superuser": 1` to request data dictionary.
-A user account can be added to multiple user groups by providing a list of user group names to request dictionary.
-
-For example, the below command will create an admin user and add it to `kernelci` user group.
-
-```
-$ curl -X 'POST' 'http://localhost:8001/latest/user/register' -H 'accept: application/json'   -H 'Content-Type: application/json'  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0Iiwic2NvcGVzIjpbImFkbWluIiwidXNlciJdfQ.KhcIWfMRr3xTFSCLcr5L4KTUVSsfSsLeyRDEjgkQRBg' -d '{"username": "test_admin", "email": "test-admin@kernelci.org", "password": "admin", "is_superuser": 1, "groups": ["kernelci"]}'
-{'_id': '615f30020eb7c3c6616e5ac6', 'username': 'test_admin', 'email': 'test-admin@kernelci.org', 'is_active':true, 'is_superuser':true, 'is_verified':false, 'groups': [{"id":"648ff894bd39930355ed16ad","name":"kernelci"}]}
-```
-
-Another way of creating users is to use `kci user add` tool from kernelci-core.
-
-
-### Verify user account
-
-A user account needs to be verified before a user token can be retrieved
-for the account.
-Send API request to `POST /user/request-verify-token` endpoint to receive
-a verification token for provided email address:
+Invite a new user (and return the token/link in the response for CLI usage):
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/user/request-verify-token' \
+  'http://localhost:8001/latest/user/invite' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <ADMIN-AUTHORIZATION-TOKEN>' \
   -d '{
-  "email": "test@kernelci.org"
-```
-
-The user will receive a verification token via email.
-Now, request `POST /user/verify` endpoint and provide the verification
-token in the request dictionary.
-
-```
-$ curl -X 'POST' \
-  'http://localhost:8001/latest/user/verify' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "token": "<VERIFICATION-TOKEN-RECEIVED-BY-EMAIL>"
+  "username": "test",
+  "email": "test@kernelci.org",
+  "groups": [],
+  "is_superuser": false,
+  "send_email": false,
+  "return_token": true,
+  "resend_if_exists": false
 }'
-{"id":"615f30020eb7c3c6616e5ac3","email":"test@kernelci.org","is_active":true,"is_superuser":false,"is_verified":true,"username":"test","groups":[]}
 ```
-`is_verified:true` in the response above denotes that a user account
-has been verified successfully. The user will also receive an email
-confirming the verification.
+
+When `send_email` is false, no SMTP configuration is required and the response
+includes `invite_url` and `token` (when `return_token` is set) so you can
+deliver the link manually.
+
+If a user already exists, set `resend_if_exists` to true and ensure the
+username and email match the existing user. Invites can only be resent to
+unverified users.
+
+To preview which public URL will be used in invite links (admin-only):
+
+```
+$ curl -X 'GET' \
+  'http://localhost:8001/latest/user/invite/url' \
+  -H 'accept: application/json' \
+  -H 'Authorization: Bearer <ADMIN-AUTHORIZATION-TOKEN>'
+```
+
+The public URL can be overridden via `PUBLIC_BASE_URL` in the environment.
+
+To accept an invite and set the password (no authentication required):
+
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/latest/user/accept-invite' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "token": "<INVITE-TOKEN>",
+  "password": "<new-password>"
+}'
+```
+
+There is also a minimal web UI:
+
+- Admin invite page: `GET /user/invite`
+- Invite acceptance page: `GET /user/accept-invite?token=<INVITE-TOKEN>`
+
+### CLI-oriented user management
+
+This section summarizes the minimum admin and user flows needed to implement a
+CLI. Use these endpoints verbatim and expect JSON responses unless noted.
+
+Helper script:
+
+- `scripts/usermanager.py` provides a small CLI for these endpoints.
+- Optional config file (checked in order): `./usermanager.toml`,
+  `~/.config/kernelci/usermanager.toml`
+- Environment overrides: `KCI_API_URL`, `KCI_API_TOKEN`
+- Optional instance selection: `--instance` or `KCI_API_INSTANCE`
+
+Example config:
+
+```
+default_instance = "local"
+
+[instances.local]
+url = "http://localhost:8001/latest"
+token = "<admin-or-user-token>"
+
+[instances.staging]
+url = "https://staging.kernelci.org/latest"
+token = "<admin-or-user-token>"
+```
+
+Use `--instance staging` (or `KCI_API_INSTANCE=staging`) to select an instance.
+
+Admin flow (requires admin bearer token):
+
+- Create invite: `POST /user/invite`
+  - Request fields: `username`, `email`, `groups`, `is_superuser`,
+    `send_email`, `return_token`, `resend_if_exists`
+  - Response fields: `user`, `email_sent`, `public_base_url`,
+    `accept_invite_url`, `invite_url` (optional), `token` (optional)
+  - Error cases: `400` if user exists and `resend_if_exists` is false, or if
+    existing user is already verified, or if username/email mismatch
+- Preview public link base: `GET /user/invite/url`
+- List users: `GET /users`
+- Get user by ID: `GET /user/{id}`
+- Update user: `PATCH /user/{id}`
+- Delete user: `DELETE /user/{id}`
+
+User flow (no auth until invite accepted):
+
+- Accept invite: `POST /user/accept-invite`
+  - Request fields: `token`, `password`
+  - Error cases: `400` invalid/expired token, inactive user, or already accepted
+    invite; `404` user not found
+- Get auth token: `POST /user/login` (form-encoded `username`, `password`)
+- Who am I: `GET /whoami`
+- Update own profile: `PATCH /user/me`
+- Update password: `POST /user/update-password`
+- Forgot/reset password: `POST /user/forgot-password`, then
+  `POST /user/reset-password`
+
+Invite link composition:
+
+- Default base uses request host; `PUBLIC_BASE_URL` overrides.
+- The acceptance URL is `PUBLIC_BASE_URL` + `/user/accept-invite` with a
+  `token` query parameter.
+
+Examples for a CLI:
+
+Invite a user and return the token/link:
+
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/latest/user/invite' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer <ADMIN-AUTHORIZATION-TOKEN>' \
+  -d '{
+  "username": "alice",
+  "email": "alice@example.org",
+  "groups": ["kernelci"],
+  "is_superuser": false,
+  "send_email": false,
+  "return_token": true,
+  "resend_if_exists": false
+}'
+```
+
+Sample response:
+
+```
+{
+  "user": {
+    "id": "6526448e7d140ee220971a0e",
+    "email": "alice@example.org",
+    "is_active": true,
+    "is_superuser": false,
+    "is_verified": false,
+    "username": "alice",
+    "groups": [{"id":"648ff894bd39930355ed16ad","name":"kernelci"}]
+  },
+  "email_sent": false,
+  "public_base_url": "http://localhost:8001",
+  "accept_invite_url": "http://localhost:8001/user/accept-invite",
+  "invite_url": "http://localhost:8001/user/accept-invite?token=<INVITE-TOKEN>",
+  "token": "<INVITE-TOKEN>"
+}
+```
+
+Accept an invite:
+
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/latest/user/accept-invite' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "token": "<INVITE-TOKEN>",
+  "password": "<new-password>"
+}'
+```
+
+Get an auth token:
+
+```
+$ curl -X 'POST' \
+  'http://localhost:8001/latest/user/login' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'username=alice&password=<new-password>'
+```
 
 
 ### Get authorization token
 
-After successful user verification, the user can retrieve authorization
-token to use certain API endpoints requiring user authorization.
+After successful user activation via an invite, the user can retrieve an
+authorization token to use certain API endpoints requiring user authorization.
 
 ```
 $ curl -X 'POST' \
