@@ -207,7 +207,7 @@ def main():
             "  ./scripts/usermanager.py login --username alice\n"
             "  ./scripts/usermanager.py whoami\n"
             "  ./scripts/usermanager.py list-users --instance staging\n"
-            "  ./scripts/usermanager.py print-config\n"
+            "  ./scripts/usermanager.py print-config-example\n"
             "\n"
             "Default config lookup (first match wins):\n"
             f"{default_paths}\n"
@@ -304,19 +304,19 @@ def main():
                                         help="Delete user by id")
     delete_user.add_argument("user_id")
 
-    subparsers.add_parser("print-config",
+    subparsers.add_parser("print-config-example",
                           help="Print a sample usermanager.toml")
 
     args = parser.parse_args()
 
-    if args.command == "print-config":
+    if args.command == "print-config-example":
         print(
             "default_instance = \"local\"\n\n"
             "[instances.local]\n"
             "url = \"http://localhost:8001/latest\"\n"
             "token = \"<admin-or-user-token>\"\n\n"
             "[instances.staging]\n"
-            "url = \"https://staging.kernelci.org/latest\"\n"
+            "url = \"https://staging.kernelci.org:9000/latest\"\n"
             "token = \"<admin-or-user-token>\"\n"
         )
         return
