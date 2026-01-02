@@ -121,6 +121,7 @@ def _require_token(token, args):
 
 
 def main():
+    default_paths = "\n".join(f"  - {path}" for path in DEFAULT_CONFIG_PATHS)
     parser = argparse.ArgumentParser(
         description="KernelCI API user management helper",
         epilog=(
@@ -132,10 +133,16 @@ def main():
             "  ./scripts/usermanager.py whoami\n"
             "  ./scripts/usermanager.py list-users --instance staging\n"
             "  ./scripts/usermanager.py print-config\n"
+            "\n"
+            "Default config lookup (first match wins):\n"
+            f"{default_paths}\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("--config", help="Path to usermanager.toml")
+    parser.add_argument(
+        "--config",
+        help="Path to usermanager.toml (defaults to first match in the lookup list below)",
+    )
     parser.add_argument("--api-url", help="API base URL, e.g. "
                                           "http://localhost:8001/latest")
     parser.add_argument("--token", help="Bearer token for admin/user actions")
