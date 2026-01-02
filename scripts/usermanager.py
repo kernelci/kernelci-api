@@ -16,8 +16,7 @@ except ImportError as exc:  # pragma: no cover - Python < 3.11
 
 DEFAULT_CONFIG_PATHS = [
     os.path.join(os.getcwd(), "usermanager.toml"),
-    os.path.join(os.path.expanduser("~"), ".config", "kernelci",
-                 "usermanager.toml"),
+    os.path.join(os.path.expanduser("~"), ".config", "kernelci", "usermanager.toml"),
 ]
 
 
@@ -138,7 +137,8 @@ def _resolve_user_id(user_id, api_url, token):
     if not isinstance(payload, list):
         raise SystemExit("Unexpected users response")
     matches = [
-        user for user in payload
+        user
+        for user in payload
         if isinstance(user, dict) and user.get("email") == user_id
     ]
     if not matches:
@@ -163,8 +163,7 @@ def _request_json(method, url, data=None, token=None, form=False):
             headers["Content-Type"] = "application/json"
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    req = urllib.request.Request(url, data=body, headers=headers,
-                                 method=method)
+    req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req) as response:
             payload = response.read().decode("utf-8")
@@ -218,12 +217,14 @@ def main():
         "--config",
         help="Path to usermanager.toml (defaults to first match in the lookup list below)",
     )
-    parser.add_argument("--api-url", help="API base URL, e.g. "
-                                          "http://localhost:8001/latest")
+    parser.add_argument(
+        "--api-url", help="API base URL, e.g. " "http://localhost:8001/latest"
+    )
     parser.add_argument("--token", help="Bearer token for admin/user actions")
     parser.add_argument("--instance", help="Instance name from config")
-    parser.add_argument("--token-label", default="Auth",
-                        help="Label used when prompting for a token")
+    parser.add_argument(
+        "--token-label", default="Auth", help="Label used when prompting for a token"
+    )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -237,8 +238,7 @@ def main():
     invite.add_argument("--return-token", action="store_true")
     invite.add_argument("--resend-if-exists", action="store_true")
 
-    invite_url = subparsers.add_parser("invite-url",
-                                       help="Preview invite URL base")
+    invite_url = subparsers.add_parser("invite-url", help="Preview invite URL base")
 
     accept = subparsers.add_parser("accept-invite", help="Accept an invite")
     accept.add_argument("--token")
@@ -255,34 +255,40 @@ def main():
     get_user = subparsers.add_parser("get-user", help="Get user by id")
     get_user.add_argument("user_id")
 
-    update_user = subparsers.add_parser("update-user",
-                                        help="Patch user by id")
+    update_user = subparsers.add_parser("update-user", help="Patch user by id")
     update_user.add_argument("user_id")
-    update_user.add_argument("--data",
-                             help="JSON object with fields to update")
+    update_user.add_argument("--data", help="JSON object with fields to update")
     update_user.add_argument("--username", help="Set username")
     update_user.add_argument("--email", help="Set email")
     update_user.add_argument("--password", help="Set password")
-    update_user.add_argument("--superuser", dest="is_superuser",
-                             action="store_true",
-                             help="Grant superuser")
-    update_user.add_argument("--no-superuser", dest="is_superuser",
-                             action="store_false",
-                             help="Revoke superuser")
-    update_user.add_argument("--active", dest="is_active",
-                             action="store_true",
-                             help="Set is_active true")
-    update_user.add_argument("--inactive", dest="is_active",
-                             action="store_false",
-                             help="Set is_active false")
-    update_user.add_argument("--verified", dest="is_verified",
-                             action="store_true",
-                             help="Set is_verified true")
-    update_user.add_argument("--unverified", dest="is_verified",
-                             action="store_false",
-                             help="Set is_verified false")
-    update_user.set_defaults(is_active=None, is_verified=None,
-                             is_superuser=None)
+    update_user.add_argument(
+        "--superuser", dest="is_superuser", action="store_true", help="Grant superuser"
+    )
+    update_user.add_argument(
+        "--no-superuser",
+        dest="is_superuser",
+        action="store_false",
+        help="Revoke superuser",
+    )
+    update_user.add_argument(
+        "--active", dest="is_active", action="store_true", help="Set is_active true"
+    )
+    update_user.add_argument(
+        "--inactive", dest="is_active", action="store_false", help="Set is_active false"
+    )
+    update_user.add_argument(
+        "--verified",
+        dest="is_verified",
+        action="store_true",
+        help="Set is_verified true",
+    )
+    update_user.add_argument(
+        "--unverified",
+        dest="is_verified",
+        action="store_false",
+        help="Set is_verified false",
+    )
+    update_user.set_defaults(is_active=None, is_verified=None, is_superuser=None)
     update_user.add_argument(
         "--set-groups",
         help="Replace all groups with a comma-separated list",
@@ -300,24 +306,24 @@ def main():
         help="Remove group(s); can be used multiple times or with commas",
     )
 
-    delete_user = subparsers.add_parser("delete-user",
-                                        help="Delete user by id")
+    delete_user = subparsers.add_parser("delete-user", help="Delete user by id")
     delete_user.add_argument("user_id")
 
-    subparsers.add_parser("print-config-example",
-                          help="Print a sample usermanager.toml")
+    subparsers.add_parser(
+        "print-config-example", help="Print a sample usermanager.toml"
+    )
 
     args = parser.parse_args()
 
     if args.command == "print-config-example":
         print(
-            "default_instance = \"local\"\n\n"
+            'default_instance = "local"\n\n'
             "[instances.local]\n"
-            "url = \"http://localhost:8001/latest\"\n"
-            "token = \"<admin-or-user-token>\"\n\n"
+            'url = "http://localhost:8001/latest"\n'
+            'token = "<admin-or-user-token>"\n\n'
             "[instances.staging]\n"
-            "url = \"https://staging.kernelci.org:9000/latest\"\n"
-            "token = \"<admin-or-user-token>\"\n"
+            'url = "https://staging.kernelci.org:9000/latest"\n'
+            'token = "<admin-or-user-token>"\n'
         )
         return
 
@@ -348,8 +354,15 @@ def main():
     if not token:
         token = _get_setting(None, "KCI_API_TOKEN", config, "api.token")
 
-    if args.command in {"invite", "invite-url", "whoami", "list-users",
-                        "get-user", "update-user", "delete-user"}:
+    if args.command in {
+        "invite",
+        "invite-url",
+        "whoami",
+        "list-users",
+        "get-user",
+        "update-user",
+        "delete-user",
+    }:
         token = _require_token(token, args)
 
     if args.command == "invite":
@@ -367,9 +380,7 @@ def main():
             "POST", f"{api_url}/user/invite", payload, token=token
         )
     elif args.command == "invite-url":
-        status, body = _request_json(
-            "GET", f"{api_url}/user/invite/url", token=token
-        )
+        status, body = _request_json("GET", f"{api_url}/user/invite/url", token=token)
     elif args.command == "accept-invite":
         invite_token = _prompt_if_missing(
             args.token,
@@ -382,9 +393,7 @@ def main():
             secret=True,
         )
         payload = {"token": invite_token, "password": password}
-        status, body = _request_json(
-            "POST", f"{api_url}/user/accept-invite", payload
-        )
+        status, body = _request_json("POST", f"{api_url}/user/accept-invite", payload)
     elif args.command == "login":
         password = _prompt_if_missing(
             args.password,
