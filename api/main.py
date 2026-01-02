@@ -588,7 +588,7 @@ async def update_me(request: Request, user: UserUpdateRequest,
     {group_name}")
             groups.append(group)
     user_update = UserUpdate(**(user.model_dump(
-         exclude={'groups'}, exclude_none=True)))
+         exclude={'groups', 'is_superuser'}, exclude_none=True)))
     if groups:
         user_update.groups = groups
     return await users_router.routes[1].endpoint(
@@ -635,11 +635,10 @@ async def update_user(user_id: str, request: Request, user: UserUpdateRequest,
     updated_user = await users_router.routes[3].endpoint(
         user_update, request, user_from_id, user_manager
     )
-    # Update user to be an admin user explicitly if requested as
-    # `fastapi-users` user update route does not allow it
-    if user.is_superuser:
+    # Update superuser explicitly since fastapi-users update route ignores it.
+    if user.is_superuser is not None:
         user_from_id = await db.find_by_id(User, updated_user.id)
-        user_from_id.is_superuser = True
+        user_from_id.is_superuser = user.is_superuser
         updated_user = await db.update(user_from_id)
     return updated_user
 
