@@ -667,7 +667,8 @@ def _user_can_edit_node(user: User, node: Node) -> bool:
     if runtime:
         runtime_editor = f'runtime:{runtime}:node-editor'
         runtime_admin = f'runtime:{runtime}:node-admin'
-        if runtime_editor in user_group_names or runtime_admin in user_group_names:
+        if (runtime_editor in user_group_names
+                or runtime_admin in user_group_names):
             return True
     return False
 
