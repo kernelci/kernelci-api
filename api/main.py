@@ -88,6 +88,7 @@ async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
     await pubsub_startup()
     await create_indexes()
     await initialize_beanie()
+    await ensure_legacy_node_editors()
     yield
 
 # List of all the supported API versions.  This is a placeholder until the API
@@ -143,6 +144,23 @@ async def create_indexes():
 async def initialize_beanie():
     """Startup event handler to initialize Beanie"""
     await db.initialize_beanie()
+
+
+async def ensure_legacy_node_editors():
+    """Grant legacy node edit privileges to specific users."""
+    legacy_usernames = {'staging.kernelci.org', 'production'}
+    group_name = 'node:edit:any'
+    group = await db.find_one(UserGroup, name=group_name)
+    if not group:
+        group = await db.create(UserGroup(name=group_name))
+    for username in legacy_usernames:
+        user = await db.find_one(User, username=username)
+        if not user:
+            continue
+        if any(existing.name == group_name for existing in user.groups):
+            continue
+        user.groups.append(group)
+        await db.update(user)
 
 
 @app.exception_handler(ValueError)
@@ -547,6 +565,11 @@ async def update_me(request: Request, user: UserUpdateRequest,
     its own profile.
     """
     metrics.add('http_requests_total', 1)
+    if user.groups:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User groups can only be updated by an admin user",
+        )
     if user.username and user.username != current_user.username:
         existing_user = await db.find_one(User, username=user.username)
         if existing_user:
@@ -621,6 +644,35 @@ async def update_user(user_id: str, request: Request, user: UserUpdateRequest,
     return updated_user
 
 
+def _get_node_runtime(node: Node) -> Optional[str]:
+    """Best-effort runtime lookup from node data."""
+    data = getattr(node, 'data', None)
+    if isinstance(data, dict):
+        return data.get('runtime')
+    return getattr(data, 'runtime', None)
+
+
+def _user_can_edit_node(user: User, node: Node) -> bool:
+    """Return True when user can update the given node."""
+    if user.is_superuser:
+        return True
+    if user.username == node.owner:
+        return True
+    user_group_names = {group.name for group in user.groups}
+    if 'node:edit:any' in user_group_names:
+        return True
+    if any(group_name in user_group_names
+           for group_name in getattr(node, 'user_groups', [])):
+        return True
+    runtime = _get_node_runtime(node)
+    if runtime:
+        runtime_editor = f'runtime:{runtime}:node-editor'
+        runtime_admin = f'runtime:{runtime}:node-admin'
+        if runtime_editor in user_group_names or runtime_admin in user_group_names:
+            return True
+    return False
+
+
 async def authorize_user(node_id: str,
                          user: User = Depends(get_current_user)):
     """Return the user if active, authenticated, and authorized"""
@@ -633,17 +685,11 @@ async def authorize_user(node_id: str,
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Node not found with id: {node_id}"
         )
-    # users staging.kernelci.org and production are superusers
-    # TBD: This is HACK until qualcomm can migrate to direct KCIDB
-    if user.username in ['staging.kernelci.org', 'production']:
-        return user
-    if not user.username == node_from_id.owner:
-        if not any(group.name in node_from_id.user_groups
-                   for group in user.groups):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unauthorized to complete the operation"
-            )
+    if not _user_can_edit_node(user, node_from_id):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized to complete the operation"
+        )
     return user
 
 
@@ -1108,10 +1154,8 @@ async def put_batch_nodeset(data: NodeUpdateRequest,
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Node not found with id: {node_id}"
             )
-        # verify ownership, and ignore if not owner
-        if not user.username == node_from_id.owner\
-           and user.username != 'production' and\
-           user.username != 'staging.kernelci.org':
+        # Verify authorization, and ignore if not permitted.
+        if not _user_can_edit_node(user, node_from_id):
             continue
         # right now we support only field:
         # processed_by_kcidb_bridge, also value should be boolean
@@ -1448,6 +1492,7 @@ versioned_app = VersionedFastAPI(app,
                                      pubsub_startup,
                                      create_indexes,
                                      initialize_beanie,
+                                     ensure_legacy_node_editors,
                                      start_background_tasks,
                                  ])
 
