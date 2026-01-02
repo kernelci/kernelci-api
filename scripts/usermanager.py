@@ -124,6 +124,33 @@ def _apply_group_changes(current, add_groups, remove_groups):
     return updated
 
 
+def _resolve_user_id(user_id, api_url, token):
+    if "@" not in user_id:
+        return user_id
+    status, body = _request_json("GET", f"{api_url}/users", token=token)
+    if status >= 400:
+        _print_response(status, body)
+        raise SystemExit(1)
+    try:
+        payload = json.loads(body) if body else []
+    except json.JSONDecodeError as exc:
+        raise SystemExit("Failed to parse users response") from exc
+    if not isinstance(payload, list):
+        raise SystemExit("Unexpected users response")
+    matches = [
+        user for user in payload
+        if isinstance(user, dict) and user.get("email") == user_id
+    ]
+    if not matches:
+        raise SystemExit(f"No user found with email: {user_id}")
+    if len(matches) > 1:
+        raise SystemExit(f"Multiple users found with email: {user_id}")
+    resolved_id = matches[0].get("id")
+    if not resolved_id:
+        raise SystemExit(f"User with email {user_id} has no id")
+    return resolved_id
+
+
 def _request_json(method, url, data=None, token=None, form=False):
     headers = {"accept": "application/json"}
     body = None
@@ -376,10 +403,12 @@ def main():
     elif args.command == "list-users":
         status, body = _request_json("GET", f"{api_url}/users", token=token)
     elif args.command == "get-user":
+        resolved_id = _resolve_user_id(args.user_id, api_url, token)
         status, body = _request_json(
-            "GET", f"{api_url}/user/{args.user_id}", token=token
+            "GET", f"{api_url}/user/{resolved_id}", token=token
         )
     elif args.command == "update-user":
+        resolved_id = _resolve_user_id(args.user_id, api_url, token)
         data = {}
         if args.data:
             try:
@@ -409,7 +438,7 @@ def main():
                 current_groups = set_groups
             else:
                 status, body = _request_json(
-                    "GET", f"{api_url}/user/{args.user_id}", token=token
+                    "GET", f"{api_url}/user/{resolved_id}", token=token
                 )
                 if status >= 400:
                     _print_response(status, body)
@@ -426,11 +455,12 @@ def main():
         if not data:
             raise SystemExit("No updates specified. Use --data or flags.")
         status, body = _request_json(
-            "PATCH", f"{api_url}/user/{args.user_id}", data, token=token
+            "PATCH", f"{api_url}/user/{resolved_id}", data, token=token
         )
     elif args.command == "delete-user":
+        resolved_id = _resolve_user_id(args.user_id, api_url, token)
         status, body = _request_json(
-            "DELETE", f"{api_url}/user/{args.user_id}", token=token
+            "DELETE", f"{api_url}/user/{resolved_id}", token=token
         )
     else:
         raise SystemExit("Unknown command")
