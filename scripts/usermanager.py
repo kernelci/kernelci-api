@@ -76,6 +76,54 @@ def _prompt_if_missing(value, prompt_text, secret=False, default=None):
     return response
 
 
+def _parse_group_list(values):
+    if not values:
+        return []
+    if isinstance(values, str):
+        values = [values]
+    groups = []
+    for value in values:
+        for group in value.split(","):
+            group = group.strip()
+            if group:
+                groups.append(group)
+    return groups
+
+
+def _dedupe(items):
+    seen = set()
+    output = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        output.append(item)
+    return output
+
+
+def _extract_group_names(payload):
+    groups = payload.get("groups") or []
+    names = []
+    for group in groups:
+        if isinstance(group, dict):
+            name = group.get("name")
+        else:
+            name = getattr(group, "name", None)
+        if name:
+            names.append(name)
+    return _dedupe(names)
+
+
+def _apply_group_changes(current, add_groups, remove_groups):
+    current = _dedupe(current)
+    remove_set = set(remove_groups)
+    updated = [group for group in current if group not in remove_set]
+    for group in add_groups:
+        if group not in updated and group not in remove_set:
+            updated.append(group)
+    return updated
+
+
 def _request_json(method, url, data=None, token=None, form=False):
     headers = {"accept": "application/json"}
     body = None
@@ -183,8 +231,47 @@ def main():
     update_user = subparsers.add_parser("update-user",
                                         help="Patch user by id")
     update_user.add_argument("user_id")
-    update_user.add_argument("--data", required=True,
+    update_user.add_argument("--data",
                              help="JSON object with fields to update")
+    update_user.add_argument("--username", help="Set username")
+    update_user.add_argument("--email", help="Set email")
+    update_user.add_argument("--password", help="Set password")
+    update_user.add_argument("--superuser", dest="is_superuser",
+                             action="store_true",
+                             help="Grant superuser")
+    update_user.add_argument("--no-superuser", dest="is_superuser",
+                             action="store_false",
+                             help="Revoke superuser")
+    update_user.add_argument("--active", dest="is_active",
+                             action="store_true",
+                             help="Set is_active true")
+    update_user.add_argument("--inactive", dest="is_active",
+                             action="store_false",
+                             help="Set is_active false")
+    update_user.add_argument("--verified", dest="is_verified",
+                             action="store_true",
+                             help="Set is_verified true")
+    update_user.add_argument("--unverified", dest="is_verified",
+                             action="store_false",
+                             help="Set is_verified false")
+    update_user.set_defaults(is_active=None, is_verified=None,
+                             is_superuser=None)
+    update_user.add_argument(
+        "--set-groups",
+        help="Replace all groups with a comma-separated list",
+    )
+    update_user.add_argument(
+        "--add-group",
+        action="append",
+        default=[],
+        help="Add group(s); can be used multiple times or with commas",
+    )
+    update_user.add_argument(
+        "--remove-group",
+        action="append",
+        default=[],
+        help="Remove group(s); can be used multiple times or with commas",
+    )
 
     delete_user = subparsers.add_parser("delete-user",
                                         help="Delete user by id")
@@ -293,10 +380,51 @@ def main():
             "GET", f"{api_url}/user/{args.user_id}", token=token
         )
     elif args.command == "update-user":
-        try:
-            data = json.loads(args.data)
-        except json.JSONDecodeError as exc:
-            raise SystemExit("Invalid JSON for --data") from exc
+        data = {}
+        if args.data:
+            try:
+                data = json.loads(args.data)
+            except json.JSONDecodeError as exc:
+                raise SystemExit("Invalid JSON for --data") from exc
+            if not isinstance(data, dict):
+                raise SystemExit("--data must be a JSON object")
+        if args.username:
+            data["username"] = args.username
+        if args.email:
+            data["email"] = args.email
+        if args.password:
+            data["password"] = args.password
+        if args.is_superuser is not None:
+            data["is_superuser"] = args.is_superuser
+        if args.is_active is not None:
+            data["is_active"] = args.is_active
+        if args.is_verified is not None:
+            data["is_verified"] = args.is_verified
+
+        set_groups = _parse_group_list(args.set_groups)
+        add_groups = _parse_group_list(args.add_group)
+        remove_groups = _parse_group_list(args.remove_group)
+        if set_groups or add_groups or remove_groups:
+            if set_groups:
+                current_groups = set_groups
+            else:
+                status, body = _request_json(
+                    "GET", f"{api_url}/user/{args.user_id}", token=token
+                )
+                if status >= 400:
+                    _print_response(status, body)
+                    raise SystemExit(1)
+                try:
+                    payload = json.loads(body) if body else {}
+                except json.JSONDecodeError as exc:
+                    raise SystemExit("Failed to parse user response") from exc
+                current_groups = _extract_group_names(payload)
+            data["groups"] = _apply_group_changes(
+                current_groups, add_groups, remove_groups
+            )
+
+        if not data:
+            raise SystemExit("No updates specified. Use --data or flags.")
         status, body = _request_json(
             "PATCH", f"{api_url}/user/{args.user_id}", data, token=token
         )
