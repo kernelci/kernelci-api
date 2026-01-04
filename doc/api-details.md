@@ -333,7 +333,7 @@ $ curl -X 'POST' \
 ### Update own user account
 
 A user can update certain information for its own account, such as
-`email`, `username`, `password`, and `groups` with a `PATCH /user/me` request.
+`email`, `username`, and `password` with a `PATCH /user/me` request.
 For example,
 ```
 $ curl -X 'PATCH' \
@@ -348,6 +348,7 @@ $ curl -X 'PATCH' \
 ```
 
 Please note that user management fields such as `is_useruser`, `is_verified`, and `is_active` can not be updated by this request for security purposes.
+User group membership can only be updated by admin users.
 
 
 ### Update an existing user account (Admin only)
@@ -364,6 +365,39 @@ $ curl -X 'PATCH' \
 -H 'Authorization: Bearer <ADMIN-USER-AUTHORIZATION-TOKEN>' \
 -d '{"email": "test-user@kernelci.org", "groups": ["kernelci"]}'
 ```
+
+### User groups and permissions
+
+User groups are plain name strings stored in the `usergroup` collection. Group
+names must already exist before they can be assigned to users; otherwise the
+API returns `400`.
+
+There is currently no REST endpoint for creating or deleting user groups. Use
+MongoDB tooling to manage them. Example with `mongosh`:
+
+```
+$ mongosh "mongodb://db:27017/kernelci"
+> db.usergroup.insertOne({name: "runtime:lava-collabora:node-editor"})
+```
+
+Admin users can assign or remove groups via:
+
+- `POST /user/invite` with a `groups` list
+- `PATCH /user/<user-id>` with `groups`
+- `scripts/usermanager.py update-user --data '{"groups": [...]}'`
+
+To remove a group, send a `groups` list that omits it; the list replaces the
+existing groups.
+
+Example using the helper script:
+
+```
+$ ./scripts/usermanager.py list-users
+$ ./scripts/usermanager.py update-user 615f30020eb7c3c6616e5ac3 \
+  --data '{"groups": ["runtime:lava-collabora:node-editor"]}'
+```
+
+Users cannot update their own groups; admin access is required.
 
 
 ### Delete user matching user ID (Admin only)
