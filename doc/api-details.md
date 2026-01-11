@@ -941,3 +941,181 @@ kernelci-api | INFO:     127.0.0.1:35810 - "POST /publish/abc HTTP/1.1" 200 OK
 kernelci-api | INFO:     127.0.0.1:35754 - "GET /listen/abc HTTP/1.1" 200 OK
 kernelci-api | INFO:     127.0.0.1:36744 - "POST /unsubscribe/abc HTTP/1.1" 200 OK
 ```
+
+
+## Events
+
+The `/events` endpoint provides access to the event history stored in MongoDB.
+Events are generated when nodes are created or updated, and are stored for a
+configurable retention period (default 7 days).
+
+### Event Structure
+
+Each event contains the following fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique event document ID |
+| `timestamp` | datetime | When the event was created |
+| `sequence_id` | integer | Sequential ID for ordering (used by pub/sub) |
+| `channel` | string | Pub/sub channel name (typically "node") |
+| `owner` | string | Username of the event publisher |
+| `data` | object | Event payload (see below) |
+
+The `data` object contains node information:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `op` | string | Operation type: `created` or `updated` |
+| `id` | string | Node ID |
+| `kind` | string | Node kind (e.g., `checkout`, `kbuild`, `job`, `test`) |
+| `name` | string | Node name |
+| `path` | array | Node path hierarchy |
+| `group` | string | Node group |
+| `state` | string | Node state: `running`, `available`, `closing`, `done` |
+| `result` | string | Node result: `pass`, `fail`, `skip`, `incomplete`, or `null` |
+| `owner` | string | Node owner (username) |
+| `data` | object | Node-specific data |
+| `is_hierarchy` | boolean | Whether this is a hierarchy update |
+
+### Query Parameters
+
+The `/events` endpoint supports the following query parameters:
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `limit` | integer | Maximum number of events to return | `limit=100` |
+| `from` | datetime | Return events after this timestamp (ISO format or Unix epoch) | `from=2025-01-01T00:00:00` |
+| `kind` | string | Filter by node kind | `kind=job` |
+| `state` | string | Filter by node state | `state=done` |
+| `result` | string | Filter by node result | `result=pass` |
+| `op` | string | Filter by operation type | `op=created` |
+| `name` | string | Filter by node name (exact match) | `name=baseline-x86` |
+| `path` | string | Filter by node path (regex pattern) | `path=.*mainline.*` |
+| `group` | string | Filter by node group (exact match) | `group=kunit-x86_64` |
+| `owner` | string | Filter by node owner (exact match) | `owner=admin` |
+| `channel` | string | Filter by pub/sub channel | `channel=node` |
+| `id` | string | Filter by event document ID | `id=507f1f77bcf86cd799439011` |
+| `ids` | string | Filter by multiple event IDs (comma-separated) | `ids=id1,id2,id3` |
+| `node_id` | string | Filter by node ID (alias for `data.id`) | `node_id=507f1f77bcf86cd799439011` |
+| `recursive` | boolean | Include full node data with each event | `recursive=true` |
+
+> **Note**: When using `recursive=true`, the `limit` parameter is required and must be <= 1000.
+
+### Examples
+
+**Get all events (limited to default pagination):**
+```
+$ curl http://localhost:8001/latest/events
+```
+
+**Get events for completed jobs with passing results:**
+```
+$ curl 'http://localhost:8001/latest/events?kind=job&state=done&result=pass'
+```
+
+**Get recently created events (last hour):**
+```
+$ curl 'http://localhost:8001/latest/events?op=created&from=2025-01-10T12:00:00'
+```
+
+**Get events for a specific node path pattern (regex):**
+```
+$ curl 'http://localhost:8001/latest/events?path=.*linux-next.*&limit=50'
+```
+
+**Get events for a specific group:**
+```
+$ curl 'http://localhost:8001/latest/events?group=kunit-x86_64&state=done'
+```
+
+**Get events by owner:**
+```
+$ curl 'http://localhost:8001/latest/events?owner=admin&kind=checkout'
+```
+
+**Get events with full node data:**
+```
+$ curl 'http://localhost:8001/latest/events?state=done&result=fail&recursive=true&limit=10'
+```
+
+**Get events for a specific node ID:**
+```
+$ curl 'http://localhost:8001/latest/events?node_id=65a1355ee98651d0fe81e412'
+```
+
+**Combine multiple filters:**
+```
+$ curl 'http://localhost:8001/latest/events?kind=test&state=done&result=fail&group=kselftest&from=2025-01-01&limit=100'
+```
+
+### Sample Response
+
+```json
+[
+  {
+    "id": "65a1355ee98651d0fe81e500",
+    "timestamp": "2025-01-12T08:30:00.000000",
+    "sequence_id": 12345,
+    "channel": "node",
+    "owner": "admin",
+    "data": {
+      "op": "updated",
+      "id": "65a1355ee98651d0fe81e412",
+      "kind": "test",
+      "name": "kselftest-cpufreq",
+      "path": ["checkout", "kbuild", "test", "kselftest-cpufreq"],
+      "group": "kselftest",
+      "state": "done",
+      "result": "pass",
+      "owner": "admin",
+      "data": {
+        "kernel_revision": {
+          "tree": "mainline",
+          "branch": "master",
+          "commit": "abc123..."
+        }
+      },
+      "is_hierarchy": false
+    }
+  }
+]
+```
+
+### Response with recursive=true
+
+When `recursive=true` is specified, each event includes a `node` field with the
+full node object:
+
+```json
+[
+  {
+    "id": "65a1355ee98651d0fe81e500",
+    "timestamp": "2025-01-12T08:30:00.000000",
+    "data": {
+      "op": "updated",
+      "id": "65a1355ee98651d0fe81e412",
+      "kind": "test",
+      "name": "kselftest-cpufreq",
+      "state": "done",
+      "result": "pass"
+    },
+    "node": {
+      "id": "65a1355ee98651d0fe81e412",
+      "kind": "test",
+      "name": "kselftest-cpufreq",
+      "path": ["checkout", "kbuild", "test", "kselftest-cpufreq"],
+      "group": "kselftest",
+      "parent": "65a1355ee98651d0fe81e400",
+      "state": "done",
+      "result": "pass",
+      "artifacts": {...},
+      "data": {...},
+      "created": "2025-01-12T08:00:00.000000",
+      "updated": "2025-01-12T08:30:00.000000",
+      "owner": "admin",
+      "user_groups": []
+    }
+  }
+]
+```

@@ -777,15 +777,29 @@ def _build_events_query(query_params: dict) -> tuple:
     Returns (recursive, processed_query_params).
     Raises HTTPException on validation errors.
     """
+    # Simple filters: param_name -> query_field
+    simple_filters = {
+        'kind': 'data.kind',
+        'state': 'data.state',
+        'result': 'data.result',
+        'op': 'data.op',
+        'name': 'data.name',
+        'group': 'data.group',
+        'owner': 'data.owner',
+        'channel': 'channel',
+    }
+
     recursive = query_params.pop('recursive', None)
     limit = query_params.pop('limit', None)
-    kind = query_params.pop('kind', None)
-    state = query_params.pop('state', None)
-    result = query_params.pop('result', None)
     from_ts = query_params.pop('from', None)
     node_id = query_params.pop('node_id', None)
-    event_id = query_params.pop('id', None)
-    event_ids = query_params.pop('ids', None)
+    path = query_params.pop('path', None)
+
+    # Apply simple filters
+    for param, field in simple_filters.items():
+        value = query_params.pop(param, None)
+        if value:
+            query_params[field] = value
 
     if node_id:
         if 'data.id' in query_params:
@@ -795,18 +809,16 @@ def _build_events_query(query_params: dict) -> tuple:
             )
         query_params['data.id'] = node_id
 
+    event_id = query_params.pop('id', None)
+    event_ids = query_params.pop('ids', None)
     _parse_event_id_filter(query_params, event_id, event_ids)
 
     if from_ts:
         if isinstance(from_ts, str):
             from_ts = datetime.fromisoformat(from_ts)
         query_params['timestamp'] = {'$gt': from_ts}
-    if kind:
-        query_params['data.kind'] = kind
-    if state:
-        query_params['data.state'] = state
-    if result:
-        query_params['data.result'] = result
+    if path:
+        query_params['data.path'] = {'$regex': path}
     if limit:
         query_params['limit'] = int(limit)
 
@@ -828,10 +840,16 @@ async def get_events(request: Request):
        Get all the matching events otherwise.
        Query parameters can be used to filter the events:
        - limit: Number of events to return
-       - from: Start timestamp (unix epoch) to filter events
+       - from: Start timestamp (unix epoch or ISO format) to filter events
        - kind: Event kind to filter events
        - state: Event state to filter events
        - result: Event result to filter events
+       - op: Operation type ('created', 'updated')
+       - name: Node name to filter events
+       - path: Node path to filter events (regex pattern)
+       - group: Node group to filter events
+       - owner: Node owner to filter events
+       - channel: Pub/sub channel to filter events
        - id / ids: Event document id(s) to filter events
        - node_id: Node id to filter events (alias for data.id)
        - recursive: Retrieve node together with event
