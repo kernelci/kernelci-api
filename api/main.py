@@ -98,6 +98,7 @@ API_VERSIONS = ['v0']
 
 metrics = Metrics()
 app = FastAPI(lifespan=lifespan, debug=True, docs_url=None, redoc_url=None)
+
 db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
@@ -1454,6 +1455,72 @@ async def icons(icon_name: str):
         )
     icon_path = os.path.join(root_dir, 'templates', icon_name)
     return FileResponse(icon_path)
+
+
+@app.get('/static/css/{filename}')
+async def serve_css(filename: str):
+    """Serve CSS files from api/static/css/"""
+    metrics.add('http_requests_total', 1)
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    print(f"[CSS] Request for: {filename}")
+    print(f"[CSS] root_dir: {root_dir}")
+    # Security: only allow safe filenames
+    if not re.match(r'^[A-Za-z0-9_.-]+\.css$', filename):
+        print(f"[CSS] Invalid filename pattern: {filename}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid filename"
+        )
+    file_path = os.path.join(root_dir, 'static', 'css', filename)
+    print(f"[CSS] Looking for file at: {file_path}")
+    print(f"[CSS] File exists: {os.path.isfile(file_path)}")
+    if not os.path.isfile(file_path):
+        print(f"[CSS] File not found: {file_path}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found"
+        )
+    print(f"[CSS] Serving file: {file_path}")
+    return FileResponse(
+        file_path,
+        media_type="text/css",
+        headers={
+            'Cache-Control': 'public, max-age=3600',  # Cache for 1 hour
+        }
+    )
+
+
+@app.get('/static/js/{filename}')
+async def serve_js(filename: str):
+    """Serve JavaScript files from api/static/js/"""
+    metrics.add('http_requests_total', 1)
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    print(f"[JS] Request for: {filename}")
+    print(f"[JS] root_dir: {root_dir}")
+    # Security: only allow safe filenames
+    if not re.match(r'^[A-Za-z0-9_.-]+\.js$', filename):
+        print(f"[JS] Invalid filename pattern: {filename}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid filename"
+        )
+    file_path = os.path.join(root_dir, 'static', 'js', filename)
+    print(f"[JS] Looking for file at: {file_path}")
+    print(f"[JS] File exists: {os.path.isfile(file_path)}")
+    if not os.path.isfile(file_path):
+        print(f"[JS] File not found: {file_path}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found"
+        )
+    print(f"[JS] Serving file: {file_path}")
+    return FileResponse(
+        file_path,
+        media_type="application/javascript",
+        headers={
+            'Cache-Control': 'public, max-age=3600',  # Cache for 1 hour
+        }
+    )
 
 
 @app.get('/metrics')

@@ -1,0 +1,332 @@
+/* ====================================================================
+   MAESTRO API VIEWER - STYLESHEET
+
+   This stylesheet provides all styling for the KernelCI API viewer interface.
+   It includes styles for navigation, tables, modals, and the Trees matrix view.
+   ==================================================================== */
+
+/* ====================================================================
+   BASE STYLES
+   ==================================================================== */
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 20px;
+    color: #333333;
+    background-color: #ffffff;
+    padding: 10px;
+    margin: 0;
+}
+
+/* ====================================================================
+   NAVIGATION MENU
+   ==================================================================== */
+#menu {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #e5e5e5;
+    border-top: 1px solid #e5e5e5;
+    margin-bottom: 20px;
+    padding: 10px 0;
+}
+
+#menu a {
+    color: #999999;
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 10px;
+    text-decoration: none;
+    padding: 10px;
+    border: 1px solid #e5e5e5;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+#menu a:hover,
+#menu a:active,
+#menu a:focus {
+    color: #333333;
+    text-decoration: none;
+}
+
+/* ====================================================================
+   REQUEST INFO SECTION
+   ==================================================================== */
+#requestinfo {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #e5e5e5;
+    border-top: 1px solid #e5e5e5;
+    margin-bottom: 20px;
+    padding: 10px;
+}
+
+#requestinfo input,
+#requestinfo button {
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 10px;
+    text-decoration: none;
+    padding: 8px 12px;
+}
+
+/* ====================================================================
+   MISC BUTTONS SECTION
+   ==================================================================== */
+#miscbuttons {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #e5e5e5;
+    border-top: 1px solid #e5e5e5;
+    margin-bottom: 20px;
+    padding: 10px;
+}
+
+#miscbuttons button,
+#miscbuttons select {
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 10px;
+    text-decoration: none;
+    padding: 8px 12px;
+}
+
+/* ====================================================================
+   NODE SEARCH TABLE
+   ==================================================================== */
+.nodesearch {
+    border-collapse: collapse;
+    border-spacing: 1px;
+    width: 100%;
+    border: 1px solid #ddd;
+}
+
+.nodesearch th,
+.nodesearch td {
+    text-align: left;
+    padding: 8px;
+}
+
+.nodesearch tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.nodesearch tr:hover {
+    background-color: #ddd;
+}
+
+/* Row color coding based on test results */
+.nodesearch tr.fail {
+    background-color: #ffcccc;
+}
+
+.nodesearch tr.null {
+    background-color: #ffffcc;
+}
+
+.nodesearch tr.jobfilter {
+    border: 1px dashed red;
+}
+
+.nodesearch th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* ====================================================================
+   NODE INFO DISPLAY
+   ==================================================================== */
+#nodeinfo {
+    line-height: 20px;
+    white-space: pre-wrap;
+}
+
+/* ====================================================================
+   MODAL DIALOG
+   ==================================================================== */
+#modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 4px;
+}
+
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+    text-decoration: none;
+}
+
+/* ====================================================================
+   ERROR MESSAGE
+   ==================================================================== */
+.error-message {
+    background-color: #ffcccc;
+    border: 1px solid #ff0000;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+    color: #cc0000;
+}
+
+/* ====================================================================
+   TREES SECTION
+   ==================================================================== */
+#treeselector {
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #e5e5e5;
+    border-top: 1px solid #e5e5e5;
+    margin-bottom: 20px;
+    padding: 15px;
+}
+
+#treeselector select,
+#treeselector input {
+    font-size: 14px;
+    margin-right: 10px;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#treeselector button {
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#treeselector button:hover {
+    background-color: #45a049;
+}
+
+#treeselector label {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Matrix table for kbuilds across commits */
+.kbuild-matrix {
+    border-collapse: collapse;
+    width: 100%;
+    border: 1px solid #ddd;
+    margin-top: 20px;
+    font-size: 13px;
+}
+
+.kbuild-matrix th,
+.kbuild-matrix td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.kbuild-matrix th {
+    background-color: #4CAF50;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+/* First column (kbuild names) should be sticky and left-aligned */
+.kbuild-matrix td:first-child,
+.kbuild-matrix th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background-color: #f5f5f5;
+    font-weight: bold;
+    z-index: 5;
+}
+
+.kbuild-matrix th:first-child {
+    background-color: #4CAF50;
+    z-index: 15;
+}
+
+/* Build status cells */
+.kbuild-matrix .build-cell {
+    cursor: pointer;
+    min-width: 80px;
+    height: 30px;
+    vertical-align: middle;
+}
+
+.kbuild-matrix .build-cell:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
+/* Status colors */
+.kbuild-matrix .build-pass {
+    background-color: #90EE90;
+    color: #006400;
+}
+
+.kbuild-matrix .build-fail {
+    background-color: #FFB6C1;
+    color: #8B0000;
+}
+
+.kbuild-matrix .build-running {
+    background-color: #FFE4B5;
+    color: #FF8C00;
+}
+
+.kbuild-matrix .build-none {
+    background-color: #F0F0F0;
+    color: #808080;
+}
+
+/* Commit headers - rotate text for better space usage */
+.kbuild-matrix .commit-header {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    min-width: 100px;
+    max-width: 100px;
+    padding: 10px 5px;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: inline-block;
+    margin-left: 10px;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4CAF50;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

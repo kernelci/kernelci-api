@@ -4,6 +4,10 @@
 # Author: Guillaume Tucker <guillaume.tucker@collabora.com>
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "kernelci-api"
 version = "0"
@@ -52,9 +56,11 @@ Documentation = "https://docs.kernelci.org"
 Repository = "https://github.com/kernelci/kernelci-api"
 
 [tool.setuptools]
-packages = ["api", "scripts", "api.templates", "migrations"]
+packages = ["api", "scripts", "api.templates", "api.static", "api.static.css", "api.static.js", "migrations"]
 
 [tool.setuptools.package-data]
 scripts = ["*"]
 "api.templates" = ["*.jinja2", "*.html", "*.png"]
+"api.static.css" = ["*.css"]
+"api.static.js" = ["*.js"]
 migrations = ["*.py"]
