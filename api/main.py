@@ -587,8 +587,11 @@ async def update_me(request: Request, user: UserUpdateRequest,
             if not group:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"User group does not exist with name: \
-    {group_name}")
+                    detail=(
+                        "User group does not exist with name: "
+                        f"{group_name}"
+                    ),
+                )
             groups.append(group)
     user_update = UserUpdate(**(user.model_dump(
          exclude={'groups', 'is_superuser'}, exclude_none=True)))
@@ -626,8 +629,11 @@ async def update_user(user_id: str, request: Request, user: UserUpdateRequest,
             if not group:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"User group does not exist with name: \
-    {group_name}")
+                    detail=(
+                        "User group does not exist with name: "
+                        f"{group_name}"
+                    ),
+                )
             groups.append(group)
     user_update = UserUpdate(**(user.model_dump(
          exclude={'groups'}, exclude_none=True)))
