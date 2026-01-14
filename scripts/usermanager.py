@@ -3,6 +3,7 @@ import argparse
 import getpass
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -148,6 +149,48 @@ def _resolve_user_id(user_id, api_url, token):
     resolved_id = matches[0].get("id")
     if not resolved_id:
         raise SystemExit(f"User with email {user_id} has no id")
+    return resolved_id
+
+
+def _parse_paginated_items(payload):
+    if isinstance(payload, dict) and "items" in payload:
+        return payload.get("items") or []
+    if isinstance(payload, list):
+        return payload
+    return []
+
+
+def _looks_like_object_id(value):
+    return bool(re.fullmatch(r"[0-9a-fA-F]{24}", value))
+
+
+def _resolve_group_id(group_id, api_url, token):
+    if _looks_like_object_id(group_id):
+        return group_id
+    query = urllib.parse.urlencode({"name": group_id})
+    status, body = _request_json(
+        "GET", f"{api_url}/user-groups?{query}", token=token
+    )
+    if status >= 400:
+        _print_response(status, body)
+        raise SystemExit(1)
+    try:
+        payload = json.loads(body) if body else {}
+    except json.JSONDecodeError as exc:
+        raise SystemExit("Failed to parse user-groups response") from exc
+    items = _parse_paginated_items(payload)
+    matches = [
+        group
+        for group in items
+        if isinstance(group, dict) and group.get("name") == group_id
+    ]
+    if not matches:
+        raise SystemExit(f"No group found with name: {group_id}")
+    if len(matches) > 1:
+        raise SystemExit(f"Multiple groups found with name: {group_id}")
+    resolved_id = matches[0].get("id")
+    if not resolved_id:
+        raise SystemExit(f"Group {group_id} has no id")
     return resolved_id
 
 
@@ -309,6 +352,17 @@ def main():
     delete_user = subparsers.add_parser("delete-user", help="Delete user by id")
     delete_user.add_argument("user_id")
 
+    list_groups = subparsers.add_parser("list-groups", help="List user groups")
+
+    get_group = subparsers.add_parser("get-group", help="Get user group by id or name")
+    get_group.add_argument("group_id")
+
+    create_group = subparsers.add_parser("create-group", help="Create user group")
+    create_group.add_argument("name")
+
+    delete_group = subparsers.add_parser("delete-group", help="Delete user group")
+    delete_group.add_argument("group_id")
+
     subparsers.add_parser(
         "print-config-example", help="Print a sample usermanager.toml"
     )
@@ -362,6 +416,10 @@ def main():
         "get-user",
         "update-user",
         "delete-user",
+        "list-groups",
+        "get-group",
+        "create-group",
+        "delete-group",
     }:
         token = _require_token(token, args)
 
@@ -470,6 +528,23 @@ def main():
         resolved_id = _resolve_user_id(args.user_id, api_url, token)
         status, body = _request_json(
             "DELETE", f"{api_url}/user/{resolved_id}", token=token
+        )
+    elif args.command == "list-groups":
+        status, body = _request_json("GET", f"{api_url}/user-groups", token=token)
+    elif args.command == "get-group":
+        resolved_id = _resolve_group_id(args.group_id, api_url, token)
+        status, body = _request_json(
+            "GET", f"{api_url}/user-groups/{resolved_id}", token=token
+        )
+    elif args.command == "create-group":
+        payload = {"name": args.name}
+        status, body = _request_json(
+            "POST", f"{api_url}/user-groups", payload, token=token
+        )
+    elif args.command == "delete-group":
+        resolved_id = _resolve_group_id(args.group_id, api_url, token)
+        status, body = _request_json(
+            "DELETE", f"{api_url}/user-groups/{resolved_id}", token=token
         )
     else:
         raise SystemExit("Unknown command")

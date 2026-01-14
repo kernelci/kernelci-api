@@ -154,6 +154,15 @@ def mock_db_find_by_id(mocker):
 
 
 @pytest.fixture
+def mock_db_delete_by_id(mocker):
+    """Mocks async call to Database class method used to delete an object"""
+    async_mock = AsyncMock()
+    mocker.patch('api.db.Database.delete_by_id',
+                 side_effect=async_mock)
+    return async_mock
+
+
+@pytest.fixture
 def mock_db_find_one(mocker):
     """Mocks async call to database method used to find one object"""
     async_mock = AsyncMock()

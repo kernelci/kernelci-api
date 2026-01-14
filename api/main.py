@@ -28,6 +28,7 @@ from fastapi import (
     Header,
     Query,
     Body,
+    Response,
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import (
@@ -70,6 +71,7 @@ from .models import (
     UserUpdate,
     UserUpdateRequest,
     UserGroup,
+    UserGroupCreateRequest,
     InviteAcceptRequest,
     InviteUrlResponse,
 )
@@ -642,6 +644,77 @@ async def update_user(user_id: str, request: Request, user: UserUpdateRequest,
         user_from_id.is_superuser = user.is_superuser
         updated_user = await db.update(user_from_id)
     return updated_user
+
+
+@app.get("/user-groups", response_model=PageModel, tags=["user"])
+async def get_user_groups(request: Request,
+                          current_user: User = Depends(get_current_superuser)):
+    """List user groups (admin-only)."""
+    metrics.add('http_requests_total', 1)
+    query_params = dict(request.query_params)
+    for pg_key in ['limit', 'offset']:
+        query_params.pop(pg_key, None)
+    paginated_resp = await db.find_by_attributes(UserGroup, query_params)
+    paginated_resp.items = serialize_paginated_data(
+        UserGroup, paginated_resp.items)
+    return paginated_resp
+
+
+@app.get("/user-groups/{group_id}", response_model=UserGroup, tags=["user"],
+         response_model_by_alias=False)
+async def get_user_group(group_id: str,
+                         current_user: User = Depends(get_current_superuser)):
+    """Get a user group by id (admin-only)."""
+    metrics.add('http_requests_total', 1)
+    group = await db.find_by_id(UserGroup, group_id)
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User group not found with id: {group_id}",
+        )
+    return group
+
+
+@app.post("/user-groups", response_model=UserGroup, tags=["user"],
+          response_model_by_alias=False)
+async def create_user_group(group: UserGroupCreateRequest,
+                            current_user: User = Depends(
+                                get_current_superuser)):
+    """Create a user group (admin-only)."""
+    metrics.add('http_requests_total', 1)
+    existing = await db.find_one(UserGroup, name=group.name)
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"User group already exists with name: {group.name}",
+        )
+    return await db.create(UserGroup(name=group.name))
+
+
+@app.delete("/user-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT,
+            tags=["user"])
+async def delete_user_group(group_id: str,
+                            current_user: User = Depends(
+                                get_current_superuser)):
+    """Delete a user group (admin-only)."""
+    metrics.add('http_requests_total', 1)
+    group = await db.find_by_id(UserGroup, group_id)
+    if not group:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User group not found with id: {group_id}",
+        )
+    assigned_count = await db.count(User, {"groups.name": group.name})
+    if assigned_count:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "User group is assigned to users and cannot be deleted. "
+                "Remove it from users first."
+            ),
+        )
+    await db.delete_by_id(UserGroup, group_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def _get_node_runtime(node: Node) -> Optional[str]:
