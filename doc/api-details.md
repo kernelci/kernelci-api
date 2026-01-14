@@ -372,13 +372,21 @@ User groups are plain name strings stored in the `usergroup` collection. Group
 names must already exist before they can be assigned to users; otherwise the
 API returns `400`.
 
-There is currently no REST endpoint for creating or deleting user groups. Use
-MongoDB tooling to manage them. Example with `mongosh`:
+User groups are plain name strings stored in the `usergroup` collection. You
+can manage them via the API endpoints below or directly with MongoDB tooling.
+Example with `mongosh`:
 
 ```
 $ mongosh "mongodb://db:27017/kernelci"
 > db.usergroup.insertOne({name: "runtime:lava-collabora:node-editor"})
 ```
+
+Admin-only user group management endpoints are available:
+
+- `GET /user-groups` (list; supports `name` filter)
+- `GET /user-groups/<group-id>`
+- `POST /user-groups` with `{"name": "runtime:lava-collabora:node-editor"}`
+- `DELETE /user-groups/<group-id>` (fails with `409` if assigned to users)
 
 Admin users can assign or remove groups via:
 
@@ -393,11 +401,132 @@ Example using the helper script:
 
 ```
 $ ./scripts/usermanager.py list-users
+$ ./scripts/usermanager.py list-groups
+$ ./scripts/usermanager.py create-group runtime:lava-collabora:node-editor
 $ ./scripts/usermanager.py update-user 615f30020eb7c3c6616e5ac3 \
   --data '{"groups": ["runtime:lava-collabora:node-editor"]}'
 ```
 
 Users cannot update their own groups; admin access is required.
+
+### Usermanager workflows (examples)
+
+These examples use `scripts/usermanager.py`. It reads `./usermanager.toml` or
+`~/.config/kernelci/usermanager.toml` by default, and you can override with
+`--api-url`/`--token` or `KCI_API_URL`/`KCI_API_TOKEN`.
+
+Common admin workflows:
+
+- List users and capture IDs:
+
+```
+$ ./scripts/usermanager.py list-users
+$ ./scripts/usermanager.py get-user <USER-ID>
+```
+
+- Invite a user (optionally add groups):
+
+```
+$ ./scripts/usermanager.py invite \
+  --username alice \
+  --email alice@example.org \
+  --groups runtime:pull-labs-demo:node-editor \
+  --return-token
+```
+
+- Accept an invite manually (useful for service accounts or testing):
+
+```
+$ ./scripts/usermanager.py accept-invite --token "<INVITE-TOKEN>"
+```
+
+- Login to get a bearer token:
+
+```
+$ ./scripts/usermanager.py login --username alice
+```
+
+- Deactivate or reactivate a user:
+
+```
+$ ./scripts/usermanager.py update-user <USER-ID> --inactive
+$ ./scripts/usermanager.py update-user <USER-ID> --active
+```
+
+- Grant or revoke superuser:
+
+```
+$ ./scripts/usermanager.py update-user <USER-ID> --superuser
+$ ./scripts/usermanager.py update-user <USER-ID> --no-superuser
+```
+
+- Mark a user verified or unverified (admin only):
+
+```
+$ ./scripts/usermanager.py update-user <USER-ID> --verified
+$ ./scripts/usermanager.py update-user <USER-ID> --unverified
+```
+
+- Assign or remove groups:
+
+```
+$ ./scripts/usermanager.py update-user <USER-ID> \
+  --add-group runtime:pull-labs-demo:node-editor
+$ ./scripts/usermanager.py update-user <USER-ID> \
+  --remove-group runtime:pull-labs-demo:node-editor
+$ ./scripts/usermanager.py update-user <USER-ID> \
+  --set-groups runtime:pull-labs-demo:node-editor,team-a
+```
+
+- Set a password (admin only, useful for service accounts):
+
+```
+$ ./scripts/usermanager.py update-user <USER-ID> --password "<new-password>"
+```
+
+- Manage user groups:
+
+```
+$ ./scripts/usermanager.py list-groups
+$ ./scripts/usermanager.py create-group runtime:pull-labs-demo:node-editor
+$ ./scripts/usermanager.py delete-group runtime:pull-labs-demo:node-editor
+```
+
+- Delete a user:
+
+```
+$ ./scripts/usermanager.py delete-user <USER-ID>
+```
+
+### Permissions and node update rules
+
+Node update permissions are determined by the user and the node being edited:
+
+- Superusers can update any node.
+- The node owner can update their own nodes.
+- Users with group `node:edit:any` can update any node.
+- Users with a group listed in the node's `user_groups` can update that node.
+- Users with `runtime:<runtime>:node-editor` or `runtime:<runtime>:node-admin`
+  can update nodes whose `data.runtime` matches `<runtime>`.
+
+Example: allow updates only for runtime `pull-labs-demo`:
+
+```
+$ mongosh "mongodb://db:27017/kernelci"
+> db.usergroup.insertOne({name: "runtime:pull-labs-demo:node-editor"})
+```
+
+```
+$ ./scripts/usermanager.py update-user <USER-ID> \
+  --add-group runtime:pull-labs-demo:node-editor
+```
+
+To remove a user group definition entirely, delete it in MongoDB:
+
+```
+$ mongosh "mongodb://db:27017/kernelci"
+> db.usergroup.deleteOne({name: "runtime:pull-labs-demo:node-editor"})
+```
 
 
 ### Delete user matching user ID (Admin only)

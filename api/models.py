@@ -115,6 +115,11 @@ class UserGroup(DatabaseModel):
         ]
 
 
+class UserGroupCreateRequest(BaseModel):
+    """Create user group request schema for API router"""
+    name: str = Field(description="User group name")
+
+
 class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
            DatabaseModel):
     """API User model"""
