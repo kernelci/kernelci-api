@@ -168,9 +168,7 @@ def _resolve_group_id(group_id, api_url, token):
     if _looks_like_object_id(group_id):
         return group_id
     query = urllib.parse.urlencode({"name": group_id})
-    status, body = _request_json(
-        "GET", f"{api_url}/user-groups?{query}", token=token
-    )
+    status, body = _request_json("GET", f"{api_url}/user-groups?{query}", token=token)
     if status >= 400:
         _print_response(status, body)
         raise SystemExit(1)
@@ -214,9 +212,7 @@ def _resolve_group_name(group_name, api_url, token):
 
 
 def _resolve_group_names(group_names, api_url, token):
-    return _dedupe(
-        [_resolve_group_name(name, api_url, token) for name in group_names]
-    )
+    return _dedupe([_resolve_group_name(name, api_url, token) for name in group_names])
 
 
 def _update_user_groups(resolved_id, add_groups, remove_groups, api_url, token):
@@ -298,9 +294,7 @@ def main():
         ("update-user", "Patch user by id/email/username"),
         ("whoami", "Show current user"),
     ]
-    command_list = "\n".join(
-        f"  {name:<18} {desc}" for name, desc in command_help
-    )
+    command_list = "\n".join(f"  {name:<18} {desc}" for name, desc in command_help)
     default_paths = "\n".join(f"  - {path}" for path in DEFAULT_CONFIG_PATHS)
     parser = argparse.ArgumentParser(
         description="KernelCI API user management helper",
@@ -358,9 +352,7 @@ def main():
         help="Group name or id; can be used multiple times or with commas",
     )
 
-    subparsers.add_parser(
-        "config-example", help="Print a sample usermanager.toml"
-    )
+    subparsers.add_parser("config-example", help="Print a sample usermanager.toml")
 
     create_group = subparsers.add_parser("create-group", help="Create user group")
     create_group.add_argument("name")
@@ -666,9 +658,7 @@ def main():
         if not add_groups:
             raise SystemExit("No groups specified. Use --group.")
         add_groups = _resolve_group_names(add_groups, api_url, token)
-        status, body = _update_user_groups(
-            resolved_id, add_groups, [], api_url, token
-        )
+        status, body = _update_user_groups(resolved_id, add_groups, [], api_url, token)
     elif args.command == "deassign-group":
         resolved_id = _resolve_user_id(args.user_id, api_url, token)
         remove_groups = _parse_group_list(args.group)
