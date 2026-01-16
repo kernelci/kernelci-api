@@ -332,6 +332,12 @@ def main():
     login.add_argument("--username", required=True)
     login.add_argument("--password")
 
+    generate_token = subparsers.add_parser(
+        "generate-api-token", help="Print just the access token for a user"
+    )
+    generate_token.add_argument("--username", required=True)
+    generate_token.add_argument("--password")
+
     whoami = subparsers.add_parser("whoami", help="Show current user")
 
     list_users = subparsers.add_parser("list-users", help="List users")
@@ -530,6 +536,29 @@ def main():
             payload,
             form=True,
         )
+    elif args.command == "generate-api-token":
+        password = _prompt_if_missing(
+            args.password,
+            "Password: ",
+            secret=True,
+        )
+        payload = {"username": args.username, "password": password}
+        status, body = _request_json(
+            "POST",
+            f"{api_url}/user/login",
+            payload,
+            form=True,
+        )
+        if status < 400:
+            try:
+                payload = json.loads(body) if body else {}
+            except json.JSONDecodeError as exc:
+                raise SystemExit("Failed to parse login response") from exc
+            token = payload.get("access_token")
+            if not token:
+                raise SystemExit("Login response missing access_token")
+            print(token)
+            return
     elif args.command == "whoami":
         status, body = _request_json("GET", f"{api_url}/whoami", token=token)
     elif args.command == "list-users":
