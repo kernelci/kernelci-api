@@ -279,9 +279,38 @@ def _require_token(token, args):
 
 
 def main():
+    command_help = [
+        ("accept-invite", "Accept an invite"),
+        ("assign-group", "Assign group(s) to a user"),
+        ("config-example", "Print a sample usermanager.toml"),
+        ("create-group", "Create user group"),
+        ("deassign-group", "Remove group(s) from a user"),
+        ("delete-group", "Delete user group"),
+        ("delete-user", "Delete user by id/email/username"),
+        ("generate-api-token", "Print just the access token for a user"),
+        ("get-group", "Get user group by id or name"),
+        ("get-user", "Get user by id/email/username"),
+        ("invite", "Invite a new user"),
+        ("invite-url", "Preview invite URL base"),
+        ("list-groups", "List user groups"),
+        ("list-users", "List users"),
+        ("login", "Get a full auth token response"),
+        ("update-user", "Patch user by id/email/username"),
+        ("whoami", "Show current user"),
+    ]
+    command_list = "\n".join(
+        f"  {name:<18} {desc}" for name, desc in command_help
+    )
     default_paths = "\n".join(f"  - {path}" for path in DEFAULT_CONFIG_PATHS)
     parser = argparse.ArgumentParser(
         description="KernelCI API user management helper",
+        usage=(
+            "usermanager.py [-h] [--config CONFIG] [--api-url API_URL] "
+            "[--token TOKEN] [--instance INSTANCE] [--token-label TOKEN_LABEL]\n"
+            "                <command> [<args>]\n\n"
+            "Commands:\n"
+            f"{command_list}"
+        ),
         epilog=(
             "Examples:\n"
             "  ./scripts/usermanager.py invite --username alice --email "
@@ -290,10 +319,12 @@ def main():
             "  ./scripts/usermanager.py login --username alice\n"
             "  ./scripts/usermanager.py whoami\n"
             "  ./scripts/usermanager.py list-users --instance staging\n"
-            "  ./scripts/usermanager.py print-config-example\n"
+            "  ./scripts/usermanager.py config-example\n"
             "\n"
             "Default config lookup (first match wins):\n"
             f"{default_paths}\n"
+            "\n"
+            "Run '<command> -h' for command-specific help.\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -312,6 +343,57 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    accept = subparsers.add_parser("accept-invite", help="Accept an invite")
+    accept.add_argument("--token")
+    accept.add_argument("--password")
+
+    assign_group = subparsers.add_parser(
+        "assign-group", help="Assign group(s) to a user"
+    )
+    assign_group.add_argument("user_id")
+    assign_group.add_argument(
+        "--group",
+        action="append",
+        default=[],
+        help="Group name or id; can be used multiple times or with commas",
+    )
+
+    subparsers.add_parser(
+        "config-example", help="Print a sample usermanager.toml"
+    )
+
+    create_group = subparsers.add_parser("create-group", help="Create user group")
+    create_group.add_argument("name")
+
+    deassign_group = subparsers.add_parser(
+        "deassign-group", help="Remove group(s) from a user"
+    )
+    deassign_group.add_argument("user_id")
+    deassign_group.add_argument(
+        "--group",
+        action="append",
+        default=[],
+        help="Group name or id; can be used multiple times or with commas",
+    )
+
+    delete_group = subparsers.add_parser("delete-group", help="Delete user group")
+    delete_group.add_argument("group_id")
+
+    delete_user = subparsers.add_parser("delete-user", help="Delete user by id")
+    delete_user.add_argument("user_id")
+
+    generate_token = subparsers.add_parser(
+        "generate-api-token", help="Print just the access token for a user"
+    )
+    generate_token.add_argument("--username", required=True)
+    generate_token.add_argument("--password")
+
+    get_group = subparsers.add_parser("get-group", help="Get user group by id or name")
+    get_group.add_argument("group_id")
+
+    get_user = subparsers.add_parser("get-user", help="Get user by id")
+    get_user.add_argument("user_id")
+
     invite = subparsers.add_parser("invite", help="Invite a new user")
     invite.add_argument("--username", required=True)
     invite.add_argument("--email", required=True)
@@ -324,26 +406,13 @@ def main():
 
     invite_url = subparsers.add_parser("invite-url", help="Preview invite URL base")
 
-    accept = subparsers.add_parser("accept-invite", help="Accept an invite")
-    accept.add_argument("--token")
-    accept.add_argument("--password")
+    list_groups = subparsers.add_parser("list-groups", help="List user groups")
+
+    list_users = subparsers.add_parser("list-users", help="List users")
 
     login = subparsers.add_parser("login", help="Get an auth token")
     login.add_argument("--username", required=True)
     login.add_argument("--password")
-
-    generate_token = subparsers.add_parser(
-        "generate-api-token", help="Print just the access token for a user"
-    )
-    generate_token.add_argument("--username", required=True)
-    generate_token.add_argument("--password")
-
-    whoami = subparsers.add_parser("whoami", help="Show current user")
-
-    list_users = subparsers.add_parser("list-users", help="List users")
-
-    get_user = subparsers.add_parser("get-user", help="Get user by id")
-    get_user.add_argument("user_id")
 
     update_user = subparsers.add_parser("update-user", help="Patch user by id")
     update_user.add_argument("user_id")
@@ -396,49 +465,11 @@ def main():
         help="Remove group(s); can be used multiple times or with commas",
     )
 
-    delete_user = subparsers.add_parser("delete-user", help="Delete user by id")
-    delete_user.add_argument("user_id")
-
-    assign_group = subparsers.add_parser(
-        "assign-group", help="Assign group(s) to a user"
-    )
-    assign_group.add_argument("user_id")
-    assign_group.add_argument(
-        "--group",
-        action="append",
-        default=[],
-        help="Group name or id; can be used multiple times or with commas",
-    )
-
-    deassign_group = subparsers.add_parser(
-        "deassign-group", help="Remove group(s) from a user"
-    )
-    deassign_group.add_argument("user_id")
-    deassign_group.add_argument(
-        "--group",
-        action="append",
-        default=[],
-        help="Group name or id; can be used multiple times or with commas",
-    )
-
-    list_groups = subparsers.add_parser("list-groups", help="List user groups")
-
-    get_group = subparsers.add_parser("get-group", help="Get user group by id or name")
-    get_group.add_argument("group_id")
-
-    create_group = subparsers.add_parser("create-group", help="Create user group")
-    create_group.add_argument("name")
-
-    delete_group = subparsers.add_parser("delete-group", help="Delete user group")
-    delete_group.add_argument("group_id")
-
-    subparsers.add_parser(
-        "print-config-example", help="Print a sample usermanager.toml"
-    )
+    whoami = subparsers.add_parser("whoami", help="Show current user")
 
     args = parser.parse_args()
 
-    if args.command == "print-config-example":
+    if args.command == "config-example":
         print(
             'default_instance = "local"\n\n'
             "[instances.local]\n"
