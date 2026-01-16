@@ -125,7 +125,7 @@ def _apply_group_changes(current, add_groups, remove_groups):
 
 
 def _resolve_user_id(user_id, api_url, token):
-    if "@" not in user_id:
+    if _looks_like_object_id(user_id):
         return user_id
     status, body = _request_json("GET", f"{api_url}/users", token=token)
     if status >= 400:
@@ -135,20 +135,20 @@ def _resolve_user_id(user_id, api_url, token):
         payload = json.loads(body) if body else []
     except json.JSONDecodeError as exc:
         raise SystemExit("Failed to parse users response") from exc
-    if not isinstance(payload, list):
-        raise SystemExit("Unexpected users response")
-    matches = [
-        user
-        for user in payload
-        if isinstance(user, dict) and user.get("email") == user_id
-    ]
+    items = _parse_paginated_items(payload)
+    matches = []
+    for user in items:
+        if not isinstance(user, dict):
+            continue
+        if user.get("email") == user_id or user.get("username") == user_id:
+            matches.append(user)
     if not matches:
-        raise SystemExit(f"No user found with email: {user_id}")
+        raise SystemExit(f"No user found with email/username: {user_id}")
     if len(matches) > 1:
-        raise SystemExit(f"Multiple users found with email: {user_id}")
+        raise SystemExit(f"Multiple users found with email/username: {user_id}")
     resolved_id = matches[0].get("id")
     if not resolved_id:
-        raise SystemExit(f"User with email {user_id} has no id")
+        raise SystemExit(f"User with {user_id} has no id")
     return resolved_id
 
 
@@ -192,6 +192,47 @@ def _resolve_group_id(group_id, api_url, token):
     if not resolved_id:
         raise SystemExit(f"Group {group_id} has no id")
     return resolved_id
+
+
+def _resolve_group_name(group_name, api_url, token):
+    if not _looks_like_object_id(group_name):
+        return group_name
+    status, body = _request_json(
+        "GET", f"{api_url}/user-groups/{group_name}", token=token
+    )
+    if status >= 400:
+        _print_response(status, body)
+        raise SystemExit(1)
+    try:
+        payload = json.loads(body) if body else {}
+    except json.JSONDecodeError as exc:
+        raise SystemExit("Failed to parse user-group response") from exc
+    resolved_name = payload.get("name")
+    if not resolved_name:
+        raise SystemExit(f"Group {group_name} has no name")
+    return resolved_name
+
+
+def _resolve_group_names(group_names, api_url, token):
+    return _dedupe(
+        [_resolve_group_name(name, api_url, token) for name in group_names]
+    )
+
+
+def _update_user_groups(resolved_id, add_groups, remove_groups, api_url, token):
+    status, body = _request_json("GET", f"{api_url}/user/{resolved_id}", token=token)
+    if status >= 400:
+        _print_response(status, body)
+        raise SystemExit(1)
+    try:
+        payload = json.loads(body) if body else {}
+    except json.JSONDecodeError as exc:
+        raise SystemExit("Failed to parse user response") from exc
+    current_groups = _extract_group_names(payload)
+    data = {
+        "groups": _apply_group_changes(current_groups, add_groups, remove_groups),
+    }
+    return _request_json("PATCH", f"{api_url}/user/{resolved_id}", data, token=token)
 
 
 def _request_json(method, url, data=None, token=None, form=False):
@@ -352,6 +393,28 @@ def main():
     delete_user = subparsers.add_parser("delete-user", help="Delete user by id")
     delete_user.add_argument("user_id")
 
+    assign_group = subparsers.add_parser(
+        "assign-group", help="Assign group(s) to a user"
+    )
+    assign_group.add_argument("user_id")
+    assign_group.add_argument(
+        "--group",
+        action="append",
+        default=[],
+        help="Group name or id; can be used multiple times or with commas",
+    )
+
+    deassign_group = subparsers.add_parser(
+        "deassign-group", help="Remove group(s) from a user"
+    )
+    deassign_group.add_argument("user_id")
+    deassign_group.add_argument(
+        "--group",
+        action="append",
+        default=[],
+        help="Group name or id; can be used multiple times or with commas",
+    )
+
     list_groups = subparsers.add_parser("list-groups", help="List user groups")
 
     get_group = subparsers.add_parser("get-group", help="Get user group by id or name")
@@ -416,6 +479,8 @@ def main():
         "get-user",
         "update-user",
         "delete-user",
+        "assign-group",
+        "deassign-group",
         "list-groups",
         "get-group",
         "create-group",
@@ -500,6 +565,12 @@ def main():
         set_groups = _parse_group_list(args.set_groups)
         add_groups = _parse_group_list(args.add_group)
         remove_groups = _parse_group_list(args.remove_group)
+        if set_groups:
+            set_groups = _resolve_group_names(set_groups, api_url, token)
+        if add_groups:
+            add_groups = _resolve_group_names(add_groups, api_url, token)
+        if remove_groups:
+            remove_groups = _resolve_group_names(remove_groups, api_url, token)
         if set_groups or add_groups or remove_groups:
             if set_groups:
                 current_groups = set_groups
@@ -528,6 +599,24 @@ def main():
         resolved_id = _resolve_user_id(args.user_id, api_url, token)
         status, body = _request_json(
             "DELETE", f"{api_url}/user/{resolved_id}", token=token
+        )
+    elif args.command == "assign-group":
+        resolved_id = _resolve_user_id(args.user_id, api_url, token)
+        add_groups = _parse_group_list(args.group)
+        if not add_groups:
+            raise SystemExit("No groups specified. Use --group.")
+        add_groups = _resolve_group_names(add_groups, api_url, token)
+        status, body = _update_user_groups(
+            resolved_id, add_groups, [], api_url, token
+        )
+    elif args.command == "deassign-group":
+        resolved_id = _resolve_user_id(args.user_id, api_url, token)
+        remove_groups = _parse_group_list(args.group)
+        if not remove_groups:
+            raise SystemExit("No groups specified. Use --group.")
+        remove_groups = _resolve_group_names(remove_groups, api_url, token)
+        status, body = _update_user_groups(
+            resolved_id, [], remove_groups, api_url, token
         )
     elif args.command == "list-groups":
         status, body = _request_json("GET", f"{api_url}/user-groups", token=token)
