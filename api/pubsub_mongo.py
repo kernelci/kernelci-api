@@ -295,6 +295,21 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
             {'$set': update}
         )
 
+    @staticmethod
+    def _decode_redis_message(msg: Dict) -> Dict:
+        """Decode Redis message bytes to strings for JSON serialization"""
+        return {
+            'type': msg.get('type'),
+            'pattern': (msg.get('pattern').decode('utf-8')
+                        if msg.get('pattern') else None),
+            'channel': (msg['channel'].decode('utf-8')
+                        if isinstance(msg['channel'], bytes)
+                        else msg['channel']),
+            'data': (msg['data'].decode('utf-8')
+                     if isinstance(msg['data'], bytes)
+                     else msg['data']),
+        }
+
     def _eventhistory_to_cloudevent(self, event: Dict) -> str:
         """Convert eventhistory document to CloudEvent JSON string
 
@@ -547,10 +562,10 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
             # Filter by owner if not promiscuous
             if sub.promiscuous:
-                return msg
+                return self._decode_redis_message(msg)
             if 'owner' in msg_data and msg_data['owner'] != sub.user:
                 continue
-            return msg
+            return self._decode_redis_message(msg)
 
     async def publish(self, channel: str, message: str):
         """Publish a message on a channel (Redis only, no durability)"""
