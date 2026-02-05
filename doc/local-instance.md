@@ -38,7 +38,14 @@ encryption algorithms.  To generate one for your local instance:
 $ echo SECRET_KEY=$(openssl rand -hex 32) >> .env
 ```
 
-This `SECRET_KEY` environment variable is currently the only required one.
+For a fresh database, define an initial admin password too:
+
+```
+$ echo KCI_INITIAL_PASSWORD=<strong-initial-password> >> .env
+```
+
+`SECRET_KEY` is always required. `KCI_INITIAL_PASSWORD` is required only when
+no admin user exists yet.
 
 ### Start docker-compose
 
@@ -78,11 +85,21 @@ by authenticated users.  This will be required to run a full pipeline or to
 subscribe to the pub/sub interface.  Then some users have administrator rights,
 which enables them to create new user accounts.
 
-So let's start by creating the initial admin user account.  This can be done
-with the
+On startup, the API now bootstraps the first admin account automatically if no
+admin exists yet:
+
+* `KCI_INITIAL_PASSWORD` must be set, otherwise startup fails with an error
+  and the API exits.
+* `KCI_INITIAL_ADMIN_USERNAME` is optional (default: `admin`)
+* `KCI_INITIAL_ADMIN_EMAIL` is optional (default:
+  `<username>@kernelci.org`)
+
+After the first admin exists, `KCI_INITIAL_PASSWORD` is no longer required for
+startup.
+
+You can still create an admin manually with the
 [`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
-tool provided in the `kernelci-api` repository which has a wrapper script
-`setup_admin_user`.  It can be called with the name of the admin user you want to create such as `admin`, then enter the admin password when prompted. Also, provide email address for the user account in the command line argument.
+tool (wrapper: `setup_admin_user`), for example:
 
 ```
 $ ./scripts/setup_admin_user --email EMAIL
