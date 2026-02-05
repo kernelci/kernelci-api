@@ -44,11 +44,16 @@ user management.
 
 ### Create an admin user
 
-The very first admin user needs to be created with
-[`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
-tool provided in the `kernelci-api` repository.
-[Here](../local-instance/#create-an-admin-user-account) is a guide to
-setup an admin user. We can use this admin user to create other user accounts.
+On startup, if no admin exists yet, the API automatically creates the first
+admin user from environment variables:
+
+- `KCI_INITIAL_PASSWORD` (required for first bootstrap)
+- `KCI_INITIAL_ADMIN_USERNAME` (optional, default: `admin`)
+- `KCI_INITIAL_ADMIN_EMAIL` (optional, default: `<username>@kernelci.org`)
+
+[Here](../local-instance/#bootstrap-the-initial-admin-user) is a guide to
+bootstrap an admin user. You can use this admin account to create other user
+accounts.
 
 
 ### Invite user (Admin only, required)

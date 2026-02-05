@@ -76,7 +76,7 @@ show:
 kernelci-api | INFO:     172.20.0.1:49228 - "GET / HTTP/1.1" 200 OK
 ```
 
-### Create an admin user account
+### Bootstrap the initial admin user
 
 Some parts of the API don't require any authentication, like in the example
 above with the root `/` endpoint and most `GET` requests to retrieve data.
@@ -85,7 +85,7 @@ by authenticated users.  This will be required to run a full pipeline or to
 subscribe to the pub/sub interface.  Then some users have administrator rights,
 which enables them to create new user accounts.
 
-On startup, the API now bootstraps the first admin account automatically if no
+On startup, the API bootstraps the first admin account automatically if no
 admin exists yet:
 
 * `KCI_INITIAL_PASSWORD` must be set, otherwise startup fails with an error
@@ -97,29 +97,14 @@ admin exists yet:
 After the first admin exists, `KCI_INITIAL_PASSWORD` is no longer required for
 startup.
 
-You can still create an admin manually with the
-[`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
-tool (wrapper: `setup_admin_user`), for example:
-
-```
-$ ./scripts/setup_admin_user --email EMAIL
-Creating kernelci-api_api_run ... done
-Password for user 'admin':
-Creating admin user...
-```
-
-> **Note** Strictly speaking, only the `db` service needs to be running in
-> order to use this tool.  In fact it can also be used with any other MongoDB
-> instance such as an Atlas account using the `--mongo` command line argument.
-
 > **Note** For more details about how to create users via the raw API, see the
 > [API documentation](../api-details/#users)
 
 ### Create an admin API token
 
-Then to get an API token, the `/user/login` API endpoint can be used.  For example,
-to create an admin token with the same user name and password as used
-previously:
+Then to get an API token, the `/user/login` API endpoint can be used.  For
+example, to create an admin token with the same username and password set in
+`KCI_INITIAL_PASSWORD`:
 
 ```
 $ curl -X 'POST' \
