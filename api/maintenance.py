@@ -13,6 +13,8 @@ import datetime
 import os
 from pymongo import MongoClient
 
+DEFAULT_MONGO_SERVICE = "mongodb://db:27017"
+
 
 def purge_ids(db, collection, ids):
     """
@@ -33,16 +35,12 @@ def purge_ids(db, collection, ids):
 def connect_to_db():
     """
     Connect to the MongoDB database using the MONGO_SERVICE environment
-    variable.
+    variable, with a default fallback.
 
     Returns:
         db: The 'kernelci' MongoDB database instance.
-    Raises:
-        ValueError: If the MONGO_SERVICE environment variable is not set.
     """
-    mongo_service = os.environ["MONGO_SERVICE"]
-    if not mongo_service:
-        raise ValueError("MONGO_SERVICE environment variable is not set")
+    mongo_service = os.getenv("MONGO_SERVICE", DEFAULT_MONGO_SERVICE)
     client = MongoClient(mongo_service)
     db = client["kernelci"]
     return db

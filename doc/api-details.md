@@ -34,7 +34,9 @@ should be added to the .env file.
 By default, API uses Redis and Database services specified in [`docker-compose.yaml`](https://github.com/kernelci/kernelci-api/blob/main/docker-compose.yaml).
 API is configured to use redis hostname `redis` and database service
 URL `mongodb://db:27017` at the moment.
-In case of using different services or configurations, `REDIS_HOST` and `MONGO_SERVICE` variables should be added to .env file.
+`MONGO_SERVICE` must be set in `.env` (for example
+`MONGO_SERVICE=mongodb://db:27017`). `REDIS_HOST` is optional and only needed
+when not using the default redis hostname `redis`.
 
 
 ## Users

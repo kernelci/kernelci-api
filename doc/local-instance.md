@@ -44,8 +44,14 @@ For a fresh database, define an initial admin password too:
 $ echo KCI_INITIAL_PASSWORD=<strong-initial-password> >> .env
 ```
 
-`SECRET_KEY` is always required. `KCI_INITIAL_PASSWORD` is required only when
-no admin user exists yet.
+Set the MongoDB connection string too:
+
+```
+$ echo MONGO_SERVICE=mongodb://db:27017 >> .env
+```
+
+`SECRET_KEY` and `MONGO_SERVICE` are always required.
+`KCI_INITIAL_PASSWORD` is required only when no admin user exists yet.
 
 ### Start docker-compose
 

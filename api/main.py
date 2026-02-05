@@ -83,6 +83,41 @@ from .config import AuthSettings
 SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES = 15  # How often to run cleanup task
 SUBSCRIPTION_MAX_AGE_MINUTES = 15           # Max age before stale
 SUBSCRIPTION_CLEANUP_RETRY_MINUTES = 1      # Retry interval if cleanup fails
+DEFAULT_MONGO_SERVICE = "mongodb://db:27017"
+
+
+def _validate_startup_environment():
+    """Validate required environment variables before app initialization."""
+    required_env_vars = (
+        "SECRET_KEY",
+    )
+    missing = []
+    empty = []
+    for name in required_env_vars:
+        value = os.getenv(name)
+        if value is None:
+            missing.append(name)
+        elif value.strip() == "":
+            empty.append(name)
+
+    if missing or empty:
+        details = []
+        if missing:
+            details.append(
+                "missing: " + ", ".join(sorted(missing))
+            )
+        if empty:
+            details.append(
+                "empty: " + ", ".join(sorted(empty))
+            )
+        raise RuntimeError(
+            "Startup environment validation failed. "
+            "Set required environment variables before starting the API. "
+            + "; ".join(details)
+        )
+
+
+_validate_startup_environment()
 
 
 @asynccontextmanager
@@ -103,7 +138,7 @@ API_VERSIONS = ['v0']
 metrics = Metrics()
 app = FastAPI(lifespan=lifespan, debug=True, docs_url=None, redoc_url=None)
 
-db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
+db = Database(service=os.getenv("MONGO_SERVICE", DEFAULT_MONGO_SERVICE))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
 
