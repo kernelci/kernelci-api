@@ -15,6 +15,7 @@ import asyncio
 import traceback
 import secrets
 import ipaddress
+import pymongo
 from typing import List, Union, Optional
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
@@ -90,6 +91,7 @@ async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
     await pubsub_startup()
     await create_indexes()
     await initialize_beanie()
+    await ensure_initial_admin_user()
     await ensure_legacy_node_editors()
     yield
 
@@ -164,6 +166,44 @@ async def ensure_legacy_node_editors():
             continue
         user.groups.append(group)
         await db.update(user)
+
+
+async def ensure_initial_admin_user():
+    """Create initial admin user on startup when none exists."""
+    admin_count = await db.count(User, {"is_superuser": True})
+    if admin_count > 0:
+        return
+
+    initial_password = os.getenv("KCI_INITIAL_PASSWORD")
+    if not initial_password:
+        raise RuntimeError(
+            "No admin user exists. Set KCI_INITIAL_PASSWORD to bootstrap "
+            "the initial admin user."
+        )
+
+    username = os.getenv("KCI_INITIAL_ADMIN_USERNAME") or "admin"
+    email = os.getenv("KCI_INITIAL_ADMIN_EMAIL") or f"{username}@kernelci.org"
+
+    try:
+        await db.create(User(
+            username=username,
+            hashed_password=Authentication.get_password_hash(initial_password),
+            email=email,
+            is_superuser=1,
+            is_verified=1,
+        ))
+        print(f"Created initial admin user '{username}' ({email}).")
+    except pymongo.errors.DuplicateKeyError as exc:
+        # Handle startup races across multiple API instances.
+        admin_count = await db.count(User, {"is_superuser": True})
+        if admin_count > 0:
+            return
+        raise RuntimeError(
+            "Failed to bootstrap initial admin user due to duplicate "
+            f"username/email conflict ({exc}). "
+            "Set KCI_INITIAL_ADMIN_USERNAME/KCI_INITIAL_ADMIN_EMAIL to unique "
+            "values or create an admin manually."
+        ) from exc
 
 
 @app.exception_handler(ValueError)
