@@ -11,7 +11,9 @@ from beanie import init_beanie
 from fastapi_pagination.ext.motor import paginate
 from motor import motor_asyncio
 from redis import asyncio as aioredis
-from kernelci.api.models import EventHistory, Hierarchy, Node, parse_node_obj
+from kernelci.api.models import (
+    EventHistory, Hierarchy, Node, TelemetryEvent, parse_node_obj
+)
 from .models import User, UserGroup
 
 
@@ -28,6 +30,7 @@ class Database:
         Node: 'node',
         UserGroup: 'usergroup',
         EventHistory: 'eventhistory',
+        TelemetryEvent: 'telemetry',
     }
 
     OPERATOR_MAP = {
