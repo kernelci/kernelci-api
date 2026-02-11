@@ -1050,6 +1050,13 @@ TELEMETRY_STATS_GROUP_FIELDS = {
 async def get_telemetry_stats(request: Request):
     """Get aggregated telemetry statistics.
 
+    This is rule-based anomaly detection using 
+    thresholded empirical rates computed over
+    a sliding (rolling) time window.
+    This is not a full anomaly detection system 
+    with baselines or machine learning, but at 
+    last something to start with.
+
     Query parameters:
     - group_by: Comma-separated fields to group by
       (runtime, device_type, job_name, tree, branch, arch,
@@ -1136,6 +1143,137 @@ async def get_telemetry_stats(request: Request):
         row['skip'] = doc['skip']
         row['infra_error'] = doc['infra_error']
         output.append(row)
+
+    return JSONResponse(content=jsonable_encoder(output))
+
+# This is test value, can adjust based on expected query patterns and volumes.
+ANOMALY_WINDOW_MAP = {
+    '1h': 1, '3h': 3, '6h': 6, '12h': 12, '24h': 24, '48h': 48,
+}
+
+
+@app.get('/telemetry/anomalies', tags=["telemetry"])
+async def get_telemetry_anomalies(
+    window: str = Query(
+        '6h', description='Time window: 1h, 3h, 6h, 12h, 24h, 48h'
+    ),
+    threshold: float = Query(
+        0.5, ge=0.0, le=1.0,
+        description='Min failure/infra error rate to flag (0.0-1.0)'
+    ),
+    min_total: int = Query(
+        3, ge=1,
+        description='Min events in window to consider (avoids noise)'
+    ),
+):
+    """Detect anomalies in telemetry data.
+
+    Finds runtime+device_type combinations where the infra error
+    rate or failure rate exceeds the threshold within the given
+    time window. Also detects runtimes with submission errors.
+
+    Returns a list sorted by severity (highest error rate first).
+    """
+    metrics.add('http_requests_total', 1)
+
+    hours = ANOMALY_WINDOW_MAP.get(window)
+    if not hours:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid window '{window}'. "
+                   f"Use: {', '.join(ANOMALY_WINDOW_MAP.keys())}",
+        )
+    since = datetime.utcnow() - timedelta(hours=hours)
+
+    # Anomaly 1: High infra error / failure rate per runtime+device_type
+    result_pipeline = [
+        {'$match': {
+            'kind': {'$in': ['job_result', 'test_result']},
+            'ts': {'$gte': since},
+        }},
+        {'$group': {
+            '_id': {
+                'runtime': '$runtime',
+                'device_type': '$device_type',
+            },
+            'total': {'$sum': 1},
+            'fail': {'$sum': {
+                '$cond': [{'$eq': ['$result', 'fail']}, 1, 0]
+            }},
+            'incomplete': {'$sum': {
+                '$cond': [{'$eq': ['$result', 'incomplete']}, 1, 0]
+            }},
+            'infra_error': {'$sum': {
+                '$cond': ['$is_infra_error', 1, 0]
+            }},
+        }},
+        {'$match': {'total': {'$gte': min_total}}},
+        {'$addFields': {
+            'infra_rate': {
+                '$divide': ['$infra_error', '$total']
+            },
+            'fail_rate': {
+                '$divide': [
+                    {'$add': ['$fail', '$incomplete']}, '$total'
+                ]
+            },
+        }},
+        {'$match': {
+            '$or': [
+                {'infra_rate': {'$gte': threshold}},
+                {'fail_rate': {'$gte': threshold}},
+            ]
+        }},
+        {'$sort': {'infra_rate': -1, 'fail_rate': -1}},
+    ]
+
+    # Anomaly 2: Submission/connectivity errors per runtime
+    error_pipeline = [
+        {'$match': {
+            'kind': {'$in': ['runtime_error', 'job_skip']},
+            'ts': {'$gte': since},
+        }},
+        {'$group': {
+            '_id': {
+                'runtime': '$runtime',
+                'error_type': '$error_type',
+            },
+            'count': {'$sum': 1},
+        }},
+        {'$match': {'count': {'$gte': min_total}}},
+        {'$sort': {'count': -1}},
+    ]
+
+    result_anomalies = await db.aggregate(
+        TelemetryEvent, result_pipeline
+    )
+    error_anomalies = await db.aggregate(
+        TelemetryEvent, error_pipeline
+    )
+
+    output = {
+        'window': window,
+        'threshold': threshold,
+        'min_total': min_total,
+        'since': since.isoformat(),
+        'result_anomalies': [],
+        'error_anomalies': [],
+    }
+
+    for doc in result_anomalies:
+        row = doc['_id'].copy()
+        row['total'] = doc['total']
+        row['fail'] = doc['fail']
+        row['incomplete'] = doc['incomplete']
+        row['infra_error'] = doc['infra_error']
+        row['infra_rate'] = round(doc['infra_rate'], 3)
+        row['fail_rate'] = round(doc['fail_rate'], 3)
+        output['result_anomalies'].append(row)
+
+    for doc in error_anomalies:
+        row = doc['_id'].copy()
+        row['count'] = doc['count']
+        output['error_anomalies'].append(row)
 
     return JSONResponse(content=jsonable_encoder(output))
 
