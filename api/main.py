@@ -1040,6 +1040,106 @@ async def get_telemetry(request: Request):
     return paginated_resp
 
 
+TELEMETRY_STATS_GROUP_FIELDS = {
+    'runtime', 'device_type', 'job_name', 'tree', 'branch',
+    'arch', 'kind', 'error_type',
+}
+
+
+@app.get('/telemetry/stats', tags=["telemetry"])
+async def get_telemetry_stats(request: Request):
+    """Get aggregated telemetry statistics.
+
+    Query parameters:
+    - group_by: Comma-separated fields to group by
+      (runtime, device_type, job_name, tree, branch, arch,
+      kind, error_type)
+    - kind: Filter by event kind before aggregating
+    - runtime: Filter by runtime name
+    - since/until: Time range (ISO 8601)
+
+    Returns grouped counts with pass/fail/incomplete/infra_error
+    breakdowns for result-bearing events.
+    """
+    metrics.add('http_requests_total', 1)
+    query_params = dict(request.query_params)
+
+    group_by_str = query_params.pop('group_by', None)
+    if not group_by_str:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="'group_by' parameter is required",
+        )
+    group_by = [f.strip() for f in group_by_str.split(',')]
+    invalid = set(group_by) - TELEMETRY_STATS_GROUP_FIELDS
+    if invalid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid group_by fields: {invalid}",
+        )
+
+    match_stage = {}
+    for key in ('kind', 'runtime', 'device_type', 'job_name',
+                'tree', 'branch', 'arch'):
+        val = query_params.pop(key, None)
+        if val:
+            match_stage[key] = val
+
+    since = query_params.pop('since', None)
+    until = query_params.pop('until', None)
+    if since or until:
+        ts_filter = {}
+        if since:
+            ts_filter['$gte'] = datetime.fromisoformat(since)
+        if until:
+            ts_filter['$lte'] = datetime.fromisoformat(until)
+        match_stage['ts'] = ts_filter
+
+    group_id = {f: f'${f}' for f in group_by}
+
+    pipeline = []
+    if match_stage:
+        pipeline.append({'$match': match_stage})
+    pipeline.append({
+        '$group': {
+            '_id': group_id,
+            'total': {'$sum': 1},
+            'pass': {'$sum': {
+                '$cond': [{'$eq': ['$result', 'pass']}, 1, 0]
+            }},
+            'fail': {'$sum': {
+                '$cond': [{'$eq': ['$result', 'fail']}, 1, 0]
+            }},
+            'incomplete': {'$sum': {
+                '$cond': [{'$eq': ['$result', 'incomplete']}, 1, 0]
+            }},
+            'skip': {'$sum': {
+                '$cond': [{'$eq': ['$result', 'skip']}, 1, 0]
+            }},
+            'infra_error': {'$sum': {
+                '$cond': ['$is_infra_error', 1, 0]
+            }},
+        }
+    })
+    pipeline.append({'$sort': {'total': -1}})
+
+    results = await db.aggregate(TelemetryEvent, pipeline)
+
+    # Flatten _id into top-level fields
+    output = []
+    for doc in results:
+        row = doc['_id'].copy()
+        row['total'] = doc['total']
+        row['pass'] = doc['pass']
+        row['fail'] = doc['fail']
+        row['incomplete'] = doc['incomplete']
+        row['skip'] = doc['skip']
+        row['infra_error'] = doc['infra_error']
+        output.append(row)
+
+    return JSONResponse(content=jsonable_encoder(output))
+
+
 # -----------------------------------------------------------------------------
 # Nodes
 def _get_node_event_data(operation, node, is_hierarchy=False):

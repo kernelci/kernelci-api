@@ -297,6 +297,12 @@ class Database:
             raise ValueError(f"No object found with id: {obj.id}")
         return obj.__class__(**await col.find_one(ObjectId(obj.id)))
 
+    async def aggregate(self, model, pipeline):
+        """Run an aggregation pipeline on a model's collection"""
+        col = self._get_collection(model)
+        cursor = col.aggregate(pipeline)
+        return await cursor.to_list(length=None)
+
     async def delete_by_id(self, model, obj_id):
         """Delete one object matching a given id"""
         col = self._get_collection(model)
