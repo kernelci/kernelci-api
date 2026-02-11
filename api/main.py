@@ -994,6 +994,52 @@ async def post_telemetry(
     return {"inserted": len(result.inserted_ids)}
 
 
+@app.get('/telemetry', response_model=PageModel, tags=["telemetry"])
+async def get_telemetry(request: Request):
+    """Query telemetry events with optional filters.
+
+    Supports filtering by any TelemetryEvent field, plus time range
+    via 'since' and 'until' parameters (ISO 8601 format).
+    Results are paginated (default limit=50).
+    """
+    metrics.add('http_requests_total', 1)
+    query_params = dict(request.query_params)
+
+    for pg_key in ['limit', 'offset']:
+        query_params.pop(pg_key, None)
+
+    since = query_params.pop('since', None)
+    until = query_params.pop('until', None)
+    if since or until:
+        ts_filter = {}
+        if since:
+            ts_filter['$gte'] = datetime.fromisoformat(since)
+        if until:
+            ts_filter['$lte'] = datetime.fromisoformat(until)
+        query_params['ts'] = ts_filter
+
+    # Convert string 'true'/'false' for boolean fields
+    if 'is_infra_error' in query_params:
+        val = query_params['is_infra_error'].lower()
+        if val not in ['true', 'false']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid value for is_infra_error, must be 'true' or 'false'",
+            )
+        if val == 'true':
+            query_params['is_infra_error'] = True
+        else:
+            query_params['is_infra_error'] = False
+
+    paginated_resp = await db.find_by_attributes(
+        TelemetryEvent, query_params
+    )
+    paginated_resp.items = serialize_paginated_data(
+        TelemetryEvent, paginated_resp.items
+    )
+    return paginated_resp
+
+
 # -----------------------------------------------------------------------------
 # Nodes
 def _get_node_event_data(operation, node, is_hierarchy=False):
