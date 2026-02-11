@@ -53,6 +53,7 @@ from kernelci.api.models import (
     parse_node_obj,
     KernelVersion,
     EventHistory,
+    TelemetryEvent,
 )
 from .auth import Authentication
 from .db import Database
@@ -951,6 +952,46 @@ async def get_events(request: Request):
         resp_list.append(item)
     json_comp = jsonable_encoder(resp_list)
     return JSONResponse(content=json_comp)
+
+
+# -----------------------------------------------------------------------------
+# Telemetry of pipeline execution and other events(not node stuff).
+# This is a separate collection from
+# EventHistory since it may have a much higher volume and different query patterns,
+# and we want to be able to optimize indexes and storage separately.
+
+@app.post('/telemetry', response_model=dict, tags=["telemetry"])
+async def post_telemetry(
+    events: List[dict],
+    current_user: User = Depends(get_current_user),
+):
+    """Bulk insert telemetry events.
+
+    Accepts a list of telemetry event dicts. Each event must have at
+    least 'kind' and 'runtime' fields. Events are validated against
+    the TelemetryEvent model before insertion.
+    """
+    metrics.add('http_requests_total', 1)
+    if not events:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Events list cannot be empty",
+        )
+    col = db._get_collection(TelemetryEvent)
+    docs = []
+    for event in events:
+        try:
+            obj = TelemetryEvent(**event)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid telemetry event: {exc}",
+            ) from exc
+        doc = obj.model_dump(by_alias=True)
+        doc.pop('_id', None)
+        docs.append(doc)
+    result = await col.insert_many(docs)
+    return {"inserted": len(result.inserted_ids)}
 
 
 # -----------------------------------------------------------------------------
