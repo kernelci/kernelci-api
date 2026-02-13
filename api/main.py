@@ -957,8 +957,9 @@ async def get_events(request: Request):
 # -----------------------------------------------------------------------------
 # Telemetry of pipeline execution and other events(not node stuff).
 # This is a separate collection from
-# EventHistory since it may have a much higher volume and different query patterns,
-# and we want to be able to optimize indexes and storage separately.
+# EventHistory since it may have a much higher volume and different
+# query patterns and allows us to optimize indexes and storage
+# separately.
 
 @app.post('/telemetry', response_model=dict, tags=["telemetry"])
 async def post_telemetry(
@@ -1024,7 +1025,7 @@ async def get_telemetry(request: Request):
         if val not in ['true', 'false']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid value for is_infra_error, must be 'true' or 'false'",
+                detail="Bad is_infra_error value, use 'true' or 'false'",
             )
         if val == 'true':
             query_params['is_infra_error'] = True
@@ -1050,11 +1051,11 @@ TELEMETRY_STATS_GROUP_FIELDS = {
 async def get_telemetry_stats(request: Request):
     """Get aggregated telemetry statistics.
 
-    This is rule-based anomaly detection using 
+    This is rule-based anomaly detection using
     thresholded empirical rates computed over
     a sliding (rolling) time window.
-    This is not a full anomaly detection system 
-    with baselines or machine learning, but at 
+    This is not a full anomaly detection system
+    with baselines or machine learning, but at
     last something to start with.
 
     Query parameters:
