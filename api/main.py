@@ -978,7 +978,6 @@ async def post_telemetry(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Events list cannot be empty",
         )
-    col = db._get_collection(TelemetryEvent)
     docs = []
     for event in events:
         try:
@@ -991,8 +990,8 @@ async def post_telemetry(
         doc = obj.model_dump(by_alias=True)
         doc.pop('_id', None)
         docs.append(doc)
-    result = await col.insert_many(docs)
-    return {"inserted": len(result.inserted_ids)}
+    inserted_ids = await db.insert_many(TelemetryEvent, docs)
+    return {"inserted": len(inserted_ids)}
 
 
 @app.get('/telemetry', response_model=PageModel, tags=["telemetry"])
@@ -1086,31 +1085,25 @@ async def get_telemetry_stats(request: Request):
             detail=f"Invalid group_by fields: {invalid}",
         )
 
-    match_stage = {}
-    for key in ('kind', 'runtime', 'device_type', 'job_name',
-                'tree', 'branch', 'arch'):
-        val = query_params.pop(key, None)
-        if val:
-            match_stage[key] = val
+    match_stage = {
+        key: query_params.pop(key)
+        for key in ('kind', 'runtime', 'device_type', 'job_name',
+                    'tree', 'branch', 'arch')
+        if query_params.get(key)
+    }
 
     since = query_params.pop('since', None)
     until = query_params.pop('until', None)
     if since or until:
-        ts_filter = {}
-        if since:
-            ts_filter['$gte'] = datetime.fromisoformat(since)
-        if until:
-            ts_filter['$lte'] = datetime.fromisoformat(until)
-        match_stage['ts'] = ts_filter
+        match_stage['ts'] = {
+            **({'$gte': datetime.fromisoformat(since)} if since else {}),
+            **({'$lte': datetime.fromisoformat(until)} if until else {}),
+        }
 
-    group_id = {f: f'${f}' for f in group_by}
-
-    pipeline = []
-    if match_stage:
-        pipeline.append({'$match': match_stage})
+    pipeline = [{'$match': match_stage}] if match_stage else []
     pipeline.append({
         '$group': {
-            '_id': group_id,
+            '_id': {f: f'${f}' for f in group_by},
             'total': {'$sum': 1},
             'pass': {'$sum': {
                 '$cond': [{'$eq': ['$result', 'pass']}, 1, 0]
@@ -1133,19 +1126,19 @@ async def get_telemetry_stats(request: Request):
 
     results = await db.aggregate(TelemetryEvent, pipeline)
 
-    # Flatten _id into top-level fields
-    output = []
-    for doc in results:
-        row = doc['_id'].copy()
-        row['total'] = doc['total']
-        row['pass'] = doc['pass']
-        row['fail'] = doc['fail']
-        row['incomplete'] = doc['incomplete']
-        row['skip'] = doc['skip']
-        row['infra_error'] = doc['infra_error']
-        output.append(row)
-
-    return JSONResponse(content=jsonable_encoder(output))
+    results = await db.aggregate(TelemetryEvent, pipeline)
+    return JSONResponse(content=jsonable_encoder([
+        {
+            **doc['_id'].copy(),
+            'total': doc['total'],
+            'pass': doc['pass'],
+            'fail': doc['fail'],
+            'incomplete': doc['incomplete'],
+            'skip': doc['skip'],
+            'infra_error': doc['infra_error'],
+        }
+        for doc in results
+    ]))
 
 # This is test value, can adjust based on expected query patterns and volumes.
 ANOMALY_WINDOW_MAP = {
