@@ -245,6 +245,12 @@ class Database:
         obj.id = res.inserted_id
         return obj
 
+    async def insert_many(self, model, documents):
+        """Create multiple documents in a collection."""
+        col = self._get_collection(model)
+        result = await col.insert_many(documents)
+        return result.inserted_ids
+
     async def _create_recursively(self, hierarchy: Hierarchy, parent: Node,
                                   cls, col):
         obj = parse_node_obj(hierarchy.node)
