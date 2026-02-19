@@ -298,14 +298,9 @@ def main():
     default_paths = "\n".join(f"  - {path}" for path in DEFAULT_CONFIG_PATHS)
     parser = argparse.ArgumentParser(
         description="KernelCI API user management helper",
-        usage=(
-            "usermanager.py [-h] [--config CONFIG] [--api-url API_URL] "
-            "[--token TOKEN] [--instance INSTANCE] [--token-label TOKEN_LABEL]\n"
-            "                <command> [<args>]\n\n"
-            "Commands:\n"
-            f"{command_list}"
-        ),
         epilog=(
+            "Commands:\n"
+            f"{command_list}\n\n"
             "Examples:\n"
             "  ./scripts/usermanager.py invite --username alice --email "
             "alice@example.org --return-token\n"
