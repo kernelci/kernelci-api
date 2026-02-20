@@ -15,6 +15,7 @@ import asyncio
 import traceback
 import secrets
 import ipaddress
+import pymongo
 from typing import List, Union, Optional
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
@@ -83,6 +84,41 @@ from .config import AuthSettings
 SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES = 15  # How often to run cleanup task
 SUBSCRIPTION_MAX_AGE_MINUTES = 15           # Max age before stale
 SUBSCRIPTION_CLEANUP_RETRY_MINUTES = 1      # Retry interval if cleanup fails
+DEFAULT_MONGO_SERVICE = "mongodb://db:27017"
+
+
+def _validate_startup_environment():
+    """Validate required environment variables before app initialization."""
+    required_env_vars = (
+        "SECRET_KEY",
+    )
+    missing = []
+    empty = []
+    for name in required_env_vars:
+        value = os.getenv(name)
+        if value is None:
+            missing.append(name)
+        elif value.strip() == "":
+            empty.append(name)
+
+    if missing or empty:
+        details = []
+        if missing:
+            details.append(
+                "missing: " + ", ".join(sorted(missing))
+            )
+        if empty:
+            details.append(
+                "empty: " + ", ".join(sorted(empty))
+            )
+        raise RuntimeError(
+            "Startup environment validation failed. "
+            "Set required environment variables before starting the API. "
+            + "; ".join(details)
+        )
+
+
+_validate_startup_environment()
 
 
 @asynccontextmanager
@@ -91,6 +127,7 @@ async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
     await pubsub_startup()
     await create_indexes()
     await initialize_beanie()
+    await ensure_initial_admin_user()
     await ensure_legacy_node_editors()
     yield
 
@@ -102,7 +139,7 @@ API_VERSIONS = ['v0']
 metrics = Metrics()
 app = FastAPI(lifespan=lifespan, debug=True, docs_url=None, redoc_url=None)
 
-db = Database(service=(os.getenv('MONGO_SERVICE') or 'mongodb://db:27017'))
+db = Database(service=os.getenv("MONGO_SERVICE", DEFAULT_MONGO_SERVICE))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
 
@@ -165,6 +202,44 @@ async def ensure_legacy_node_editors():
             continue
         user.groups.append(group)
         await db.update(user)
+
+
+async def ensure_initial_admin_user():
+    """Create initial admin user on startup when none exists."""
+    admin_count = await db.count(User, {"is_superuser": True})
+    if admin_count > 0:
+        return
+
+    initial_password = os.getenv("KCI_INITIAL_PASSWORD")
+    if not initial_password:
+        raise RuntimeError(
+            "No admin user exists. Set KCI_INITIAL_PASSWORD to bootstrap "
+            "the initial admin user."
+        )
+
+    username = os.getenv("KCI_INITIAL_ADMIN_USERNAME") or "admin"
+    email = os.getenv("KCI_INITIAL_ADMIN_EMAIL") or f"{username}@kernelci.org"
+
+    try:
+        await db.create(User(
+            username=username,
+            hashed_password=Authentication.get_password_hash(initial_password),
+            email=email,
+            is_superuser=1,
+            is_verified=1,
+        ))
+        print(f"Created initial admin user '{username}' ({email}).")
+    except pymongo.errors.DuplicateKeyError as exc:
+        # Handle startup races across multiple API instances.
+        admin_count = await db.count(User, {"is_superuser": True})
+        if admin_count > 0:
+            return
+        raise RuntimeError(
+            "Failed to bootstrap initial admin user due to duplicate "
+            f"username/email conflict ({exc}). "
+            "Set KCI_INITIAL_ADMIN_USERNAME/KCI_INITIAL_ADMIN_EMAIL to unique "
+            "values or create an admin manually."
+        ) from exc
 
 
 @app.exception_handler(ValueError)

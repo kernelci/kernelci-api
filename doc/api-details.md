@@ -34,7 +34,9 @@ should be added to the .env file.
 By default, API uses Redis and Database services specified in [`docker-compose.yaml`](https://github.com/kernelci/kernelci-api/blob/main/docker-compose.yaml).
 API is configured to use redis hostname `redis` and database service
 URL `mongodb://db:27017` at the moment.
-In case of using different services or configurations, `REDIS_HOST` and `MONGO_SERVICE` variables should be added to .env file.
+`MONGO_SERVICE` must be set in `.env` (for example
+`MONGO_SERVICE=mongodb://db:27017`). `REDIS_HOST` is optional and only needed
+when not using the default redis hostname `redis`.
 
 
 ## Users
@@ -44,11 +46,16 @@ user management.
 
 ### Create an admin user
 
-The very first admin user needs to be created with
-[`api.admin`](https://github.com/kernelci/kernelci-api/blob/main/api/admin.py)
-tool provided in the `kernelci-api` repository.
-[Here](../local-instance/#create-an-admin-user-account) is a guide to
-setup an admin user. We can use this admin user to create other user accounts.
+On startup, if no admin exists yet, the API automatically creates the first
+admin user from environment variables:
+
+- `KCI_INITIAL_PASSWORD` (required for first bootstrap)
+- `KCI_INITIAL_ADMIN_USERNAME` (optional, default: `admin`)
+- `KCI_INITIAL_ADMIN_EMAIL` (optional, default: `<username>@kernelci.org`)
+
+[Here](../local-instance/#bootstrap-the-initial-admin-user) is a guide to
+bootstrap an admin user. You can use this admin account to create other user
+accounts.
 
 
 ### Invite user (Admin only, required)
