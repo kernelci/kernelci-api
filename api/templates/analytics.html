@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>KernelCI Pipeline Analytics</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .navbar-brand { font-weight: 700; }
+        .summary-card {
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .summary-card:hover { transform: translateY(-3px); }
+        .summary-card .number { font-size: 2.2rem; font-weight: 700; }
+        .summary-card .label { font-size: 0.95rem; opacity: 0.9; }
+        .card-total { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .card-pass { background: linear-gradient(135deg, #56ab2f, #a8e063); }
+        .card-fail { background: linear-gradient(135deg, #eb3349, #f45c43); }
+        .card-infra { background: linear-gradient(135deg, #f7971e, #ffd200); }
+        .card-incomplete { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .card-skip { background: linear-gradient(135deg, #6c757d, #adb5bd); }
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .panel h5 { font-weight: 600; margin-bottom: 16px; }
+        .anomaly-alert {
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            border-left: 4px solid;
+        }
+        .anomaly-high { background: #fff5f5; border-color: #dc3545; }
+        .anomaly-medium { background: #fff8e1; border-color: #ffc107; }
+        .anomaly-low { background: #e8f5e9; border-color: #28a745; }
+        .table th { font-weight: 600; font-size: 0.85rem; text-transform: uppercase; color: #6c757d; }
+        .badge-pass { background-color: #28a745; }
+        .badge-fail { background-color: #dc3545; }
+        .badge-infra { background-color: #fd7e14; }
+        .badge-incomplete { background-color: #17a2b8; }
+        .badge-skip { background-color: #6c757d; }
+        .progress { height: 8px; border-radius: 4px; }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.85); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column;
+        }
+        .error-row { cursor: pointer; }
+        .error-row:hover { background-color: #f8f9fa; }
+        .nav-links a { color: rgba(255,255,255,0.8); text-decoration: none; margin-left: 16px; }
+        .nav-links a:hover { color: white; }
+        .chart-container { position: relative; height: 300px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+        <div class="container-fluid">
+            <span class="navbar-brand">
+                <i class="bi bi-activity"></i> KernelCI Pipeline Analytics
+            </span>
+            <div class="nav-links">
+                <a href="/dashboard"><i class="bi bi-grid"></i> Dashboard</a>
+                <a href="/stats"><i class="bi bi-bar-chart"></i> Stats</a>
+                <a href="/viewer"><i class="bi bi-eye"></i> Viewer</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 py-3">
+        <!-- Filters -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="panel py-3">
+                    <div class="row align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Time Window</label>
+                            <select class="form-select" id="timeWindow">
+                                <option value="1h">Last 1 hour</option>
+                                <option value="3h">Last 3 hours</option>
+                                <option value="6h" selected>Last 6 hours</option>
+                                <option value="12h">Last 12 hours</option>
+                                <option value="24h">Last 24 hours</option>
+                                <option value="48h">Last 48 hours</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Runtime</label>
+                            <select class="form-select" id="filterRuntime">
+                                <option value="">All runtimes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Tree</label>
+                            <select class="form-select" id="filterTree">
+                                <option value="">All trees</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Event Kind</label>
+                            <select class="form-select" id="filterKind">
+                                <option value="">All kinds</option>
+                                <option value="job_submission">Job Submission</option>
+                                <option value="job_result">Job Result</option>
+                                <option value="test_result">Test Result</option>
+                                <option value="runtime_error">Runtime Error</option>
+                                <option value="job_skip">Job Skip</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label fw-semibold">Anomaly Threshold</label>
+                            <select class="form-select" id="anomalyThreshold">
+                                <option value="0.3">30%</option>
+                                <option value="0.5" selected>50%</option>
+                                <option value="0.7">70%</option>
+                                <option value="0.9">90%</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" id="refreshBtn">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4" id="summaryCards">
+            <div class="col-md-2">
+                <div class="summary-card card-total">
+                    <div class="number" id="totalEvents">-</div>
+                    <div class="label">Total Events</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="summary-card card-pass">
+                    <div class="number" id="passCount">-</div>
+                    <div class="label">Pass</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="summary-card card-fail">
+                    <div class="number" id="failCount">-</div>
+                    <div class="label">Fail</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="summary-card card-infra">
+                    <div class="number" id="infraCount">-</div>
+                    <div class="label">Infra Errors</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="summary-card card-incomplete">
+                    <div class="number" id="incompleteCount">-</div>
+                    <div class="label">Incomplete</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="summary-card card-skip">
+                    <div class="number" id="skipCount">-</div>
+                    <div class="label">Skip</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Anomalies -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="panel">
+                    <h5><i class="bi bi-exclamation-triangle text-warning"></i> Anomaly Detection</h5>
+                    <div id="anomalySection">
+                        <p class="text-muted">Loading anomalies...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="panel">
+                    <h5><i class="bi bi-pie-chart"></i> Results Distribution</h5>
+                    <div class="chart-container">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="panel">
+                    <h5><i class="bi bi-bar-chart"></i> Events by Kind</h5>
+                    <div class="chart-container">
+                        <canvas id="kindChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Tables -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="panel">
+                    <h5><i class="bi bi-hdd-rack"></i> Stats by Runtime</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="runtimeTable">
+                            <thead>
+                                <tr>
+                                    <th>Runtime</th>
+                                    <th>Total</th>
+                                    <th>Pass</th>
+                                    <th>Fail</th>
+                                    <th>Infra Err</th>
+                                    <th>Health</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="panel">
+                    <h5><i class="bi bi-diagram-3"></i> Stats by Tree</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm" id="treeTable">
+                            <thead>
+                                <tr>
+                                    <th>Tree</th>
+                                    <th>Total</th>
+                                    <th>Pass</th>
+                                    <th>Fail</th>
+                                    <th>Infra Err</th>
+                                    <th>Health</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Device Type Stats and Recent Errors -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="panel">
+                    <h5><i class="bi bi-cpu"></i> Stats by Device Type</h5>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm" id="deviceTable">
+                            <thead>
+                                <tr>
+                                    <th>Device Type</th>
+                                    <th>Total</th>
+                                    <th>Pass</th>
+                                    <th>Fail</th>
+                                    <th>Infra Err</th>
+                                    <th>Health</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="panel">
+                    <h5><i class="bi bi-bug"></i> Recent Errors</h5>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm" id="errorsTable">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Kind</th>
+                                    <th>Runtime</th>
+                                    <th>Error Type</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Runtime Health Chart -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="panel">
+                    <h5><i class="bi bi-heart-pulse"></i> Runtime Health Overview</h5>
+                    <div style="height: 350px;">
+                        <canvas id="runtimeHealthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display:none;">
+        <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-3 fw-semibold text-primary">Loading analytics data...</p>
+    </div>
+
+    <script>
+    var apiurl;
+    var charts = {};
+
+    function initAPI() {
+        var pageurl = window.location.href.split('?')[0];
+        apiurl = pageurl.replace('/analytics', '');
+    }
+
+    function getTimeRange() {
+        var windowMap = {
+            '1h': 1, '3h': 3, '6h': 6, '12h': 12, '24h': 24, '48h': 48
+        };
+        var win = $('#timeWindow').val();
+        var hours = windowMap[win] || 6;
+        var since = new Date(Date.now() - hours * 3600 * 1000);
+        return { since: since.toISOString(), window: win };
+    }
+
+    function buildFilterParams() {
+        var params = {};
+        var runtime = $('#filterRuntime').val();
+        var tree = $('#filterTree').val();
+        var kind = $('#filterKind').val();
+        if (runtime) params.runtime = runtime;
+        if (tree) params.tree = tree;
+        if (kind) params.kind = kind;
+        return params;
+    }
+
+    function showLoading() { $('#loadingOverlay').show(); }
+    function hideLoading() { $('#loadingOverlay').hide(); }
+
+    function formatNumber(n) {
+        if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+        return n.toString();
+    }
+
+    function healthBar(pass, total) {
+        if (total === 0) return '<span class="text-muted">N/A</span>';
+        var pct = ((pass / total) * 100).toFixed(1);
+        var color = pct >= 80 ? 'success' : pct >= 50 ? 'warning' : 'danger';
+        return '<div class="progress"><div class="progress-bar bg-' + color +
+               '" style="width:' + pct + '%"></div></div>' +
+               '<small class="text-muted">' + pct + '%</small>';
+    }
+
+    function destroyChart(name) {
+        if (charts[name]) {
+            charts[name].destroy();
+            charts[name] = null;
+        }
+    }
+
+    function renderResultsChart(data) {
+        destroyChart('results');
+        var totals = { pass: 0, fail: 0, incomplete: 0, skip: 0, infra_error: 0 };
+        data.forEach(function(row) {
+            totals.pass += row.pass || 0;
+            totals.fail += row.fail || 0;
+            totals.incomplete += row.incomplete || 0;
+            totals.skip += row.skip || 0;
+            totals.infra_error += row.infra_error || 0;
+        });
+        var ctx = document.getElementById('resultsChart').getContext('2d');
+        charts.results = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pass', 'Fail', 'Incomplete', 'Skip', 'Infra Error'],
+                datasets: [{
+                    data: [totals.pass, totals.fail, totals.incomplete, totals.skip, totals.infra_error],
+                    backgroundColor: ['#28a745', '#dc3545', '#17a2b8', '#6c757d', '#fd7e14'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+
+    function renderKindChart(data) {
+        destroyChart('kind');
+        var kinds = {};
+        data.forEach(function(row) {
+            var k = row.kind || 'unknown';
+            kinds[k] = (kinds[k] || 0) + (row.total || 0);
+        });
+        var labels = Object.keys(kinds);
+        var values = labels.map(function(k) { return kinds[k]; });
+        var colors = ['#667eea', '#764ba2', '#f7971e', '#56ab2f', '#eb3349', '#4facfe'];
+        var ctx = document.getElementById('kindChart').getContext('2d');
+        charts.kind = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Event Count',
+                    data: values,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function renderRuntimeHealthChart(data) {
+        destroyChart('runtimeHealth');
+        var runtimes = data.slice(0, 15);
+        var labels = runtimes.map(function(r) { return r.runtime || 'N/A'; });
+        var ctx = document.getElementById('runtimeHealthChart').getContext('2d');
+        charts.runtimeHealth = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Pass',
+                        data: runtimes.map(function(r) { return r.pass || 0; }),
+                        backgroundColor: '#28a745',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Fail',
+                        data: runtimes.map(function(r) { return r.fail || 0; }),
+                        backgroundColor: '#dc3545',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Infra Error',
+                        data: runtimes.map(function(r) { return r.infra_error || 0; }),
+                        backgroundColor: '#fd7e14',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Incomplete',
+                        data: runtimes.map(function(r) { return r.incomplete || 0; }),
+                        backgroundColor: '#17a2b8',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                }
+            }
+        });
+    }
+
+    function updateSummaryCards(data) {
+        var totals = { total: 0, pass: 0, fail: 0, incomplete: 0, skip: 0, infra_error: 0 };
+        data.forEach(function(row) {
+            totals.total += row.total || 0;
+            totals.pass += row.pass || 0;
+            totals.fail += row.fail || 0;
+            totals.incomplete += row.incomplete || 0;
+            totals.skip += row.skip || 0;
+            totals.infra_error += row.infra_error || 0;
+        });
+        $('#totalEvents').text(formatNumber(totals.total));
+        $('#passCount').text(formatNumber(totals.pass));
+        $('#failCount').text(formatNumber(totals.fail));
+        $('#infraCount').text(formatNumber(totals.infra_error));
+        $('#incompleteCount').text(formatNumber(totals.incomplete));
+        $('#skipCount').text(formatNumber(totals.skip));
+    }
+
+    function renderStatsTable(tableId, data, groupField) {
+        var tbody = $('#' + tableId + ' tbody');
+        tbody.empty();
+        if (!data || data.length === 0) {
+            tbody.append('<tr><td colspan="6" class="text-muted text-center">No data available</td></tr>');
+            return;
+        }
+        data.sort(function(a, b) { return (b.total || 0) - (a.total || 0); });
+        data.forEach(function(row) {
+            var name = row[groupField] || 'N/A';
+            var total = row.total || 0;
+            var pass = row.pass || 0;
+            var fail = row.fail || 0;
+            var infra = row.infra_error || 0;
+            tbody.append(
+                '<tr>' +
+                '<td><strong>' + name + '</strong></td>' +
+                '<td>' + total + '</td>' +
+                '<td><span class="badge badge-pass bg-success">' + pass + '</span></td>' +
+                '<td><span class="badge badge-fail bg-danger">' + fail + '</span></td>' +
+                '<td><span class="badge badge-infra" style="background:#fd7e14">' + infra + '</span></td>' +
+                '<td>' + healthBar(pass, total) + '</td>' +
+                '</tr>'
+            );
+        });
+    }
+
+    function renderAnomalies(data) {
+        var section = $('#anomalySection');
+        section.empty();
+
+        var resultAnomalies = data.result_anomalies || [];
+        var errorAnomalies = data.error_anomalies || [];
+
+        if (resultAnomalies.length === 0 && errorAnomalies.length === 0) {
+            section.append(
+                '<div class="alert alert-success mb-0">' +
+                '<i class="bi bi-check-circle"></i> No anomalies detected in the ' +
+                data.window + ' window (threshold: ' + (data.threshold * 100) + '%)' +
+                '</div>'
+            );
+            return;
+        }
+
+        resultAnomalies.forEach(function(a) {
+            var severity = a.infra_rate >= 0.7 || a.fail_rate >= 0.7 ? 'high' :
+                          a.infra_rate >= 0.5 || a.fail_rate >= 0.5 ? 'medium' : 'low';
+            var icon = severity === 'high' ? 'bi-exclamation-octagon text-danger' :
+                      severity === 'medium' ? 'bi-exclamation-triangle text-warning' :
+                      'bi-info-circle text-success';
+            section.append(
+                '<div class="anomaly-alert anomaly-' + severity + '">' +
+                '<div class="d-flex justify-content-between align-items-center">' +
+                '<div>' +
+                '<i class="bi ' + icon + '"></i> ' +
+                '<strong>' + (a.runtime || 'N/A') + '</strong>' +
+                (a.device_type ? ' / ' + a.device_type : '') +
+                '</div>' +
+                '<div>' +
+                '<span class="badge bg-danger me-1">Fail: ' + (a.fail_rate * 100).toFixed(1) + '%</span>' +
+                '<span class="badge" style="background:#fd7e14">Infra: ' + (a.infra_rate * 100).toFixed(1) + '%</span>' +
+                '</div>' +
+                '</div>' +
+                '<small class="text-muted">' + a.total + ' events | ' +
+                a.fail + ' fail | ' + a.incomplete + ' incomplete | ' +
+                a.infra_error + ' infra errors</small>' +
+                '</div>'
+            );
+        });
+
+        if (errorAnomalies.length > 0) {
+            section.append('<h6 class="mt-3 mb-2">Submission / Connectivity Errors</h6>');
+            errorAnomalies.forEach(function(a) {
+                section.append(
+                    '<div class="anomaly-alert anomaly-medium">' +
+                    '<i class="bi bi-wifi-off text-warning"></i> ' +
+                    '<strong>' + (a.runtime || 'N/A') + '</strong>' +
+                    ' - ' + (a.error_type || 'unknown') +
+                    ' <span class="badge bg-warning text-dark">' + a.count + ' occurrences</span>' +
+                    '</div>'
+                );
+            });
+        }
+    }
+
+    function renderErrors(data) {
+        var tbody = $('#errorsTable tbody');
+        tbody.empty();
+        var items = (data.items || []).slice(0, 50);
+        if (items.length === 0) {
+            tbody.append('<tr><td colspan="5" class="text-muted text-center">No recent errors</td></tr>');
+            return;
+        }
+        items.forEach(function(evt) {
+            var ts = evt.ts ? new Date(evt.ts).toLocaleString() : 'N/A';
+            var msg = evt.error_msg || '';
+            if (msg.length > 80) msg = msg.substring(0, 80) + '...';
+            tbody.append(
+                '<tr class="error-row">' +
+                '<td><small>' + ts + '</small></td>' +
+                '<td><span class="badge bg-secondary">' + (evt.kind || '') + '</span></td>' +
+                '<td>' + (evt.runtime || 'N/A') + '</td>' +
+                '<td><span class="badge" style="background:#fd7e14">' + (evt.error_type || 'N/A') + '</span></td>' +
+                '<td><small>' + msg + '</small></td>' +
+                '</tr>'
+            );
+        });
+    }
+
+    function populateFilterDropdowns(runtimeData, treeData) {
+        var runtimeSelect = $('#filterRuntime');
+        var currentRuntime = runtimeSelect.val();
+        runtimeSelect.find('option:not(:first)').remove();
+        runtimeData.forEach(function(row) {
+            var name = row.runtime || '';
+            if (name) runtimeSelect.append('<option value="' + name + '">' + name + '</option>');
+        });
+        if (currentRuntime) runtimeSelect.val(currentRuntime);
+
+        var treeSelect = $('#filterTree');
+        var currentTree = treeSelect.val();
+        treeSelect.find('option:not(:first)').remove();
+        treeData.forEach(function(row) {
+            var name = row.tree || '';
+            if (name) treeSelect.append('<option value="' + name + '">' + name + '</option>');
+        });
+        if (currentTree) treeSelect.val(currentTree);
+    }
+
+    function loadAll() {
+        showLoading();
+        var time = getTimeRange();
+        var filters = buildFilterParams();
+
+        var statsBaseUrl = apiurl + '/latest/telemetry/stats?since=' + encodeURIComponent(time.since);
+        for (var key in filters) {
+            statsBaseUrl += '&' + key + '=' + encodeURIComponent(filters[key]);
+        }
+
+        var requests = [];
+
+        // Runtime stats
+        requests.push($.ajax({
+            url: statsBaseUrl + '&group_by=runtime',
+            method: 'GET',
+            dataType: 'json'
+        }).catch(function() { return []; }));
+
+        // Tree stats
+        requests.push($.ajax({
+            url: statsBaseUrl + '&group_by=tree',
+            method: 'GET',
+            dataType: 'json'
+        }).catch(function() { return []; }));
+
+        // Kind stats
+        requests.push($.ajax({
+            url: statsBaseUrl + '&group_by=kind',
+            method: 'GET',
+            dataType: 'json'
+        }).catch(function() { return []; }));
+
+        // Device type stats
+        requests.push($.ajax({
+            url: statsBaseUrl + '&group_by=device_type',
+            method: 'GET',
+            dataType: 'json'
+        }).catch(function() { return []; }));
+
+        // Anomalies
+        var anomalyUrl = apiurl + '/latest/telemetry/anomalies?window=' +
+            encodeURIComponent(time.window) +
+            '&threshold=' + encodeURIComponent($('#anomalyThreshold').val());
+        requests.push($.ajax({
+            url: anomalyUrl,
+            method: 'GET',
+            dataType: 'json'
+        }).catch(function() { return { result_anomalies: [], error_anomalies: [] }; }));
+
+        // Recent errors
+        var errUrl = apiurl + '/latest/telemetry?since=' + encodeURIComponent(time.since) +
+            '&is_infra_error=true&limit=50';
+        requests.push($.ajax({
+            url: errUrl,
+            method: 'GET',
+            dataType: 'json'
+        }).catch(function() { return { items: [] }; }));
+
+        Promise.all(requests).then(function(results) {
+            var runtimeData = results[0] || [];
+            var treeData = results[1] || [];
+            var kindData = results[2] || [];
+            var deviceData = results[3] || [];
+            var anomalyData = results[4] || {};
+            var errorData = results[5] || {};
+
+            // Use kind data for summary (covers all events)
+            updateSummaryCards(kindData);
+
+            // Charts
+            renderResultsChart(kindData);
+            renderKindChart(kindData);
+            renderRuntimeHealthChart(runtimeData);
+
+            // Tables
+            renderStatsTable('runtimeTable', runtimeData, 'runtime');
+            renderStatsTable('treeTable', treeData, 'tree');
+            renderStatsTable('deviceTable', deviceData, 'device_type');
+
+            // Anomalies
+            renderAnomalies(anomalyData);
+
+            // Recent errors
+            renderErrors(errorData);
+
+            // Populate filter dropdowns
+            populateFilterDropdowns(runtimeData, treeData);
+
+            hideLoading();
+        }).catch(function(err) {
+            console.error('Error loading analytics:', err);
+            hideLoading();
+            alert('Error loading analytics data. Check console for details.');
+        });
+    }
+
+    $(document).ready(function() {
+        initAPI();
+        $('#refreshBtn').click(loadAll);
+        $('#timeWindow').change(loadAll);
+        $('#filterRuntime').change(loadAll);
+        $('#filterTree').change(loadAll);
+        $('#filterKind').change(loadAll);
+        $('#anomalyThreshold').change(loadAll);
+        loadAll();
+    });
+    </script>
+</body>
+</html>
