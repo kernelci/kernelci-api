@@ -1125,8 +1125,6 @@ async def get_telemetry_stats(request: Request):
     pipeline.append({'$sort': {'total': -1}})
 
     results = await db.aggregate(TelemetryEvent, pipeline)
-
-    results = await db.aggregate(TelemetryEvent, pipeline)
     return JSONResponse(content=jsonable_encoder([
         {
             **doc['_id'].copy(),
@@ -1833,6 +1831,22 @@ async def manage():
     manage_path = os.path.join(root_dir, 'templates', 'manage.html')
     with open(manage_path, 'r', encoding='utf-8') as file:
         # set header to text/html and no-cache stuff
+        hdr = {
+            'Content-Type': 'text/html',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        }
+        return PlainTextResponse(file.read(), headers=hdr)
+
+
+@app.get('/analytics')
+async def analytics_page():
+    """Serve pipeline analytics dashboard with telemetry data"""
+    metrics.add('http_requests_total', 1)
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    analytics_path = os.path.join(root_dir, 'templates', 'analytics.html')
+    with open(analytics_path, 'r', encoding='utf-8') as file:
         hdr = {
             'Content-Type': 'text/html',
             'Cache-Control': 'no-cache, no-store, must-revalidate',
