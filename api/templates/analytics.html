@@ -64,6 +64,43 @@
         .nav-links a { color: rgba(255,255,255,0.8); text-decoration: none; margin-left: 16px; }
         .nav-links a:hover { color: white; }
         .chart-container { position: relative; height: 300px; }
+        .anomaly-alert { cursor: pointer; }
+        .anomaly-alert:hover { opacity: 0.9; }
+        .stats-clickable tr { cursor: pointer; }
+        .stats-clickable tr:hover { background-color: #e9ecef; }
+        .detail-panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            padding: 24px;
+            margin-bottom: 24px;
+            border-left: 4px solid #667eea;
+        }
+        .detail-panel .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .detail-panel .detail-header h5 { margin: 0; }
+        .event-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 10px;
+            border: 1px solid #e9ecef;
+        }
+        .event-card:hover { border-color: #667eea; }
+        .event-field { margin-bottom: 4px; }
+        .event-field .field-name {
+            font-weight: 600;
+            color: #6c757d;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+        .event-field .field-value { font-size: 0.9rem; }
+        .node-link { color: #667eea; text-decoration: underline; cursor: pointer; }
+        .node-link:hover { color: #764ba2; }
     </style>
 </head>
 <body>
@@ -311,6 +348,26 @@
         </div>
     </div>
 
+    <!-- Event Detail Drill-down Panel -->
+    <div class="container-fluid px-4" id="detailContainer" style="display:none;">
+        <div class="detail-panel" id="detailPanel">
+            <div class="detail-header">
+                <h5><i class="bi bi-list-ul"></i> <span id="detailTitle">Event Details</span></h5>
+                <div>
+                    <span class="text-muted me-3" id="detailCount"></span>
+                    <button class="btn btn-sm btn-outline-secondary" id="detailClose">
+                        <i class="bi bi-x-lg"></i> Close
+                    </button>
+                </div>
+            </div>
+            <div id="detailLoading" class="text-center py-3" style="display:none;">
+                <div class="spinner-border spinner-border-sm text-primary"></div>
+                <span class="ms-2">Loading events...</span>
+            </div>
+            <div id="detailContent"></div>
+        </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div class="loading-overlay" id="loadingOverlay" style="display:none;">
         <div class="spinner-border text-primary" style="width:3rem;height:3rem;" role="status">
@@ -503,8 +560,156 @@
         $('#skipCount').text(formatNumber(totals.skip));
     }
 
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function resultBadge(result) {
+        var colors = {
+            pass: 'bg-success', fail: 'bg-danger',
+            incomplete: 'bg-info', skip: 'bg-secondary'
+        };
+        var cls = colors[result] || 'bg-secondary';
+        return '<span class="badge ' + cls + '">' + (result || 'N/A') + '</span>';
+    }
+
+    function renderEventCard(evt) {
+        var ts = evt.ts ? new Date(evt.ts).toLocaleString() : 'N/A';
+        var html = '<div class="event-card">';
+        html += '<div class="row">';
+
+        // Left column: key fields
+        html += '<div class="col-md-8">';
+        html += '<div class="d-flex align-items-center mb-2">';
+        html += '<span class="badge bg-secondary me-2">' + escapeHtml(evt.kind) + '</span>';
+        html += resultBadge(evt.result);
+        if (evt.is_infra_error) {
+            html += ' <span class="badge ms-1" style="background:#fd7e14">infra error</span>';
+        }
+        html += '<small class="text-muted ms-auto">' + ts + '</small>';
+        html += '</div>';
+
+        var fields = [
+            ['Runtime', evt.runtime],
+            ['Device Type', evt.device_type],
+            ['Device ID', evt.device_id],
+            ['Job Name', evt.job_name],
+            ['Test Name', evt.test_name],
+            ['Tree', evt.tree],
+            ['Branch', evt.branch],
+            ['Arch', evt.arch],
+        ];
+        fields.forEach(function(f) {
+            if (f[1]) {
+                html += '<div class="event-field d-inline-block me-4">';
+                html += '<span class="field-name">' + f[0] + ': </span>';
+                html += '<span class="field-value">' + escapeHtml(f[1]) + '</span>';
+                html += '</div>';
+            }
+        });
+        html += '</div>';
+
+        // Right column: IDs, errors, links
+        html += '<div class="col-md-4">';
+        if (evt.node_id) {
+            html += '<div class="event-field">';
+            html += '<span class="field-name">Node: </span>';
+            html += '<a class="node-link" href="/viewer?node_id=' +
+                    encodeURIComponent(evt.node_id) +
+                    '" target="_blank">' + escapeHtml(evt.node_id) + '</a>';
+            html += '</div>';
+        }
+        if (evt.job_id) {
+            html += '<div class="event-field">';
+            html += '<span class="field-name">Job ID: </span>';
+            html += '<span class="field-value">' + escapeHtml(evt.job_id) + '</span>';
+            html += '</div>';
+        }
+        if (evt.error_type) {
+            html += '<div class="event-field">';
+            html += '<span class="field-name">Error Type: </span>';
+            html += '<span class="badge" style="background:#fd7e14">' +
+                    escapeHtml(evt.error_type) + '</span>';
+            html += '</div>';
+        }
+        if (evt.error_msg) {
+            html += '<div class="event-field">';
+            html += '<span class="field-name">Error Msg: </span>';
+            html += '<span class="field-value text-danger">' +
+                    escapeHtml(evt.error_msg) + '</span>';
+            html += '</div>';
+        }
+        if (evt.retry > 0) {
+            html += '<div class="event-field">';
+            html += '<span class="field-name">Retry: </span>';
+            html += '<span class="field-value">#' + evt.retry + '</span>';
+            html += '</div>';
+        }
+        html += '</div>';
+
+        html += '</div></div>';
+        return html;
+    }
+
+    function showDetail(title, filters) {
+        var container = $('#detailContainer');
+        var content = $('#detailContent');
+        var loading = $('#detailLoading');
+        $('#detailTitle').text(title);
+        content.empty();
+        container.show();
+        loading.show();
+        $('#detailCount').text('');
+
+        var time = getTimeRange();
+        var url = apiurl + '/latest/telemetry?since=' +
+                  encodeURIComponent(time.since) + '&limit=50';
+        for (var key in filters) {
+            if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+                url += '&' + encodeURIComponent(key) + '=' +
+                       encodeURIComponent(filters[key]);
+            }
+        }
+
+        $.ajax({
+            url: url,
+            method: 'GET',
+            dataType: 'json'
+        }).then(function(data) {
+            loading.hide();
+            var items = data.items || [];
+            var total = data.total || items.length;
+            $('#detailCount').text(
+                items.length + ' shown' +
+                (total > items.length ? ' of ' + total + ' total' : '')
+            );
+            if (items.length === 0) {
+                content.html(
+                    '<div class="text-muted text-center py-3">' +
+                    'No events found matching these filters.</div>'
+                );
+                return;
+            }
+            items.forEach(function(evt) {
+                content.append(renderEventCard(evt));
+            });
+            // Scroll to the detail panel
+            container[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }).catch(function(err) {
+            loading.hide();
+            content.html(
+                '<div class="alert alert-danger">Error loading events: ' +
+                escapeHtml(String(err.statusText || err)) + '</div>'
+            );
+        });
+    }
+
     function renderStatsTable(tableId, data, groupField) {
-        var tbody = $('#' + tableId + ' tbody');
+        var table = $('#' + tableId);
+        table.addClass('stats-clickable');
+        var tbody = table.find('tbody');
         tbody.empty();
         if (!data || data.length === 0) {
             tbody.append('<tr><td colspan="6" class="text-muted text-center">No data available</td></tr>');
@@ -517,9 +722,9 @@
             var pass = row.pass || 0;
             var fail = row.fail || 0;
             var infra = row.infra_error || 0;
-            tbody.append(
-                '<tr>' +
-                '<td><strong>' + name + '</strong></td>' +
+            var tr = $(
+                '<tr title="Click to see individual events">' +
+                '<td><strong>' + escapeHtml(name) + '</strong></td>' +
                 '<td>' + total + '</td>' +
                 '<td><span class="badge badge-pass bg-success">' + pass + '</span></td>' +
                 '<td><span class="badge badge-fail bg-danger">' + fail + '</span></td>' +
@@ -527,6 +732,12 @@
                 '<td>' + healthBar(pass, total) + '</td>' +
                 '</tr>'
             );
+            tr.on('click', function() {
+                var filters = {};
+                filters[groupField] = name;
+                showDetail('Events for ' + groupField + ': ' + name, filters);
+            });
+            tbody.append(tr);
         });
     }
 
@@ -553,17 +764,19 @@
             var icon = severity === 'high' ? 'bi-exclamation-octagon text-danger' :
                       severity === 'medium' ? 'bi-exclamation-triangle text-warning' :
                       'bi-info-circle text-success';
-            section.append(
-                '<div class="anomaly-alert anomaly-' + severity + '">' +
+            var alertEl = $(
+                '<div class="anomaly-alert anomaly-' + severity +
+                '" title="Click to see individual events">' +
                 '<div class="d-flex justify-content-between align-items-center">' +
                 '<div>' +
                 '<i class="bi ' + icon + '"></i> ' +
-                '<strong>' + (a.runtime || 'N/A') + '</strong>' +
-                (a.device_type ? ' / ' + a.device_type : '') +
+                '<strong>' + escapeHtml(a.runtime || 'N/A') + '</strong>' +
+                (a.device_type ? ' / ' + escapeHtml(a.device_type) : '') +
                 '</div>' +
                 '<div>' +
                 '<span class="badge bg-danger me-1">Fail: ' + (a.fail_rate * 100).toFixed(1) + '%</span>' +
                 '<span class="badge" style="background:#fd7e14">Infra: ' + (a.infra_rate * 100).toFixed(1) + '%</span>' +
+                ' <i class="bi bi-arrow-right-circle ms-2"></i>' +
                 '</div>' +
                 '</div>' +
                 '<small class="text-muted">' + a.total + ' events | ' +
@@ -571,19 +784,42 @@
                 a.infra_error + ' infra errors</small>' +
                 '</div>'
             );
+            (function(anomaly) {
+                alertEl.on('click', function() {
+                    var filters = { runtime: anomaly.runtime };
+                    if (anomaly.device_type) filters.device_type = anomaly.device_type;
+                    var label = escapeHtml(anomaly.runtime || 'N/A');
+                    if (anomaly.device_type) label += ' / ' + escapeHtml(anomaly.device_type);
+                    showDetail('Anomaly events: ' + label, filters);
+                });
+            })(a);
+            section.append(alertEl);
         });
 
         if (errorAnomalies.length > 0) {
             section.append('<h6 class="mt-3 mb-2">Submission / Connectivity Errors</h6>');
             errorAnomalies.forEach(function(a) {
-                section.append(
-                    '<div class="anomaly-alert anomaly-medium">' +
+                var alertEl = $(
+                    '<div class="anomaly-alert anomaly-medium" title="Click to see individual events">' +
                     '<i class="bi bi-wifi-off text-warning"></i> ' +
-                    '<strong>' + (a.runtime || 'N/A') + '</strong>' +
-                    ' - ' + (a.error_type || 'unknown') +
+                    '<strong>' + escapeHtml(a.runtime || 'N/A') + '</strong>' +
+                    ' - ' + escapeHtml(a.error_type || 'unknown') +
                     ' <span class="badge bg-warning text-dark">' + a.count + ' occurrences</span>' +
+                    ' <i class="bi bi-arrow-right-circle ms-2"></i>' +
                     '</div>'
                 );
+                (function(anomaly) {
+                    alertEl.on('click', function() {
+                        var filters = { runtime: anomaly.runtime };
+                        if (anomaly.error_type) filters.error_type = anomaly.error_type;
+                        showDetail(
+                            'Error events: ' + escapeHtml(anomaly.runtime || 'N/A') +
+                            ' - ' + escapeHtml(anomaly.error_type || 'unknown'),
+                            filters
+                        );
+                    });
+                })(a);
+                section.append(alertEl);
             });
         }
     }
@@ -600,15 +836,29 @@
             var ts = evt.ts ? new Date(evt.ts).toLocaleString() : 'N/A';
             var msg = evt.error_msg || '';
             if (msg.length > 80) msg = msg.substring(0, 80) + '...';
-            tbody.append(
-                '<tr class="error-row">' +
+            var tr = $(
+                '<tr class="error-row" title="Click to see full event details">' +
                 '<td><small>' + ts + '</small></td>' +
-                '<td><span class="badge bg-secondary">' + (evt.kind || '') + '</span></td>' +
-                '<td>' + (evt.runtime || 'N/A') + '</td>' +
-                '<td><span class="badge" style="background:#fd7e14">' + (evt.error_type || 'N/A') + '</span></td>' +
-                '<td><small>' + msg + '</small></td>' +
+                '<td><span class="badge bg-secondary">' + escapeHtml(evt.kind || '') + '</span></td>' +
+                '<td>' + escapeHtml(evt.runtime || 'N/A') + '</td>' +
+                '<td><span class="badge" style="background:#fd7e14">' + escapeHtml(evt.error_type || 'N/A') + '</span></td>' +
+                '<td><small>' + escapeHtml(msg) + '</small></td>' +
                 '</tr>'
             );
+            (function(event) {
+                tr.on('click', function() {
+                    // Show this single event in the detail panel
+                    $('#detailContainer').show();
+                    $('#detailTitle').text('Event Detail');
+                    $('#detailCount').text('');
+                    $('#detailLoading').hide();
+                    var content = $('#detailContent');
+                    content.empty();
+                    content.append(renderEventCard(event));
+                    $('#detailContainer')[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            })(evt);
+            tbody.append(tr);
         });
     }
 
@@ -737,6 +987,10 @@
         $('#filterTree').change(loadAll);
         $('#filterKind').change(loadAll);
         $('#anomalyThreshold').change(loadAll);
+        $('#detailClose').click(function() {
+            $('#detailContainer').hide();
+            $('#detailContent').empty();
+        });
         loadAll();
     });
     </script>
