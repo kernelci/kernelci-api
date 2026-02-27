@@ -1,1012 +1,1164 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Maestro Mini-dashboard</title>
-    <!-- add vertical divider at menu -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>KernelCI Dashboard</title>
     <style>
+        :root {
+            --bg-start: #0f172a;
+            --bg-end: #111827;
+            --panel: rgba(17, 24, 39, 0.88);
+            --panel-border: rgba(148, 163, 184, 0.25);
+            --text: #e2e8f0;
+            --subtext: #94a3b8;
+            --accent: #8b5cf6;
+            --pass: #16a34a;
+            --pass-soft: rgba(22, 163, 74, 0.24);
+            --fail: #dc2626;
+            --fail-soft: rgba(220, 38, 38, 0.28);
+            --infra: #6b7280;
+            --infra-soft: rgba(107, 114, 128, 0.28);
+            --ok: #34d399;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            font-size: 14px;
-            line-height: 20px;
-            color: #333333;
-            background-color: #ffffff;
-            padding: 10px;
+            margin: 0;
+            color: var(--text);
+            font-family: "Montserrat", "Segoe UI", "Trebuchet MS", sans-serif;
+            background:
+                radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.28), transparent 35%),
+                radial-gradient(circle at 90% 25%, rgba(16, 185, 129, 0.18), transparent 30%),
+                linear-gradient(140deg, var(--bg-start), var(--bg-end));
+            min-height: 100vh;
         }
-        #menu {
-            background-color: #f5f5f5;
-            border-bottom: 1px solid #e5e5e5;
-            border-top: 1px solid #e5e5e5;
-            margin-bottom: 20px;
-            padding: 10px 0;
-        }
-        #menu a {
-            color: #999999;
-            font-size: 14px;
-            font-weight: bold;
-            margin-right: 10px;
-            text-decoration: none;
-            /* Add light grey box for each menu item */
-            padding: 10px;
-            border: 1px solid #e5e5e5;
-            border-radius: 4px;
 
+        .dashboard {
+            max-width: 100%;
+            margin: 0;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
-        #menu a:hover {
-            color: #333333;
-            text-decoration: none;            
-        }
-        #menu a:active {
-            color: #333333;
-            text-decoration: none;
-        }
-        #menu a:focus {
-            color: #333333;
-            text-decoration: none;
-        }
-        /* Add selectbox at right side of div */
-        #menu select {
-            float: right;
-        }
-        #menu option {
-            font-size: 14px;
-            font-weight: bold;
-            margin-right: 10px;
-            text-decoration: none;
-        }
-        #menu label {
-            font-size: 14px;
-            font-weight: bold;
-            margin-right: 10px;
-            text-decoration: none;
-            float: right;
-        }
-        #requestinfo {
-            background-color: #f5f5f5;
-            border-bottom: 1px solid #e5e5e5;
-            border-top: 1px solid #e5e5e5;
-            margin-bottom: 20px;
-            padding: 10px 0;
-        }
-        #requestinfo input {
-            font-size: 14px;
-            font-weight: bold;
-            margin-right: 10px;
-            text-decoration: none;
-        }
-        #requestinfo button {
-            font-size: 14px;
-            font-weight: bold;
-            margin-right: 10px;
-            text-decoration: none;
-        }
-        #miscbuttons {
-            background-color: #f5f5f5;
-            border-bottom: 1px solid #e5e5e5;
-            border-top: 1px solid #e5e5e5;
-            margin-bottom: 20px;
-            padding: 10px 0;
-        }
-        #miscbuttons button {
-            font-size: 14px;
-            font-weight: bold;
-            margin-right: 10px;
-            text-decoration: none;
-        }
-        .results {
-            border-collapse: collapse;
-            border-spacing: 1;
-            width: 100%;
-            border: 1px solid #ddd;
-            /* shadow */
-            box-shadow: 5px 5px 5px #888888;
 
-        }
-        .results th, .results td {
-            text-align: left;
-            padding: 8px;
-        }
-        /* alternate color for rows, depends on tr class, fail - pink, null - yellow */
-        .results tr:nth-child(even){background-color: #f2f2f2}
-        .results tr:hover {background-color: #ddd;}
-        .results tr.fail {background-color: lightpink}
-        .results tr.pass {background-color: lightgreen}
-        .results tr.null {background-color: #ffffcc}
-        /* slowly glowing */
-        @keyframes glowing {
-            0% { background-color: lightcyan; }
-            50% { background-color: lightblue; }
-            100% { background-color: lightcyan; }
-        }
-        .results tr.building {
-            background-color: lightcyan;
-            animation: glowing 1500ms infinite;
-            animation-name: glowing;
-        }
-        .results th {
-            background-color: #4CAF50;
-            color: white;
-        }
-        /* highlight node id as link, as its clickable */
-        .tdnodeid {
-            color: blue;
-            text-decoration: underline;
-            cursor: pointer;
-        }
-        #nodeinfo {
-            line-height: 20px; /* Fixed line height */
-            white-space: pre-wrap; /* To wrap text and preserve spaces and line breaks */
-        }
-        /* a bit more fancy selectbox */
-        select {
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            padding: 2px 30px 2px 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #fff;
-            background-image: url('data:image/svg+xml;utf8,<svg fill="black" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
-            background-repeat: no-repeat;
-            background-position: 100% 50%;
-        }
-        /* highlight commit as link */
-        .commitall {
-            color: blue;
-            text-decoration: underline;
-            cursor: pointer;
-        }
-        /* highlight showtests as link */
-        .showtests {
-            color: blue;
-            text-decoration: underline;
-            cursor: pointer;
-        }
-        /* style for popup that float on top of the page, in the middle, covering rest of content */
-        #popup {
-            position: fixed;
-            background-color: #f5f5f5;
-            border: 1px solid #e5e5e5;
-            padding: 10px;
-            display: none;
-            z-index: 1000;
+        .topbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
             align-items: center;
-            justify-content: center;
-            /* center */
-            top: 50%;
-            left: 50%;
+            justify-content: space-between;
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 10px 18px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(4px);
+        }
+
+        .brand {
+            font-family: "Poppins", "Montserrat", "Trebuchet MS", sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: 0.25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand:before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #22d3ee);
+        }
+
+        .menu {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .menu a {
+            color: var(--subtext);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            transition: all 0.25s;
+        }
+
+        .menu a.active,
+        .menu a:hover {
+            color: var(--text);
+            border-color: rgba(148, 163, 184, 0.45);
+            background: rgba(99, 102, 241, 0.16);
+        }
+
+        .menu a:focus-visible {
+            outline: 2px solid rgba(56, 189, 248, 0.7);
+            outline-offset: 2px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(140px, 1fr));
+            gap: 10px;
+            align-items: end;
+        }
+
+        .control {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .control label {
+            color: var(--subtext);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
+        }
+
+        select,
+        button {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(2, 6, 23, 0.65);
+            color: var(--text);
+            padding: 10px 12px;
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        button {
+            cursor: pointer;
+            background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+            border: none;
+        }
+
+        select:focus-visible,
+        button:focus-visible {
+            outline: 2px solid rgba(56, 189, 248, 0.7);
+            outline-offset: 2px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            color: var(--subtext);
+            font-size: 0.9rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            padding: 6px 10px;
+            border-radius: 999px;
+            margin-bottom: 6px;
+        }
+
+        .badge.pass { border-color: rgba(16, 185, 129, 0.5); color: #a7f3d0; }
+        .badge.fail { border-color: rgba(239, 68, 68, 0.6); color: #fecaca; }
+        .badge.infra { border-color: rgba(148, 163, 184, 0.6); color: #cbd5e1; }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .legend span {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text);
+            font-size: 0.82rem;
+        }
+
+        .legend .swatch {
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .legend .pass { background: var(--pass); }
+        .legend .fail { background: var(--fail); }
+        .legend .infra { background: var(--infra); }
+
+        .content-head {
+            margin: 8px 0 12px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .content-head h1 {
+            margin: 0;
+            font-size: 1.25rem;
+            letter-spacing: 0.4px;
+        }
+
+        .hint {
+            color: var(--subtext);
+            font-size: 0.92rem;
+        }
+
+        .heatmap-shell {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            max-height: 75vh;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th,
+        td {
+            text-align: left;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            padding: 6px 8px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: rgba(30, 41, 59, 0.98);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            color: #cbd5e1;
+            z-index: 2;
+        }
+
+        thead th.vertical {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            height: 160px;
+            padding: 10px 2px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        tbody tr:hover {
+            background: rgba(148, 163, 184, 0.1);
+        }
+
+        .col-header-id {
+            width: 110px;
+        }
+
+        .col-header-ts {
+            width: 160px;
+        }
+
+        .cell {
+            padding: 4px;
+            width: 28px;
+            min-width: 28px;
+            max-width: 28px;
+            text-align: center;
+        }
+
+        .square {
+            display: block;
+            width: 18px;
+            height: 18px;
+            margin: 0 auto;
+            border-radius: 3px;
+            transition: transform 0.1s ease;
+            text-decoration: none;
+        }
+
+        .square.pass { background: var(--pass); box-shadow: 0 0 4px var(--pass-soft); }
+        .square.fail { background: var(--fail); box-shadow: 0 0 4px var(--fail-soft); }
+        .square.infra { background: var(--infra); box-shadow: 0 0 4px var(--infra-soft); }
+        .square.unknown { background: #374151; }
+
+        .square:hover {
+            transform: scale(1.4);
+            z-index: 5;
+            position: relative;
+        }
+
+        .status-text {
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: var(--subtext);
+            margin-bottom: 8px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid rgba(226, 232, 240, 0.25);
+            border-top-color: #8b5cf6;
+            animation: spin 0.9s linear infinite;
+        }
+
+        .empty,
+        .error {
+            color: var(--subtext);
+            border: 1px dashed rgba(148, 163, 184, 0.35);
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .home-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .home-card {
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 14px;
+            background: linear-gradient(160deg, rgba(148, 163, 184, 0.14), rgba(14, 165, 233, 0.06));
+        }
+
+        .home-card h3 {
+            margin: 0 0 4px;
+            font-size: 0.95rem;
+            color: #f1f5f9;
+        }
+
+        .home-card p {
+            margin: 0;
+            color: var(--subtext);
+            line-height: 1.4;
+            font-size: 0.86rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 900px) {
+            .dashboard {
+                padding: 12px;
+            }
+
+            .toolbar {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .topbar {
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 540px) {
+            .toolbar {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .menu {
+                width: 100%;
+            }
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
+</head>
+<body>
+    <main class="dashboard">
+        <header class="topbar">
+            <div class="brand">KernelCI Dashboard</div>
+            <nav class="menu" id="menu"></nav>
+        </header>
+
+        <section class="panel" id="toolbarPanel"></section>
+
+        <section class="panel">
+            <div class="status-bar" id="status"></div>
+            <div id="legend"></div>
+            <div class="content-head">
+                <h1 id="viewTitle">Dashboard</h1>
+                <div id="viewHint" class="hint"></div>
+            </div>
+            <div id="content"></div>
+        </section>
+    </main>
+
     <script>
-        var pagebaseurl;
-        var apiurl;
-        var mainmenu = [
-            {
-                "name": "Home",
-                "suffix": "",
-            },
-            {
-                "name": "Builds",
-                "suffix": "?builds",
-            },
-            {
-                "name": "Test suites",
-                "suffix": "?testsuites",
-            },
-            {
-                "name": "All tests",
-                "suffix": "?tests",
-            },
+        const MENU_ITEMS = [
+            {name: 'Home', suffix: ''},
+            {name: 'Builds', suffix: 'builds'},
+            {name: 'Test suites', suffix: 'testsuites'},
+            {name: 'All tests', suffix: 'tests'},
         ];
-        var nodes = {}
-        var nodes_current_filter = "";
-        var nodes_startdate = "";
-        var nodes_update_in_progress = false;
-        var display_parameters = "";
-        var jstree_state = false;
-        var NODES_LIMIT = 5000;
 
-    /*
-    As a syntactic convenience, if the operator matches one of >, <, >=, <=, !=
-    then the corresponding API operator '__gt', '__lt', '__gte', '__lte',
-    '__ne' is added to the key name automatically.  Spaces can also be used
-    around the operators, although this typically means adding double quotes on
-    the command line around each attribute.  As such, the example used
-    previously is equivalent to "score >= 100".
-    """
-    operators = {
-        '>': '__gt',
-        '<': '__lt',
-        '>=': '__gte',
-        '<=': '__lte',
-        '!=': '__ne',
-        '=': '',
-    }
-        // on python we split by using regex
-            pattern = re.compile(r'^([.a-zA-Z0-9_-]+) *([<>!=]+) *(.*)')
-        */
-        function convert_condition(condition) {
-            var operators = {
-                '>': '__gt=',
-                '<': '__lt=',
-                '>=': '__gte=',
-                '<=': '__lte=',
-                '!=': '__ne=',
-                '=': '=',
+        const TIMEFRAME_OPTIONS = [
+            {value: '24h', label: 'Last 24h', hours: 24},
+            {value: '7d', label: 'Last 7d', hours: 168},
+            {value: '30d', label: 'Last 30d', hours: 720},
+            {value: '90d', label: 'Last 90d', hours: 2160},
+            {value: 'all', label: 'All data'},
+        ];
+
+        const API_BASE = `${window.location.origin}/latest`;
+
+        const state = {
+            mode: 'home',
+            tree: '',
+            branch: '',
+            timeframe: '30d',
+        };
+
+        const statusMap = {
+            pass: 'pass',
+            fail: 'fail',
+            incomplete: 'infra',
+            building: 'infra',
+            error: 'infra',
+            infra: 'infra',
+            infra_error: 'infra',
+            aborted: 'infra',
+            unknown: 'infra',
+        };
+
+        const maxRows = 80;
+        const maxColumns = 24;
+        const batchSize = 1000;
+        const maxNodesPerRequest = 6000;
+
+        function normalizeMode(params) {
+            if (params.has('builds')) {
+                return 'builds';
             }
-            //var pattern = /^([.a-zA-Z0-9_-]+) *([<>!=]+) *(.*)/;
-            var pattern = /^([.a-zA-Z0-9_-]+)([<>!=]+)(.*)/;
-            var match = pattern.exec(condition);
-            if (match == null) {
-                console.log("condition: " + condition + " does not match");
-                return condition;
+            if (params.has('testsuites')) {
+                return 'testsuites';
             }
-            var key = match[1];
-            var op = match[2];
-            var value = match[3];
-            if (op in operators) {
-                op = operators[op];
+            if (params.has('tests')) {
+                return 'tests';
             }
-            console.log("key: " + key + " op: " + op + " value: " + value);
-            return key + op + value;
+            return 'home';
         }
 
-        function humanAge(diff) {
-            var diffString = "";
-            var diffhours = Math.floor(diff / (1000 * 60 * 60)) % 24;
-            var diffminutes = Math.floor(diff / (1000 * 60)) % 60;
-            if (diffhours > 0) {
-                diffString += diffhours + "h ";
+        function parseState() {
+            const params = new URLSearchParams(window.location.search);
+            state.mode = normalizeMode(params);
+            state.tree = params.get('tree') || '';
+            state.branch = params.get('branch') || '';
+            state.timeframe = params.get('timeframe') || '30d';
+            const validTimeframes = TIMEFRAME_OPTIONS.map((item) => item.value);
+            if (!validTimeframes.includes(state.timeframe)) {
+                state.timeframe = '30d';
             }
-            diffString += diffminutes + "m";
-
-            return diffString;
+            return {...state};
         }
 
-        function updresdiv(html) {
-            var resdiv = document.getElementById("results");
-            if (jstree_state) {
-                $('#results').jstree().destroy(true);
-                jstree_state = false;
+        function timeframeDate(hoursMode) {
+            if (hoursMode === 'all') {
+                return '';
             }
-            resdiv.innerHTML = html;
+            const hours = TIMEFRAME_OPTIONS.find((item) => item.value === hoursMode)?.hours;
+            if (!hours) {
+                return '';
+            }
+            const now = new Date();
+            const pivot = new Date(now.getTime() - hours * 60 * 60 * 1000);
+            return pivot.toISOString().split('.')[0];
         }
 
-        function getnodes(url) {
-            var request = new XMLHttpRequest();
-            nodes_update_in_progress = true;
-            request.open('GET', url, true);
-            request.onload = function() {
-                if (request.status >= 200 && request.status < 400) {
-                    var data = JSON.parse(request.responseText);
-                    if (data.items == undefined) {
-                        console.log("getnodes() no items");
-                        return;
-                    }
-                    if (data.items.length > NODES_LIMIT) {
-                            console.log("getnodes() too many items: " + data.items.length);
-                            return;
-                    }
+        function statusClass(rawStatus) {
+            if (!rawStatus) {
+                return 'unknown';
+            }
+            const status = String(rawStatus).toLowerCase();
+            return statusMap[status] || 'unknown';
+        }
 
-                    if (data.offset == 0) {
-                        nodes = data;
-                        console.log("getnodes() first page: " + nodes.items.length + "Total " + data.total);
-                        /*
-                        // this will knock down the server
-                        // submit also queries to fetch other pages
-                        chunks = Math.ceil(data.total / NODES_LIMIT);
-                        for (var i = 1; i < chunks; i++) {
-                            var requrl = url.split("&offset")[0];
-                            url = requrl + "&offset=" + (i * NODES_LIMIT);
-                            console.log("getnodes() next page: " + url);
-                            getnodes(url);
-                        }
-                        */
-                    } else {
-                        nodes.items = nodes.items.concat(data.items);
-                    }
-                    if (nodes.items.length == data.total) {
-                        console.log("getnodes() all nodes: " + nodes.items.length);
-                        updresults();
-                        displayMenu();
-                        showpopup("");
-                        nodes_update_in_progress = false;
-                    } else {
-                        current_nodes = nodes.items.length;
-                        showpopup("Retrieving nodes: " + current_nodes + " of " + data.total);
-                        // request next chunk
-                        var requrl = url.split("&offset")[0];
-                        url = requrl + "&offset=" + current_nodes;
-                        console.log("getnodes() next page: " + url);
-                        getnodes(url);
-                    }
-                    /*
-                    // did we got all?
-                    if (nodes.items.length < data.total) {
-                        // remove offset from url if present
-                        var requrl = url.split("&offset")[0];
-                        url = requrl + "&offset=" + (data.offset + data.items.length);
-                        console.log("getnodes() next page: " + url);
-                        popup = "Retrieving nodes: " + (nodes.items.length) + " of " + data.total;
-                        showpopup(popup);
-                        getnodes(url);
-                    } else {
-                        console.log("getnodes() all nodes: " + nodes.items.length);
-                        updresults();
-                        displayMenu();
-                        showpopup("");
-                    }
-                    */
+        function statusLabel(rawStatus) {
+            if (!rawStatus) {
+                return 'N/A';
+            }
+            const status = String(rawStatus).toLowerCase();
+            if (statusMap[status] === 'pass') {
+                return 'PASS';
+            }
+            if (statusMap[status] === 'fail') {
+                return 'FAIL';
+            }
+            return 'INFRA';
+        }
+
+        function getKernelRevision(node) {
+            const revision = node?.data?.kernel_revision || {};
+            return {
+                tree: revision.tree || 'unknown',
+                branch: revision.branch || 'unknown',
+                commit: revision.commit || 'unknown',
+                describe: revision.describe || '',
+            };
+        }
+
+        function getSuiteName(node) {
+            const data = node?.data || {};
+            return data.suite || data.test_suite || node.name || 'unknown';
+        }
+
+        function buildQuery(kind) {
+            const params = new URLSearchParams();
+            params.set('kind', kind);
+            if (state.timeframe !== 'all') {
+                const date = timeframeDate(state.timeframe);
+                if (date) {
+                    params.set('created__gt', date);
                 }
-            };
-            request.onerror = function() {
-                // There was a connection error of some sort
-            };
-            
-            request.send();
+            }
+            if (state.tree) {
+                params.set('data.kernel_revision.tree', state.tree);
+            }
+            if (state.branch) {
+                params.set('data.kernel_revision.branch', state.branch);
+            }
+            return params;
         }
 
-        /* Here we do 2 API calls to retrieve for specified timeframe:
-        1)Retrieve all kernels we built
-        2)Retrieve all tests we ran
-        */
-        function updatenodes(conditions) {
-            // request API for node info
-            var url = apiurl + "/latest/nodes?";
-            var urlsuffix = "";
-            //var request = new XMLHttpRequest();
-            console.log("display_parameters: " + display_parameters);
-            // if no display_parameters, then we dont do anything
-            if (display_parameters.length == 0) {
-                console.log("updatenodes() no display_parameters");
-                return;
-            }
-            var is_kbuilds = false;
-            for (var i = 0; i < display_parameters.length; i++) {
-                if (display_parameters[i] == "builds" || display_parameters[i].indexOf("displaycommit") != -1 || display_parameters[i].indexOf("showknode") != -1) {
-                    is_kbuilds = true;
+        async function fetchAllNodes(kind) {
+            let offset = 0;
+            const allNodes = [];
+            const query = buildQuery(kind);
+
+            while (allNodes.length < maxNodesPerRequest) {
+                query.set('limit', String(batchSize));
+                query.set('offset', String(offset));
+                const resp = await fetch(`${API_BASE}/nodes/fast?${query.toString()}`);
+                if (!resp.ok) {
+                    const txt = await resp.text();
+                    throw new Error(`Request failed (${resp.status}): ${txt}`);
+                }
+                const chunk = await resp.json();
+                if (!Array.isArray(chunk)) {
+                    throw new Error('Unexpected response from /nodes/fast');
+                }
+                allNodes.push(...chunk);
+                if (chunk.length < batchSize) {
                     break;
                 }
-            }
-            if (is_kbuilds) {
-                // append to conditions kind=kbuild
-                conditions.push("kind=kbuild");
+                offset += batchSize;
             }
 
-            // treetests - we need to fetch all nodes for specific commit
-            if (display_parameters.length == 1 && display_parameters[0].indexOf("treetests") != -1) {
-                // remove all other conditions
-                conditions = [];
-                // append to conditions kind=test
-                conditions.push("data.kernel_revision.commit=" + display_parameters[0].split("=")[1]);
-            }
+            allNodes.sort((a, b) => new Date(b.created).getTime() - new Date(a.created).getTime());
+            return allNodes;
+        }
 
-            // build url nodes?condition1&condition2&condition3
-            for (var i = 0; i < conditions.length; i++) {
-                dec = decodeURIComponent(conditions[i]);
-                urlsuffix += convert_condition(dec);
-                if (i != conditions.length - 1) {
-                    urlsuffix += "&";
+        function collectTreeBranch(nodes) {
+            const perTree = {};
+            nodes.forEach((node) => {
+                const rev = getKernelRevision(node);
+                if (!perTree[rev.tree]) {
+                    perTree[rev.tree] = new Set();
                 }
-            }
-
-            if (urlsuffix == nodes_current_filter && nodes.items != undefined) {
-                // same as before, do nothing
-                console.log("updatenodes() same filter ("+urlsuffix+"), do nothing");
-                return;
-            }
-            nodes_current_filter = urlsuffix;
-            url += urlsuffix;
-            url += "&limit=" + NODES_LIMIT;
-            console.log("updatenodes() url: " + url);
-            getnodes(url);
-            showpopup("Retrieving nodes...");
-        }
-
-        function updtimeframe() {
-            var timeframe = document.getElementById("timeframe").value;
-            var conditions = [];
-            var now = new Date();
-            var weekago = new Date(now.getTime() - (timeframe * 60 * 60 * 1000));
-            console.log("timeframe: last " + timeframe + " hours");
-            // update url with new timeframe
-            // search=created>2024-03-18T06:12:32
-            startdate = weekago.toISOString().split(".")[0];
-            nodes_startdate = startdate;
-            conditions = ["created>" + startdate];
-            // force flush old filter to make forced refresh
-            nodes_current_filter = "";
-            updatenodes(conditions);
-        }
-        // convert nodes to sorted by date array
-        function nodes_array() {
-            var nodesarray = [];
-            if (nodes.items == undefined) {
-                return nodesarray;
-            }
-            for (var i = 0; i < nodes.items.length; i++) {
-                var node = nodes.items[i];
-                // tree, branch, commit
-                //console.log("node: " + node.kind + " " + node.result + " " + node.data.kernel_revision.tree + " " + node.data.kernel_revision.branch + " " + node.data.kernel_revision.commit + " " + node.created + " " + node.result);
-                nodesarray.push(node);
-            }
-            // print count
-            console.log("nodesarray: " + nodesarray.length);
-            // sort by created date
-            nodesarray.sort(function(a, b) {
-                return new Date(b.created) - new Date(a.created);
+                perTree[rev.tree].add(rev.branch);
             });
-            return nodesarray;
+            const trees = Object.keys(perTree).sort((a, b) => a.localeCompare(b));
+            const branchMap = {};
+            trees.forEach((tree) => {
+                branchMap[tree] = Array.from(perTree[tree]).sort((a, b) => a.localeCompare(b));
+            });
+            return {trees, branchMap};
         }
 
-        function setmiscbuttons(cbdata, name="Back") {
-            var miscbuttons = document.getElementById("miscbuttons");
-            var miscbuttonshtml = "";
-            if (cbdata) {
-                miscbuttonshtml += "<button onclick=\"" + cbdata + "\">" + name + "</button>";
-                miscbuttons.innerHTML = miscbuttonshtml;
-                // set style to display: block
-                miscbuttons.style.display = "block";
-            } else {
-                miscbuttons.innerHTML = "";
-                // set style to display: none
-                miscbuttons.style.display = "none";
+        function updateURL() {
+            const params = new URLSearchParams();
+
+            if (state.mode !== 'home') {
+                params.set(state.mode, '1');
             }
+            if (state.timeframe !== '30d') {
+                params.set('timeframe', state.timeframe);
+            }
+            if (state.tree) {
+                params.set('tree', state.tree);
+            }
+            if (state.branch) {
+                params.set('branch', state.branch);
+            }
+
+            const suffix = params.toString();
+            const base = `${window.location.pathname}`;
+            const fullUrl = suffix ? `${base}?${suffix}` : base;
+            window.history.pushState({}, '', fullUrl);
         }
 
-        function displaysumbuilds() {
-            var resultshtml = "<table class=\"results\">";
-            resultshtml += "<tr><th>Date</th><th>Tree</th><th>Branch</th><th>Commit</th><th>Describe</th><th>Builds</th><th>Pass</th><th>Fail</th><th>Incomplete</th><th>Remark</th></tr>";
-            var nodesarray = nodes_array();
-            var builds = {};
-            // Set misc button as refresh
-            setmiscbuttons("updtimeframe()", "Refresh");
-            // set url to ?builds
-            var url = pagebaseurl + "?builds";
-            window.history.pushState("", "", url);
+        function createSelect(id, label, options, value, onChange) {
+            const control = document.createElement('div');
+            control.className = 'control';
 
-            // first we make a list of all commits and statistics of builds for each
-            for (var i = 0; i < nodesarray.length; i++) {
-                var node = Object.assign({}, nodesarray[i]);
-                // reduce node.created to just date+time
-                node.created = node.created.split("T")[0] + " " + node.created.split("T")[1].split(".")[0];
-                if (node.kind == "kbuild") {
-                    // if tree or treebranch set to any value, use them as filter too
-                    if (document.getElementById("tree") != null) {
-                        tree_filter = document.getElementById("tree").value;
-                    } else {
-                        tree_filter = "";
-                    }
-                    if (document.getElementById("treebranch") != null) {
-                        treebranch_filter = document.getElementById("treebranch").value;
-                    } else {
-                        treebranch_filter = "";
-                    }
-                    if (tree_filter != "") {
-                        if (node.data.kernel_revision.tree != tree_filter) {
-                            continue;
-                        }
-                    }
-                    if (treebranch_filter != "") {
-                        var treebranch = node.data.kernel_revision.tree + "/" + node.data.kernel_revision.branch;
-                        if (treebranch != treebranch_filter) {
-                            continue;
-                        }
-                    }
+            const labelEl = document.createElement('label');
+            labelEl.setAttribute('for', id);
+            labelEl.textContent = label;
 
-                    var key = node.data.kernel_revision.tree + " " + node.data.kernel_revision.branch + " " + node.data.kernel_revision.commit;
-                    if (key in builds) {
-                        builds[key].builds += 1;
-                        if (node.result == "pass") {
-                            builds[key].pass += 1;
-                        } else if (node.result == "fail") {
-                            builds[key].fail += 1;
-                        } else if (node.result == "incomplete") {
-                            builds[key].incomplete += 1;
-                        } else {
-                            builds[key].unknown += 1;
-                        }
-                    } else {
-                        builds[key] = {};
-                        // add tree, branch, commit
-                        builds[key].tree = node.data.kernel_revision.tree;
-                        builds[key].branch = node.data.kernel_revision.branch;
-                        builds[key].commit = node.data.kernel_revision.commit;
-                        builds[key].describe = node.data.kernel_revision.describe;
-                        builds[key].created = node.created;
-                        builds[key].builds = 1;
-                        builds[key].pass = 0;
-                        builds[key].fail = 0;
-                        builds[key].incomplete = 0;
-                        builds[key].unknown = 0;
-                        if (node.result == "pass") {
-                            builds[key].pass += 1;
-                        } else if (node.result == "fail") {
-                            builds[key].fail += 1;
-                        } else if (node.result == "incomplete") {
-                            builds[key].incomplete += 1;
-                        } else {
-                            builds[key].unknown += 1;
-                        }
-                    }
-                }
+            const select = document.createElement('select');
+            select.id = id;
+
+            options.forEach((option) => {
+                const opt = document.createElement('option');
+                opt.value = option.value;
+                opt.textContent = option.label;
+                select.appendChild(opt);
+            });
+
+            if (value !== undefined) {
+                select.value = value;
             }
-            // now we display the list: tree, branch, commit, builds, pass, fail
-            for (var key in builds) {
-                // if we have unknown, likely it means build in progress, then mark it as class="building"
-                if (builds[key].unknown > 0) {
-                    tr_class = "building";
-                } else {
-                    tr_class = "";
+
+            select.addEventListener('change', () => onChange(select.value));
+
+            control.appendChild(labelEl);
+            control.appendChild(select);
+            return control;
+        }
+
+        function updateActiveMenu() {
+            const menu = document.getElementById('menu');
+            menu.innerHTML = '';
+
+            MENU_ITEMS.forEach((entry) => {
+                const link = document.createElement('a');
+                const suffix = entry.suffix ? `?${entry.suffix}` : '';
+                const url = `${window.location.pathname}${suffix}`;
+                link.href = url;
+                link.textContent = entry.name;
+                if ((state.mode === 'home' && entry.suffix === '') ||
+                    (state.mode === 'builds' && entry.suffix === 'builds') ||
+                    (state.mode === 'testsuites' && entry.suffix === 'testsuites') ||
+                    (state.mode === 'tests' && entry.suffix === 'tests')) {
+                    link.classList.add('active');
                 }
-                resultshtml += "<tr class=\"" + tr_class + "\">";
-                resultshtml += "<td>" + builds[key].created + "</td>";
-                resultshtml += "<td>" + builds[key].tree + "</td>";
-                resultshtml += "<td>" + builds[key].branch + "</td>";
-                resultshtml += "<td class=\"commitall\">" + builds[key].commit + "</td>";
-                resultshtml += "<td>" + builds[key].describe + "</td>";
-                resultshtml += "<td>" + builds[key].builds + "</td>";
-                resultshtml += "<td>" + builds[key].pass + "</td>";
-                resultshtml += "<td>" + builds[key].fail + "</td>";
-                resultshtml += "<td>" + builds[key].incomplete + "</td>";
-                if (builds[key].unknown > 0) {
-                    resultshtml += "<td>Building...</td>";
-                } else {
-                    resultshtml += "<td class=\"showtests\">Show tests</td>";
-                }
-                resultshtml += "</tr>";
-            }
-            resultshtml += "</table>";
-            updresdiv(resultshtml);
-            // add onclick of commitall class - display all builds for this commit displayallbuilds(commit)
-            var commitall = document.getElementsByClassName("commitall");
-            for (var i = 0; i < commitall.length; i++) {
-                commitall[i].addEventListener("click", function(event) {
+
+                link.addEventListener('click', (event) => {
                     event.preventDefault();
-                    var commit = this.innerHTML;
-                    displayallbuilds(commit);
+                    if (entry.suffix === '') {
+                        state.mode = 'home';
+                        state.tree = '';
+                        state.branch = '';
+                        state.timeframe = '30d';
+                        updateURL();
+                        renderDashboard();
+                    } else if (entry.suffix === 'builds') {
+                        event.preventDefault();
+                        state.mode = 'builds';
+                    } else if (entry.suffix === 'testsuites') {
+                        event.preventDefault();
+                        state.mode = 'testsuites';
+                    } else if (entry.suffix === 'tests') {
+                        event.preventDefault();
+                        state.mode = 'tests';
+                    }
+                    if (entry.suffix) {
+                        updateURL();
+                        renderDashboard();
+                    }
                 });
-            }
-            // add onclick of showtests class - display all builds for this commit displayallbuilds(commit)
-            var showtests = document.getElementsByClassName("showtests");
-            for (var i = 0; i < showtests.length; i++) {
-                showtests[i].addEventListener("click", function(event) {
-                    event.preventDefault();
-                    // clear all nodes
-                    nodes = {};
-                    var commit = this.parentElement.children[3].innerHTML;
-                    showtreetests(commit);
-                });
-            }
+                menu.appendChild(link);
+            });
         }
 
-        // Display summary of all builds
-        function displayallbuilds(commit) {
-            setmiscbuttons("displaysumbuilds()");
-            // set url to ?displaycommit=commit
-            var url = pagebaseurl + "?displaycommit=" + commit;
-            window.history.pushState("", "", url);            
+        function renderMenuBar() {
+            updateActiveMenu();
+            const toolbarPanel = document.getElementById('toolbarPanel');
+            const toolbar = document.createElement('div');
 
-            // header: kernel, tree, branch, config, result, datetime
-            var resultshtml = "<table class=\"results\">";
-            resultshtml += "<tr><th>Build</th><th>Date</th><th>Tree</th><th>Branch</th><th>Arch</th><th>Compiler</th><th>Config</th><th>Commit</th><th>Result</th></tr>";
-            var nodesarray = nodes_array();
-            console.log("nodesarray: " + nodesarray.length);
-            for (var i = 0; i < nodesarray.length; i++) {
-                // make copy of node
-                var node = Object.assign({}, nodesarray[i]);
-                // reduce node.created to just date+time
-                node.created = node.created.split("T")[0] + " " + node.created.split("T")[1].split(".")[0];
-                // if commit set - use as filter
-                if (commit != undefined) {
-                    // check if node have data and kernel_revision and commit HACK HACK TODO FIXME
-                    if (node.data == undefined || node.data.kernel_revision == undefined || node.data.kernel_revision.commit == undefined) {
-                        continue;
-                    }
-                    if (node.data.kernel_revision.commit != commit) {
-                        continue;
-                    }
-                }
-                //console.log("node: " + node.kind + " " + node.result + " " + node.data.kernel_revision.tree + " " + node.data.kernel_revision.branch + " " + node.data.kernel_revision.commit + " " + node.created + " " + node.result);
-                if (node.kind == "kbuild") {
-                    // set class depends on node.result
-                    tr_class = node.result;
-                    resultshtml += "<tr class=\"" + tr_class + "\">";
-
-                    resultshtml += "<td onclick=\"showknode('" + node.id + "')\" class=\"tdnodeid\">" + node.id + "</td>";
-                    resultshtml += "<td>" + node.created + "</td>";
-                    resultshtml += "<td>" + node.data.kernel_revision.tree + "</td>";
-                    resultshtml += "<td>" + node.data.kernel_revision.branch + "</td>";
-                    resultshtml += "<td>" + node.data.arch + "</td>";
-                    resultshtml += "<td>" + node.data.compiler + "</td>";
-                    if (node.data.config_full == "") {
-                        resultshtml += "<td>Unknown</td>";
-                    } else {
-                        resultshtml += "<td>" + node.data.config_full + "</td>";
-                    }
-                    resultshtml += "<td>" + node.data.kernel_revision.commit + "</td>";
-                    if (node.result == "pass") {
-                        resultshtml += "<td>" + node.result + "</td>";
-                    } else {
-                        resultshtml += "<td class=\"" + node.result + "\">" + node.result + "</td>";
-                    }
-                    resultshtml += "</tr>";
-                }
-            }
-            resultshtml += "</table>";
-            updresdiv(resultshtml);
-        }
-
-        function showknode(nodeid) {
-            var found_node = false;
-            console.log("show nodeid: " + nodeid);
-            // set url showknode=XXXXX
-            var url = pagebaseurl + "?showknode=" + nodeid;
-            window.history.pushState("", "", url);
-
-            // check if nodes.items exist
-            if (nodes.items == undefined) {
-                nodeinfohtml = "<tr><td>Error</td><td>No nodes found</td><td></td></tr>";
-                updresdiv(nodeinfohtml);
+            if (state.mode === 'home') {
+                toolbar.innerHTML = `
+                    <div class="status-bar">
+                        <div>Use the menu to switch modes. "Builds" for build outcomes and "Test suites" for suite progress over older/newer builds.</div>
+                    </div>
+                `;
+                toolbarPanel.innerHTML = '';
+                toolbarPanel.appendChild(toolbar);
                 return;
-            }         
-            // find node in nodes
-            for (var i = 0; i < nodes.items.length; i++) {
-                if (nodes.items[i].id == nodeid) {
-                    var node = nodes.items[i];
-                    var nodeinfohtml = "<tr><th>Parameter</th><th>Value</th><th>Misc</th></tr>";
+            }
 
-                    found_node = node;
-                    // is kind == kbuild ? if not - show error in results and quit
-                    if (node.kind != "kbuild") {
-                        nodeinfohtml += "<tr><td>Error</td><td>Node is not kbuild</td><td></td></tr>";
-                        updresdiv("<table class=\"results\">" + nodeinfohtml + "</table>");
+            const nodesForFilters = state.currentNodes && state.currentNodes.length
+                ? state.currentNodes
+                : [];
+            const filterData = collectTreeBranch(nodesForFilters);
+            const treeOptions = [{value: '', label: 'All trees'}];
+            filterData.trees.forEach((tree) => {
+                treeOptions.push({value: tree, label: tree});
+            });
+
+            const selectedTree = state.tree && treeOptions.some((item) => item.value === state.tree)
+                ? state.tree
+                : '';
+            state.tree = selectedTree;
+            if (state.tree) {
+                state.branch = state.branch;
+            }
+
+            const branchChoices = [{value: '', label: 'All branches'}];
+            if (state.tree && filterData.branchMap[state.tree]) {
+                filterData.branchMap[state.tree].forEach((branch) => {
+                    branchChoices.push({value: branch, label: branch});
+                });
+            } else if (!state.tree && filterData.branchMap['unknown']) {
+                filterData.branchMap['unknown'].forEach((branch) => {
+                    branchChoices.push({value: branch, label: branch});
+                });
+            }
+
+            const timeframeChoices = TIMEFRAME_OPTIONS.map((item) => ({
+                value: item.value,
+                label: item.label,
+            }));
+
+            toolbar.className = 'toolbar';
+            toolbar.appendChild(createSelect(
+                'treeFilter',
+                'Kernel tree',
+                treeOptions,
+                selectedTree,
+                (value) => {
+                    state.tree = value;
+                    if (!value) {
+                        state.branch = '';
+                    } else if (state.branch &&
+                               !filterData.branchMap[value]?.includes(state.branch)) {
+                        state.branch = '';
+                    }
+                    updateURL();
+                    renderDashboard();
+                }
+            ));
+
+            toolbar.appendChild(createSelect(
+                'branchFilter',
+                'Branch',
+                branchChoices,
+                state.branch,
+                (value) => {
+                    state.branch = value;
+                    updateURL();
+                    renderDashboard();
+                }
+            ));
+
+            toolbar.appendChild(createSelect(
+                'timeframeFilter',
+                'Time window',
+                timeframeChoices,
+                state.timeframe,
+                (value) => {
+                    state.timeframe = value;
+                    updateURL();
+                    renderDashboard();
+                }
+            ));
+
+            const buttonWrap = document.createElement('div');
+            buttonWrap.className = 'control';
+            const buttonLabel = document.createElement('label');
+            buttonLabel.textContent = 'Action';
+            const refresh = document.createElement('button');
+            refresh.textContent = 'Reload view';
+            refresh.type = 'button';
+            refresh.addEventListener('click', () => {
+                renderDashboard();
+            });
+            buttonWrap.appendChild(buttonLabel);
+            buttonWrap.appendChild(refresh);
+            toolbar.appendChild(buttonWrap);
+
+            toolbarPanel.innerHTML = '';
+            toolbarPanel.appendChild(toolbar);
+        }
+
+        function renderLegend() {
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '';
+            const wrap = document.createElement('div');
+            wrap.className = 'legend';
+            const items = [
+                {name: 'PASS', clazz: 'pass'},
+                {name: 'FAIL', clazz: 'fail'},
+                {name: 'INFRA/other', clazz: 'infra'},
+            ];
+            items.forEach((item) => {
+                const chip = document.createElement('span');
+                chip.innerHTML = `<span class="swatch ${item.clazz}"></span>${item.name}`;
+                wrap.appendChild(chip);
+            });
+            legend.appendChild(wrap);
+        }
+
+        function renderHome() {
+            const title = document.getElementById('viewTitle');
+            title.textContent = 'KernelCI Dashboard';
+            const hint = document.getElementById('viewHint');
+            hint.textContent = 'Use the top bar and filter controls to compare build and test status over time.';
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="home-grid">
+                    <div class="home-card">
+                        <h3>Builds</h3>
+                        <p>Heatmap of build results per commit/configuration for a selected tree and branch.</p>
+                    </div>
+                    <div class="home-card">
+                        <h3>Test suites</h3>
+                        <p>Suite-by-suite status matrix for selected tree/branch across older and newer builds.</p>
+                    </div>
+                    <div class="home-card">
+                        <h3>All tests</h3>
+                        <p>Overall view of test states by commit and suite, useful for quick regressions.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setStatus(text, extraClass = '') {
+            const status = document.getElementById('status');
+            status.innerHTML = '';
+            const badge = document.createElement('span');
+            badge.className = `badge ${extraClass}`;
+            badge.textContent = text;
+            status.appendChild(badge);
+            if (extraClass) {
+                badge.classList.remove('unknown');
+            }
+        }
+
+        function setError(text) {
+            const content = document.getElementById('content');
+            content.innerHTML = `<div class="error">${text}</div>`;
+        }
+
+        function formatTimestamp(value) {
+            if (!value) {
+                return 'Unknown';
+            }
+            const dt = new Date(value);
+            if (Number.isNaN(dt.getTime())) {
+                return 'Unknown';
+            }
+            return dt.toISOString().replace('T', ' ').split('.')[0] + ' UTC';
+        }
+
+        function clip(value, len = 12) {
+            const text = value || '';
+            return text.length > len ? `${text.slice(0, len)}...` : text;
+        }
+
+        function heatCell(entry, title, rowScope) {
+            if (!entry) {
+                return '<td class="cell"><span class="square unknown" title="No data"></span></td>';
+            }
+            const result = entry.result || entry;
+            const id = entry.id || null;
+            const cls = statusClass(result);
+            const txt = statusLabel(result);
+            const tooltip = `${rowScope}\n${title}\nResult: ${txt}${id ? `\nID: ${id}` : ''}`;
+            const url = id ? `/viewer?node_id=${id}` : '#';
+            
+            return `
+                <td class="cell">
+                    <a href="${url}" class="square ${cls}" title="${tooltip}"></a>
+                </td>
+            `;
+        }
+
+        function renderHeatGrid({rows, columns, rowKeyLabel, titleText, hintText, emptyText}) {
+            if (!rows.length || !columns.length) {
+                const content = document.getElementById('content');
+                content.innerHTML = `<div class="empty">${emptyText}</div>`;
+                return;
+            }
+
+            const safeCols = columns.slice(0, maxColumns);
+            const tableBodyRows = rows.map((row) => {
+                const cells = safeCols.map((col) => {
+                    const entry = row.values[col];
+                    const label = row.meta[col] || col;
+                    return heatCell(entry, label, row.name);
+                }).join('');
+                
+                // Shorten commit ID if it looks like one (hex string)
+                let displayName = row.name;
+                if (row.name.includes(' · ')) {
+                    const [commit, rest] = row.name.split(' · ');
+                    if (commit.length > 12) {
+                        displayName = `${commit.slice(0, 8)} · ${rest}`;
+                    }
+                } else if (row.name.length > 20) {
+                    displayName = row.name.slice(0, 12) + '...';
+                }
+
+                return `
+                    <tr>
+                        <td class="col-header-id" title="${row.name}">${displayName}</td>
+                        <td class="col-header-ts">${formatTimestamp(row.timestamp)}</td>
+                        ${cells}
+                    </tr>
+                `;
+            }).join('');
+
+            const headerCols = safeCols.map((col, index) => 
+                `<th class="cell vertical" title="${col}">${index + 1}</th>`
+            ).join('');
+
+            const content = document.getElementById('content');
+            content.innerHTML = `
+                <div class="content-head">
+                    <h2>${titleText}</h2>
+                    <div class="status-text">${hintText}</div>
+                </div>
+                <div class="heatmap-shell">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="col-header-id">${rows.length === 1 ? 'Item' : 'Commit'}</th>
+                                <th class="col-header-ts">Updated</th>
+                                ${headerCols}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableBodyRows}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderBuilds(nodes) {
+            const stateNodes = nodes.filter((node) => node.kind === 'kbuild');
+            const filterData = collectTreeBranch(stateNodes);
+            const grouped = new Map();
+            const columnsSet = {};
+
+            stateNodes.forEach((node) => {
+                const rev = getKernelRevision(node);
+                const commit = rev.commit;
+                const rowKey = commit;
+                const row = grouped.get(rowKey) || {
+                    name: `${commit} · ${rev.tree}/${rev.branch}`,
+                    timestamp: node.created,
+                    values: {},
+                    meta: {},
+                };
+
+                if (!grouped.has(rowKey)) {
+                    grouped.set(rowKey, row);
+                }
+
+                const config = (node?.data?.config_full
+                    || node?.data?.config
+                    || `${node?.data?.arch || 'arch'}-${node?.data?.compiler || 'gcc'}`)
+                    .trim();
+                if (!row.values[config]) {
+                    row.values[config] = {
+                        result: node.result,
+                        id: node.id
+                    };
+                }
+                if (!columnsSet[config]) {
+                    columnsSet[config] = 1;
+                } else {
+                    columnsSet[config] += 1;
+                }
+            });
+
+            const rows = Array.from(grouped.values())
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                .slice(0, maxRows);
+
+            const columns = Object.keys(columnsSet)
+                .sort((a, b) => columnsSet[b] - columnsSet[a])
+                .slice(0, maxColumns);
+
+            renderHeatGrid({
+                rows,
+                columns,
+                titleText: 'Build heatmap',
+                hintText: 'Commit rows × build variant columns',
+                emptyText: 'No builds found for the selected filters.'
+            });
+
+            setStatus(`Build nodes loaded: ${nodes.length}`, 'pass');
+        }
+
+        function renderTestSuites(nodes, aggregateByCommit = false) {
+            const filterData = collectTreeBranch(nodes);
+            const rows = new Map();
+            const columnsSet = new Set();
+
+            nodes
+                .filter((node) => node.kind === 'test')
+                .forEach((node) => {
+                    const rev = getKernelRevision(node);
+                    const suite = getSuiteName(node);
+                    const axis = aggregateByCommit
+                        ? `${suite} (${rev.tree}/${rev.branch})`
+                        : rev.commit;
+                    const series = aggregateByCommit
+                        ? rev.commit
+                        : suite;
+
+                    if (!axis || axis === 'unknown' || !series || series === 'unknown') {
                         return;
                     }
-                    for (var key in node) {
-                        if (key == "data") {
-                            for (var key2 in node[key]) {
-                                if (key2 == "kernel_revision") {
-                                    data = node[key][key2];
-                                    nodeinfohtml += "<tr><td>Tree</td><td>" + data.tree + "</td><td></td></tr>";
-                                    nodeinfohtml += "<tr><td>Branch</td><td>" + data.branch + "</td><td></td></tr>";
-                                    nodeinfohtml += "<tr><td>Commit</td><td>" + data.commit + "</td><td></td></tr>";
-                                    nodeinfohtml += "<tr><td>URL</td><td>" + data.url + "</td><td></td></tr>";
-                                    nodeinfohtml += "<tr><td>Describe</td><td>" + data.describe + "</td><td></td></tr>";
-                                    nodeinfohtml += "<tr><td>Arch</td><td>" + node[key].arch + "</td><td></td></tr>";
-                                    nodeinfohtml += "<tr><td>Compiler</td><td>" + node[key].compiler + "</td><td></td></tr>";
-                                    nodeinfohtml += "<tr><td>Config</td><td>" + node[key].config_full + "</td><td></td></tr>";
-                                } else {
-                                    nodeinfohtml += "<tr><td>" + key2 + "</td><td>" + node[key][key2] + "</td><td></td></tr>";
-                                }
-                            }
-                        } else if (key == "artifacts") {
-                            for (var key2 in node[key]) {
-                                url = node[key][key2];
-                                filename = url.split("/").pop();
-                                filename = filename.split("?")[0];
-                                nodeinfohtml += "<tr><td>" + key2 + "</td><td><a href=\"" + url + "\">" + filename + "</a></td><td></td></tr>";
-                            }
-                        } else {
-                            nodeinfohtml += "<tr><td>" + key + "</td><td>" + node[key] + "</td><td></td></tr>";
-                        }
+
+                    columnsSet.add(series);
+
+                    const row = rows.get(axis) || {
+                        name: axis,
+                        timestamp: node.created,
+                        values: {},
+                        meta: {},
+                    };
+                    if (!rows.has(axis)) {
+                        rows.set(axis, row);
                     }
-                    updresdiv("<table class=\"results\">" + nodeinfohtml + "</table>");
-                }
-            }
-            if (found_node) {
-                setmiscbuttons("displayallbuilds('" + found_node.data.kernel_revision.commit + "')");
-            }
-        }
-
-        function getchildren(parentnodeid) {
-            var newchildren = [];
-            for (var i = 0; i < nodes.items.length; i++) {
-                var node = nodes.items[i];
-                if (node.parent == parentnodeid) {
-                    mininode = {};
-                    mininode["id"] = node.id;
-                    mininode["text"] = { name: node.name };
-                    mininode["children"] = [];
-                    newchildren.push(mininode);
-                }
-            }
-            // recurse over new children, if they have children
-            for (var i = 0; i < newchildren.length; i++) {
-                newchildren[i]["children"] = getchildren(newchildren[i]["id"]);
-            }
-            return newchildren;
-        }
-
-        function showtreetests(commit) {
-            console.log("showtreetests() commit: " + commit);
-            // update url to ?showtreetests=commit
-            var url = pagebaseurl + "?treetests=" + commit;
-            window.history.pushState("", "", url);
-            display_parameters = ["treetests=" + commit];
-            
-            // We need all nodes, if not present, then fetch them
-            // after that we will automatically retry them
-            conditions = [];
-            conditions.push('data.kernel_revision.commit=' + commit);
-            updatenodes(conditions);
-            if (nodes.items == undefined) {
-                console.log("showtreetests() no nodes");
-                return;
-            }
-            console.log("showtreetests() nodes: " + nodes.items.length + " commit: " + commit);
-            
-            jstreedata = [];
-            for (var i = 0; i < nodes.items.length; i++) {
-                var node = nodes.items[i];
-                if (node.data.kernel_revision.commit == commit) {
-                    mininode = {};
-                    mininode["id"] = node.id;
-                    // if kind checkout - set parent as # as its root
-                    if (node.kind == "checkout") {
-                        mininode["parent"] = "#";
-                    } else {
-                        mininode["parent"] = node.parent;
+                    if (row.values[series] === undefined) {
+                        row.values[series] = {
+                            result: node.result,
+                            id: node.id
+                        };
+                        row.meta[series] = `${rev.tree}/${rev.branch} · ${suite}`;
                     }
-                    if (node.kind == "test" && node.data.platform != undefined) {
-                        mininode["text"] = "(" + node.data.platform + ") " + node.name;
-                    } else if (node.kind == "checkout") {
-                        mininode["text"] = node.data.kernel_revision.tree + " / " + node.data.kernel_revision.branch + " / " + node.data.kernel_revision.describe;
-                    } else {
-                        mininode["text"] = node.name;
-                    }
-                    if (node.result == "pass") {
-                        mininode["icon"] = "/icons/ok.png";
-                    } else if (node.result == "fail") {
-                        mininode["icon"] = "/icons/bad.png";
-                    } else if (node.result == "incomplete") {
-                        mininode["icon"] = "/icons/warning.png";
-                    }
-                    mininode["a_attr"] = { href: "/viewer?node_id=" + node.id, title: "Test tooltip" };
-                    jstreedata.push(mininode);
-                }
-            }
-            console.log("showtreetests() jstreedata.length: " + jstreedata.length);
-            updresdiv("");
-            jstree_state = true;
-            $('#results').jstree({
-                'core': {
-                    'data': jstreedata
-                }
-            });
-        }
-
-        function updresults(hint) {
-            // if hint is set and == treebranch
-            if (hint == "treebranch") {
-                // then set select #tree to ""
-                document.getElementById("tree").value = "";                
-            }
-            if (hint == "tree") {
-                // then set select #treebranch to ""
-                document.getElementById("treebranch").value = "";                
-            }
-            // iterate over display_parameters
-            for (var i = 0; i < display_parameters.length; i++) {
-                // truncate # at end
-                if (display_parameters[i].indexOf("#") != -1) {
-                    display_parameters[i] = display_parameters[i].split("#")[0];
-                }
-
-                // if just "builds"
-                if (display_parameters[i] == "builds") {
-                    displaysumbuilds();
-                    return;
-                }
-                // Show tree of tests for specific commit
-                if (display_parameters[i].indexOf("treetests=") != -1) {
-                    var commit = display_parameters[i].split("=")[1];
-                    showtreetests(commit);
-                    return;
-                }
-                // if displaycommit=XXXXX, then display all builds for this commit
-                if (display_parameters[i].indexOf("displaycommit=") != -1) {
-                    var commit = display_parameters[i].split("=")[1];
-                    displayallbuilds(commit);
-                    return;
-                }
-                // showknode=XXXXX
-                if (display_parameters[i].indexOf("showknode=") != -1) {
-                    var nodeid = display_parameters[i].split("=")[1];
-                    showknode(nodeid);
-                    return;
-                }
-            }
-        }
-
-        function kernels_array() {
-            // iterate over nodes and return array of kernels
-            var kernels = [];
-            if (nodes.items == undefined) {
-                return kernels;
-            }
-            for (var i = 0; i < nodes.items.length; i++) {
-                var node = nodes.items[i];
-                if (node.kind == "kbuild") {
-                    var obj = {};
-                    obj["tree"] = node.data.kernel_revision.tree;
-                    obj["branch"] = node.data.kernel_revision.branch;
-                    // check if we already have this tree/branch in kernels array
-                    var found = false;
-                    for (var j = 0; j < kernels.length; j++) {
-                        if (kernels[j].tree == obj.tree && kernels[j].branch == obj.branch) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        kernels.push(obj);
-                    }
-                }
-            }
-            return kernels;
-        }
-
-        function displayMenu() {
-            var menu = document.getElementById("menu");
-            var menuhtml = "";
-            var ago = [24, 168, 720];
-            var ago_desc = ["Last 24h", "Last 7d", "Last 30d"];
-
-            // retrieve current values of timeframe
-            var tf_elem = document.getElementById("timeframe");
-            if (tf_elem != null) {
-                var selected_timeframe = tf_elem.value;
-            } else {
-                var selected_timeframe = "";
-            }
-
-            for (var i = 0; i < mainmenu.length; i++) {
-                menuhtml += "<a class=\"menulink\" href=\"" + mainmenu[i].suffix + "\">" + mainmenu[i].name + "</a> ";
-            }
-            kernels = kernels_array();
-            if (kernels.length > 0) {
-                var trees = [];
-                var treebranch = [];
-
-                // add all trees
-                for (var i = 0; i < kernels.length; i++) {
-                    if (trees.indexOf(kernels[i].tree) == -1) {
-                        trees.push(kernels[i].tree);
-                    }
-                }
-                // add all combinations of tree/branch
-                for (var i = 0; i < kernels.length; i++) {
-                    var current_treebranch = kernels[i].tree + "/" + kernels[i].branch;
-                    if (treebranch.indexOf(current_treebranch) == -1) {
-                        treebranch.push(current_treebranch);
-                    }
-                }
-                menuhtml += "<select id=\"treebranch\" onchange=\"updresults('treebranch')\">";
-                menuhtml += "<option value=\"\">Any tree/branch</option>";
-                for (var i = 0; i < treebranch.length; i++) {
-                    menuhtml += "<option value=\"" + treebranch[i] + "\">" + treebranch[i] + "</option>";
-                }
-                menuhtml += "</select>";
-
-                menuhtml += "<select id=\"tree\" onchange=\"updresults('tree')\">";
-                menuhtml += "<option value=\"\">Any tree</option>";
-                for (var i = 0; i < trees.length; i++) {
-                    menuhtml += "<option value=\"" + trees[i] + "\">" + trees[i] + "</option>";
-                }
-                menuhtml += "</select>";
-            }
-            // add selectbox for last 24h, 7d, 30d
-            menuhtml += "<select id=\"timeframe\" onchange=\"updtimeframe()\">";
-            menuhtml += "<option value=\"\">Select timeframe</option>";
-            for (var i = 0; i < ago.length; i++) {
-                // if selected_timeframe is equal to ago[i] then add selected attribute
-                if (selected_timeframe == ago[i]) {
-                    menuhtml += "<option value=\"" + ago[i] + "\" selected>" + ago_desc[i] + "</option>";
-                } else {
-                    menuhtml += "<option value=\"" + ago[i] + "\">" + ago_desc[i] + "</option>";
-                }
-            }
-            menuhtml += "</select>";
-            menu.innerHTML = menuhtml;
-            // add event listener to all menu links (by class)
-            links = document.getElementsByClassName("menulink");
-            for (var i = 0; i < links.length; i++) {
-                links[i].addEventListener("click", function(event) {
-                    event.preventDefault();
-                    var fullurl = pagebaseurl + this.getAttribute("href");
-                    window.history.pushState("", "", fullurl);
-                    parseParameters(fullurl);
                 });
+
+            const columns = Array.from(columnsSet).sort();
+            const sortedRows = Array.from(rows.values())
+                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            const limitedRows = sortedRows.slice(0, maxRows);
+            return {
+                rows: limitedRows,
+                columns: columns,
+                totalColumns: columns.length,
             };
         }
 
-        function cleardivs() {
-            updresdiv("");
+        function renderTestsuitesView(nodes) {
+            const filtered = nodes.filter((node) => node.kind === 'test');
+            const {rows, columns} = renderTestSuites(filtered, false);
+            renderHeatGrid({
+                rows,
+                columns,
+                titleText: 'Test suites heatmap',
+                hintText: 'Commit rows × suite columns',
+                emptyText: 'No test-suite rows found for the selected tree/branch/timeframe.'
+            });
+            setStatus(`Test nodes loaded: ${nodes.length}`, 'pass');
         }
 
-        function parseParameters(url) {
-            // parse the url and extract the parameters
-            var url = url.split("?")[1];
-            if (url == undefined) {
-                display_parameters = [];
-                console.log("parseParameters clear");
-                cleardivs();
-                return;
-            }
-            display_parameters = url.split("&");
-            console.log("parseParameters url: " + url);
-            // alert on testsuites, tests - not ready
-            if (url == "testsuites" || url == "tests") {
-                alert("Not ready yet");
-                display_parameters = [];
-                return;
-            }
-            updresults();
+        function renderAllTests(nodes) {
+            const filtered = nodes.filter((node) => node.kind === 'test');
+            const {rows, columns} = renderTestSuites(filtered, true);
+            renderHeatGrid({
+                rows,
+                columns,
+                titleText: 'All tests heatmap',
+                hintText: 'Suite rows × commit columns',
+                emptyText: 'No test rows found for the selected timeframe.'
+            });
+            setStatus(`Test nodes loaded: ${nodes.length}`, 'pass');
         }
 
-        function showpopup(text) {
-            var popup = document.getElementById("popup");
-            // if empty - hide
-            if (text == "") {
-                popup.innerHTML = "Completed";
-                // close with delay 1 sec
-                setTimeout(function() {
-                    popup.innerHTML = text;
-                    popup.style.display = "none";
-                }, 1000);
-            } else {
-                popup.innerHTML = text;
-                popup.style.display = "block";
+        function updateFiltersFromMode(nodes) {
+            state.currentNodes = nodes;
+            if (state.tree && !collectTreeBranch(nodes).trees.includes(state.tree)) {
+                state.tree = '';
+                state.branch = '';
+            }
+            if (state.branch && state.tree &&
+                !collectTreeBranch(nodes).branchMap[state.tree]?.includes(state.branch)) {
+                state.branch = '';
+            }
+            if (state.mode === 'tests' && nodes.length === 0) {
+                state.tree = '';
+                state.branch = '';
             }
         }
-    
-        function onLoad() {
-            // do we have a node id in the url?
-            var url = window.location.href;
-            pagebaseurl = url.split("?")[0];
-            // api url is just remove /viewer
-            apiurl = pagebaseurl.replace("/dashboard", "");
-            // do we have any parameters? then call parseParameters()
-            if (url.indexOf("?") != -1) {
-                parseParameters(url);
+
+        async function renderDashboard() {
+            parseState();
+            renderMenuBar();
+            renderLegend();
+
+            const viewTitle = document.getElementById('viewTitle');
+            const viewHint = document.getElementById('viewHint');
+            const content = document.getElementById('content');
+
+            if (state.mode === 'home') {
+                state.currentNodes = [];
+                renderHome();
+                setStatus('Ready', '');
+                return;
             }
-            displayMenu();
-            // blink timeframe selectbox 5 times to attract attention
-            var timeframe = document.getElementById("timeframe");
-            if (timeframe != null) {
-                var blink = 5;
-                var blinkInterval = setInterval(function() {
-                    if (blink == 0) {
-                        clearInterval(blinkInterval);
-                        // set to 24h
-                        timeframe.value = 24;
-                        if (nodes_update_in_progress == false) {
-                            updtimeframe();
-                        } else {
-                            console.log("Already updating nodes");
-                        }
-                    }
-                    if (timeframe.style.backgroundColor == "pink") {
-                        timeframe.style.backgroundColor = "white";
-                    } else {
-                        timeframe.style.backgroundColor = "pink";
-                    }
-                    blink--;
-                }, 200);
+
+            setStatus('Loading data', 'pass');
+            content.innerHTML = '<div class="empty"><span class="spinner"></span> Fetching nodes...</div>';
+
+            try {
+                const nodes = await fetchAllNodes(state.mode === 'builds' ? 'kbuild' : 'test');
+                state.currentNodes = nodes;
+                updateFiltersFromMode(nodes);
+                renderMenuBar();
+                if (state.mode === 'builds') {
+                    viewTitle.textContent = 'Builds';
+                    viewHint.textContent = `Showing ${state.tree || 'all trees'}${state.branch ? ` / ${state.branch}` : ''}`;
+                    renderBuilds(nodes);
+                }
+                if (state.mode === 'testsuites') {
+                    viewTitle.textContent = 'Test suites';
+                    viewHint.textContent = `Showing ${state.tree || 'all trees'}${state.branch ? ` / ${state.branch}` : ''}`;
+                    renderTestsuitesView(nodes);
+                }
+                if (state.mode === 'tests') {
+                    viewTitle.textContent = 'All tests';
+                    viewHint.textContent = `Showing ${state.timeframe} across ${state.tree || 'all trees'}`;
+                    renderAllTests(nodes);
+                }
+            } catch (error) {
+                setError(error.message || 'Failed to load data');
             }
         }
+
+        window.addEventListener('popstate', renderDashboard);
+        document.addEventListener('DOMContentLoaded', renderDashboard);
     </script>
-</head>
-<body onload="onLoad()">
-<!-- nice horizontal menu at top -->
-<div id="menu">
-</div>
-<div id="miscbuttons"></div>
-<div id="results"></div>
-<div id="tree"></div>
-<div id="popup"></div>
 </body>
 </html>
