@@ -272,9 +272,12 @@ body {
 /* Build status cells */
 .kbuild-matrix .build-cell {
     cursor: pointer;
-    min-width: 80px;
+    min-width: 20px;
+    max-width: 25px;
     height: 30px;
     vertical-align: middle;
+    font-size: 10px;
+    padding: 2px;
 }
 
 .kbuild-matrix .build-cell:hover {
@@ -307,11 +310,11 @@ body {
 .kbuild-matrix .commit-header {
     writing-mode: vertical-rl;
     text-orientation: mixed;
-    min-width: 100px;
-    max-width: 100px;
-    padding: 10px 5px;
+    min-width: 20px;
+    max-width: 20px;
+    padding: 10px 1px;
     font-family: monospace;
-    font-size: 12px;
+    font-size: 11px;
 }
 
 /* Loading spinner */
