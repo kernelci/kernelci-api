@@ -896,7 +896,13 @@ def _build_events_query(query_params: dict) -> tuple:
 
     if from_ts:
         if isinstance(from_ts, str):
-            from_ts = datetime.fromisoformat(from_ts)
+            try:
+                from_ts = datetime.fromisoformat(from_ts)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid 'from' parameter, must be an ISO 8601 datetime"
+                ) from exc
         query_params['timestamp'] = {'$gt': from_ts}
     if path:
         query_params['data.path'] = {'$regex': path}
