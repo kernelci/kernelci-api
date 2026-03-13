@@ -11,8 +11,9 @@ import pytest
 
 @pytest.mark.asyncio
 @pytest.mark.dependency(
-    depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
-    scope='session')
+    depends=["tests/e2e_tests/test_user_creation.py::test_create_regular_user"],
+    scope="session",
+)
 @pytest.mark.order(3)
 async def test_subscribe_node_channel(test_async_client):
     """
@@ -27,19 +28,20 @@ async def test_subscribe_node_channel(test_async_client):
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
         },
     )
-    pytest.node_channel_subscription_id = response.json()['id']
+    pytest.node_channel_subscription_id = response.json()["id"]
     assert response.status_code == 200
     # only id, channel, user is mandatory in the response
-    assert 'id' in response.json()
-    assert 'channel' in response.json()
-    assert 'user' in response.json()
-    assert response.json().get('channel') == 'node'
+    assert "id" in response.json()
+    assert "channel" in response.json()
+    assert "user" in response.json()
+    assert response.json().get("channel") == "node"
 
 
 @pytest.mark.asyncio
 @pytest.mark.dependency(
-    depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
-    scope='session')
+    depends=["tests/e2e_tests/test_user_creation.py::test_create_regular_user"],
+    scope="session",
+)
 @pytest.mark.order(3)
 async def test_subscribe_test_channel(test_async_client):
     """
@@ -54,19 +56,20 @@ async def test_subscribe_test_channel(test_async_client):
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
         },
     )
-    pytest.test_channel_subscription_id = response.json()['id']
+    pytest.test_channel_subscription_id = response.json()["id"]
     assert response.status_code == 200
     # only id, channel, user is mandatory in the response
-    assert 'id' in response.json()
-    assert 'channel' in response.json()
-    assert 'user' in response.json()
-    assert response.json().get('channel') == 'test_channel'
+    assert "id" in response.json()
+    assert "channel" in response.json()
+    assert "user" in response.json()
+    assert response.json().get("channel") == "test_channel"
 
 
 @pytest.mark.asyncio
 @pytest.mark.dependency(
-    depends=['tests/e2e_tests/test_user_creation.py::test_create_regular_user'],
-    scope='session')
+    depends=["tests/e2e_tests/test_user_creation.py::test_create_regular_user"],
+    scope="session",
+)
 @pytest.mark.order(3)
 async def test_subscribe_user_group_channel(test_async_client):
     """
@@ -82,10 +85,10 @@ async def test_subscribe_user_group_channel(test_async_client):
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
         },
     )
-    pytest.user_group_channel_subscription_id = response.json()['id']
+    pytest.user_group_channel_subscription_id = response.json()["id"]
     assert response.status_code == 200
     # only id, channel, user is mandatory in the response
-    assert 'id' in response.json()
-    assert 'channel' in response.json()
-    assert 'user' in response.json()
-    assert response.json().get('channel') == 'user_group'
+    assert "id" in response.json()
+    assert "channel" in response.json()
+    assert "user" in response.json()
+    assert response.json().get("channel") == "user_group"

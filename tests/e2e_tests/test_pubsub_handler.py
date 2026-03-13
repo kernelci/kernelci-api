@@ -7,14 +7,15 @@
 """End-to-end test function for KernelCI API pubsub handler"""
 
 import pytest
-from cloudevents.http import CloudEvent, to_structured, from_json
+from cloudevents.http import CloudEvent, from_json, to_structured
 
 from .listen_handler import create_listen_task
 
 
 @pytest.mark.dependency(
-    depends=['tests/e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel'],
-    scope='session')
+    depends=["tests/e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel"],
+    scope="session",
+)
 @pytest.mark.asyncio
 async def test_pubsub_handler(test_async_client):
     """
@@ -23,9 +24,7 @@ async def test_pubsub_handler(test_async_client):
     Use pubsub listener task to verify published event message.
     """
     # Create Task to listen pubsub event on 'test_channel' channel
-    task_listen = create_listen_task(
-        test_async_client,
-        pytest.test_channel_subscription_id)  # pylint: disable=no-member
+    task_listen = create_listen_task(test_async_client, pytest.test_channel_subscription_id)  # pylint: disable=no-member
 
     # Created and publish CloudEvent
     attributes = {
@@ -35,23 +34,19 @@ async def test_pubsub_handler(test_async_client):
     data = {"message": "Test message"}
     event = CloudEvent(attributes, data)
     headers, body = to_structured(event)
-    headers['Authorization'] = f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
-    response = await test_async_client.post(
-        "publish/test_channel",
-        headers=headers,
-        data=body
-        )
+    headers["Authorization"] = f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
+    response = await test_async_client.post("publish/test_channel", headers=headers, data=body)
     assert response.status_code == 200
 
     # Get result of pubsub event listener
     await task_listen
     assert task_listen.result().json().keys() == {
-        'channel',
-        'data',
-        'pattern',
-        'type',
+        "channel",
+        "data",
+        "pattern",
+        "type",
     }
-    event_data = from_json(task_listen.result().json().get('data')).data
-    assert event_data != 'BEEP'
-    assert ('message',) == tuple(event_data.keys())
-    assert event_data.get('message') == 'Test message'
+    event_data = from_json(task_listen.result().json().get("data")).data
+    assert event_data != "BEEP"
+    assert ("message",) == tuple(event_data.keys())
+    assert event_data.get("message") == "Test message"

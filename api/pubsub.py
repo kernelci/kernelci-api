@@ -5,15 +5,16 @@
 
 """Pub/Sub implementation"""
 
-import logging
 import asyncio
-
 import json
+import logging
 from datetime import datetime, timedelta
-from redis import asyncio as aioredis
+
 from cloudevents.http import CloudEvent, to_json
-from .models import Subscription, SubscriptionStats
+from redis import asyncio as aioredis
+
 from .config import PubSubSettings
+from .models import Subscription, SubscriptionStats
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ class PubSub:
     available from the `docker-compose` setup.
     """
 
-    ID_KEY = 'kernelci-api-pubsub-id'
+    ID_KEY = "kernelci-api-pubsub-id"
 
     @classmethod
     async def create(cls, *args, **kwargs):
@@ -42,10 +43,7 @@ class PubSub:
             host = self._settings.redis_host
         if db_number is None:
             db_number = self._settings.redis_db_number
-        self._redis = aioredis.from_url(
-            'redis://' + host + '/' + str(db_number),
-            health_check_interval=30
-        )
+        self._redis = aioredis.from_url("redis://" + host + "/" + str(db_number), health_check_interval=30)
         # self._subscriptions is a dict that matches a subscription id
         # (key) with a Subscription object ('sub') and a redis
         # PubSub object ('redis_sub'). For instance:
@@ -65,8 +63,7 @@ class PubSub:
             return
         if not self._keep_alive_timer or self._keep_alive_timer.done():
             loop = asyncio.get_running_loop()
-            self._keep_alive_timer = asyncio.run_coroutine_threadsafe(
-                self._keep_alive(), loop)
+            self._keep_alive_timer = asyncio.run_coroutine_threadsafe(self._keep_alive(), loop)
 
     async def _keep_alive(self):
         while True:
@@ -81,7 +78,7 @@ class PubSub:
     def _update_channels(self):
         self._channels = set()
         for sub in self._subscriptions.values():
-            for channel in sub['redis_sub'].channels.keys():
+            for channel in sub["redis_sub"].channels.keys():
                 self._channels.add(channel.decode())
 
     async def subscribe(self, channel, user, options=None):
@@ -93,13 +90,15 @@ class PubSub:
         async with self._lock:
             redis_sub = self._redis.pubsub()
             sub = Subscription(id=sub_id, channel=channel, user=user)
-            if options and options.get('promiscuous'):
+            if options and options.get("promiscuous"):
                 sub.promiscuous = True
             await redis_sub.subscribe(channel)
-            self._subscriptions[sub_id] = {'redis_sub': redis_sub,
-                                           'sub': sub,
-                                           'created': datetime.utcnow(),
-                                           'last_poll': None}
+            self._subscriptions[sub_id] = {
+                "redis_sub": redis_sub,
+                "sub": sub,
+                "created": datetime.utcnow(),
+                "last_poll": None,
+            }
             self._update_channels()
             self._start_keep_alive_timer()
             return sub
@@ -115,14 +114,13 @@ class PubSub:
             # Only allow a user to unsubscribe its own
             # subscriptions. One exception: let an anonymous (internal)
             # call to this function to unsubscribe any subscription
-            if user and user != sub['sub'].user:
-                raise RuntimeError(f"Subscription {sub_id} "
-                                   f"not owned by {user}")
+            if user and user != sub["sub"].user:
+                raise RuntimeError(f"Subscription {sub_id} not owned by {user}")
             self._subscriptions.pop(sub_id)
             self._update_channels()
-            await sub['redis_sub'].unsubscribe()
+            await sub["redis_sub"].unsubscribe()
             # shut down pubsub connection
-            await sub['redis_sub'].close()
+            await sub["redis_sub"].close()
 
     async def listen(self, sub_id, user=None):
         """Listen for Pub/Sub messages
@@ -136,23 +134,20 @@ class PubSub:
         # Only allow a user to listen to its own subscriptions. One
         # exception: let an anonymous (internal) call to this function
         # to listen to any subscription
-        if user and user != sub['sub'].user:
-            raise RuntimeError(f"Subscription {sub_id} "
-                               f"not owned by {user}")
+        if user and user != sub["sub"].user:
+            raise RuntimeError(f"Subscription {sub_id} not owned by {user}")
         while True:
-            self._subscriptions[sub_id]['last_poll'] = datetime.utcnow()
+            self._subscriptions[sub_id]["last_poll"] = datetime.utcnow()
             msg = None
             try:
-                msg = await sub['redis_sub'].get_message(
-                    ignore_subscribe_messages=True, timeout=1.0
-                )
+                msg = await sub["redis_sub"].get_message(ignore_subscribe_messages=True, timeout=1.0)
             except aioredis.ConnectionError:
                 async with self._lock:
-                    channel = self._subscriptions[sub_id]['sub'].channel
+                    channel = self._subscriptions[sub_id]["sub"].channel
                     new_redis_sub = self._redis.pubsub()
                     await new_redis_sub.subscribe(channel)
-                    self._subscriptions[sub_id]['redis_sub'] = new_redis_sub
-                    sub['redis_sub'] = new_redis_sub
+                    self._subscriptions[sub_id]["redis_sub"] = new_redis_sub
+                    sub["redis_sub"] = new_redis_sub
                 continue
             except aioredis.RedisError as exc:
                 # log the error and continue
@@ -161,14 +156,14 @@ class PubSub:
 
             if msg is None:
                 continue
-            msg_data = json.loads(msg['data'])
+            msg_data = json.loads(msg["data"])
             # If the subscription is promiscuous, return the message
             # without checking the owner
-            if sub['sub'].promiscuous:
+            if sub["sub"].promiscuous:
                 return msg
             # If the subscription is not promiscuous, check the owner of the
             # message
-            if 'owner' in msg_data and msg_data['owner'] != sub['sub'].user:
+            if "owner" in msg_data and msg_data["owner"] != sub["sub"].user:
                 continue
             return msg
 
@@ -194,7 +189,7 @@ class PubSub:
         """
         while True:
             msg = await self._redis.blpop(list_name, timeout=1.0)
-            data = json.loads(msg[1].decode('utf-8')) if msg else None
+            data = json.loads(msg[1].decode("utf-8")) if msg else None
             if data is not None:
                 return data
 
@@ -209,10 +204,10 @@ class PubSub:
         """
         if not attributes:
             attributes = {}
-        if not attributes.get('type'):
-            attributes['type'] = "api.kernelci.org"
-        if not attributes.get('source'):
-            attributes['source'] = self._settings.cloud_events_source
+        if not attributes.get("type"):
+            attributes["type"] = "api.kernelci.org"
+        if not attributes.get("source"):
+            attributes["source"] = self._settings.cloud_events_source
         event = CloudEvent(attributes=attributes, data=data)
         await self.publish(channel, to_json(event))
 
@@ -236,13 +231,13 @@ class PubSub:
         """Get existing subscription details"""
         subscriptions = []
         for _, subscription in self._subscriptions.items():
-            sub = subscription['sub']
+            sub = subscription["sub"]
             stats = SubscriptionStats(
                 id=sub.id,
                 channel=sub.channel,
                 user=sub.user,
-                created=subscription['created'],
-                last_poll=subscription['last_poll']
+                created=subscription["created"],
+                last_poll=subscription["last_poll"],
             )
             subscriptions.append(stats)
         return subscriptions
@@ -254,7 +249,7 @@ class PubSub:
 
         async with self._lock:
             for sub_id, sub_data in self._subscriptions.items():
-                last_poll = sub_data.get('last_poll')
+                last_poll = sub_data.get("last_poll")
                 if last_poll and last_poll < cutoff:
                     stale_ids.append(sub_id)
 

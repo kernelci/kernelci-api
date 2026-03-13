@@ -18,9 +18,7 @@ def test_unsubscribe_endpoint(mock_unsubscribe, test_client):
     """
     response = test_client.post(
         "unsubscribe/1",
-        headers={
-            "Authorization": BEARER_TOKEN
-        },
+        headers={"Authorization": BEARER_TOKEN},
     )
     assert response.status_code == 200
 
@@ -34,10 +32,8 @@ def test_unsubscribe_endpoint_empty_response(test_client):
     """
     response = test_client.post(
         "unsubscribe/1",
-        headers={
-            "Authorization": BEARER_TOKEN
-        },
+        headers={"Authorization": BEARER_TOKEN},
     )
     print("response.json()", response.json())
     assert response.status_code == 404
-    assert 'detail' in response.json()
+    assert "detail" in response.json()

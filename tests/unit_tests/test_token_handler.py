@@ -11,12 +11,12 @@
 """Unit test function for KernelCI API token handler"""
 
 import pytest
+
 from api.models import User
 
 
 @pytest.mark.asyncio
-async def test_token_endpoint(test_async_client, mock_user_find,
-                              mock_beanie_user_update):
+async def test_token_endpoint(test_async_client, mock_user_find, mock_beanie_user_update):
     """
     Test Case : Test KernelCI API /user/login endpoint
     Expected Result :
@@ -24,15 +24,14 @@ async def test_token_endpoint(test_async_client, mock_user_find,
         JSON with 'access_token' and 'token_type' key
     """
     user = User(
-        id='65265305c74695807499037f',
-        username='bob',
-        hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                        'xCZGmM8jWXUXJZ4K',
-        email='bob@kernelci.org',
+        id="65265305c74695807499037f",
+        username="bob",
+        hashed_password="$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.xCZGmM8jWXUXJZ4K",
+        email="bob@kernelci.org",
         groups=[],
         is_active=True,
         is_superuser=False,
-        is_verified=True
+        is_verified=True,
     )
     mock_user_find.return_value = user
     mock_beanie_user_update.return_value = user
@@ -41,17 +40,16 @@ async def test_token_endpoint(test_async_client, mock_user_find,
         "user/login",
         headers={
             "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
         },
-        data="username=bob&password=hello"
+        data="username=bob&password=hello",
     )
     assert response.status_code == 200
-    assert ('access_token', 'token_type') == tuple(response.json().keys())
+    assert ("access_token", "token_type") == tuple(response.json().keys())
 
 
 @pytest.mark.asyncio
-async def test_token_endpoint_incorrect_password(test_async_client,
-                                                 mock_user_find):
+async def test_token_endpoint_incorrect_password(test_async_client, mock_user_find):
     """
     Test Case : Test KernelCI API /user/login endpoint for negative path
     Incorrect password should be passed to the endpoint
@@ -67,10 +65,10 @@ async def test_token_endpoint_incorrect_password(test_async_client,
         "user/login",
         headers={
             "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
         },
-        data="username=bob&password=hello1"
+        data="username=bob&password=hello1",
     )
     print("response json", response.json())
     assert response.status_code == 400
-    assert response.json() == {'detail': 'LOGIN_BAD_CREDENTIALS'}
+    assert response.json() == {"detail": "LOGIN_BAD_CREDENTIALS"}

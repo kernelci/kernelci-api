@@ -69,7 +69,5 @@ def test_get_events_filter_by_node_id_alias(mock_db_find_by_attributes, test_cli
 
 def test_get_events_rejects_node_id_and_data_id(test_client):
     """GET /events rejects requests with both node_id and data.id parameters."""
-    resp = test_client.get(
-        "events?node_id=693af4f5fee8383e92b6b0eb&data.id=693af4f5fee8383e92b6b0eb"
-    )
+    resp = test_client.get("events?node_id=693af4f5fee8383e92b6b0eb&data.id=693af4f5fee8383e92b6b0eb")
     assert resp.status_code == 400
