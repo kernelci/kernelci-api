@@ -18,8 +18,7 @@ from api.models import PageModel
 from tests.unit_tests.conftest import BEARER_TOKEN
 
 
-def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
-                              test_client):
+def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent, test_client):
     """
     Test Case : Test KernelCI API /node endpoint
     Expected Result :
@@ -41,7 +40,7 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         name="checkout",
         path=["checkout"],
         group="debug",
-        data={'kernel_revision': revision_obj},
+        data={"kernel_revision": revision_obj},
         parent=None,
         state="closing",
         result=None,
@@ -58,43 +57,39 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
     }
     response = test_client.post(
         "node",
-        headers={
-            "Accept": "application/json",
-            "Authorization": BEARER_TOKEN
-        },
-        data=json.dumps(request_dict)
-        )
+        headers={"Accept": "application/json", "Authorization": BEARER_TOKEN},
+        data=json.dumps(request_dict),
+    )
     print("response.json()", response.json())
     assert response.status_code == 200
     assert response.json().keys() == {
-        'id',
-        'artifacts',
-        'created',
-        'data',
-        'debug',
-        'group',
-        'jobfilter',
-        'platform_filter',
-        'holdoff',
-        'kind',
-        'name',
-        'owner',
-        'path',
-        'parent',
-        'result',
-        'submitter',
-        'state',
-        'timeout',
-        'treeid',
-        'updated',
-        'user_groups',
-        'processed_by_kcidb_bridge',
-        'retry_counter',
+        "id",
+        "artifacts",
+        "created",
+        "data",
+        "debug",
+        "group",
+        "jobfilter",
+        "platform_filter",
+        "holdoff",
+        "kind",
+        "name",
+        "owner",
+        "path",
+        "parent",
+        "result",
+        "submitter",
+        "state",
+        "timeout",
+        "treeid",
+        "updated",
+        "user_groups",
+        "processed_by_kcidb_bridge",
+        "retry_counter",
     }
 
 
-def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes,
-                                          test_client):
+def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes, test_client):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
     endpoint for the positive path
@@ -141,10 +136,7 @@ def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes,
         "treeid": "61bda8f2eb1a63d2b7152414",
     }
     mock_db_find_by_attributes.return_value = PageModel(
-        items=[node_obj_1, node_obj_2],
-        total=2,
-        limit=50,
-        offset=0
+        items=[node_obj_1, node_obj_2], total=2, limit=50, offset=0
     )
 
     params = {
@@ -158,15 +150,13 @@ def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes,
     response = test_client.get(
         "nodes",
         params=params,
-        )
+    )
     print("response.json()", response.json())
     assert response.status_code == 200
-    assert len(response.json()['items']) > 0
+    assert len(response.json()["items"]) > 0
 
 
-def test_get_nodes_by_attributes_endpoint_node_not_found(
-        mock_db_find_by_attributes,
-        test_client):
+def test_get_nodes_by_attributes_endpoint_node_not_found(mock_db_find_by_attributes, test_client):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
     endpoint for the node not found
@@ -175,28 +165,16 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(
         Empty list
     """
 
-    mock_db_find_by_attributes.return_value = PageModel(
-        items=[],
-        total=0,
-        limit=50,
-        offset=0
-    )
+    mock_db_find_by_attributes.return_value = PageModel(items=[], total=0, limit=50, offset=0)
 
-    params = {
-        "name": "checkout",
-        "revision.tree": "baseline"
-    }
-    response = test_client.get(
-        "nodes",
-        params=params
-        )
+    params = {"name": "checkout", "revision.tree": "baseline"}
+    response = test_client.get("nodes", params=params)
     print("response.json()", response.json())
     assert response.status_code == 200
-    assert response.json().get('total') == 0
+    assert response.json().get("total") == 0
 
 
-def test_get_node_by_id_endpoint(mock_db_find_by_id,
-                                 test_client):
+def test_get_node_by_id_endpoint(mock_db_find_by_id, test_client):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
     for the positive path
@@ -209,7 +187,7 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         url="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git",
         branch="master",
         commit="2a987e65025e2b79c6d453b78cb5985ac6e5eb26",
-        describe="v5.16-rc4-31-g2a987e65025e"
+        describe="v5.16-rc4-31-g2a987e65025e",
     )
     node_obj = Node(
         id="61bda8f2eb1a63d2b7152418",
@@ -217,7 +195,7 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         name="checkout",
         path=["checkout"],
         group="blah",
-        data={'kernel_revision': revision_obj},
+        data={"kernel_revision": revision_obj},
         parent=None,
         state="closing",
         result=None,
@@ -229,34 +207,33 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
     print("response.json()", response.json())
     assert response.status_code == 200
     assert response.json().keys() == {
-        'id',
-        'artifacts',
-        'created',
-        'data',
-        'debug',
-        'group',
-        'jobfilter',
-        'platform_filter',
-        'holdoff',
-        'kind',
-        'name',
-        'owner',
-        'path',
-        'parent',
-        'result',
-        'submitter',
-        'state',
-        'timeout',
-        'treeid',
-        'updated',
-        'user_groups',
-        'processed_by_kcidb_bridge',
-        'retry_counter',
+        "id",
+        "artifacts",
+        "created",
+        "data",
+        "debug",
+        "group",
+        "jobfilter",
+        "platform_filter",
+        "holdoff",
+        "kind",
+        "name",
+        "owner",
+        "path",
+        "parent",
+        "result",
+        "submitter",
+        "state",
+        "timeout",
+        "treeid",
+        "updated",
+        "user_groups",
+        "processed_by_kcidb_bridge",
+        "retry_counter",
     }
 
 
-def test_get_node_by_id_endpoint_empty_response(mock_db_find_by_id,
-                                                test_client):
+def test_get_node_by_id_endpoint_empty_response(mock_db_find_by_id, test_client):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
     for negative path
@@ -272,8 +249,7 @@ def test_get_node_by_id_endpoint_empty_response(mock_db_find_by_id,
     assert response.json() is None
 
 
-def test_get_all_nodes(mock_db_find_by_attributes,
-                       test_client):
+def test_get_all_nodes(mock_db_find_by_attributes, test_client):
     """
     Test Case : Test KernelCI API GET /nodes endpoint for the
     positive path
@@ -347,10 +323,7 @@ def test_get_all_nodes(mock_db_find_by_attributes,
     }
 
     mock_db_find_by_attributes.return_value = PageModel(
-        items=[node_obj_1, node_obj_2, node_obj_3],
-        total=3,
-        limit=50,
-        offset=0
+        items=[node_obj_1, node_obj_2, node_obj_3], total=3, limit=50, offset=0
     )
 
     response = test_client.get("nodes")
@@ -359,8 +332,7 @@ def test_get_all_nodes(mock_db_find_by_attributes,
     assert len(response.json()) > 0
 
 
-def test_get_all_nodes_empty_response(mock_db_find_by_attributes,
-                                      test_client):
+def test_get_all_nodes_empty_response(mock_db_find_by_attributes, test_client):
     """
     Test Case : Test KernelCI API GET /nodes endpoint for the
     negative path
@@ -368,14 +340,9 @@ def test_get_all_nodes_empty_response(mock_db_find_by_attributes,
         HTTP Response Code 200 OK
         Empty list as no Node object is added.
     """
-    mock_db_find_by_attributes.return_value = PageModel(
-        items=[],
-        total=0,
-        limit=50,
-        offset=0
-    )
+    mock_db_find_by_attributes.return_value = PageModel(items=[], total=0, limit=50, offset=0)
 
     response = test_client.get("nodes")
     print("response.json()", response.json())
     assert response.status_code == 200
-    assert response.json().get('total') == 0
+    assert response.json().get("total") == 0

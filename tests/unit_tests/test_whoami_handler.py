@@ -11,8 +11,9 @@
 """Unit test function for KernelCI API whoami handler"""
 
 import pytest
-from tests.unit_tests.conftest import BEARER_TOKEN
+
 from api.models import UserRead
+from tests.unit_tests.conftest import BEARER_TOKEN
 
 
 @pytest.mark.asyncio
@@ -25,24 +26,27 @@ async def test_whoami_endpoint(test_async_client, mock_auth_current_user):
         and 'active' keys
     """
     user = UserRead(
-            id='61bda8f2eb1a63d2b7152420',
-            username='test-user',
-            email='test-user@kernelci.org',
-            groups=[],
-            is_active=True,
-            is_verified=False,
-            is_superuser=False
-        )
+        id="61bda8f2eb1a63d2b7152420",
+        username="test-user",
+        email="test-user@kernelci.org",
+        groups=[],
+        is_active=True,
+        is_verified=False,
+        is_superuser=False,
+    )
     mock_auth_current_user.return_value = user, BEARER_TOKEN
     response = await test_async_client.get(
         "whoami",
-        headers={
-            "Accept": "application/json",
-            "Authorization": BEARER_TOKEN
-        },
+        headers={"Accept": "application/json", "Authorization": BEARER_TOKEN},
     )
     print(response.json(), response.status_code)
     assert response.status_code == 200
-    assert ('id', 'email', 'is_active', 'is_superuser',
-            'is_verified', 'username',
-            'groups') == tuple(response.json().keys())
+    assert (
+        "id",
+        "email",
+        "is_active",
+        "is_superuser",
+        "is_verified",
+        "username",
+        "groups",
+    ) == tuple(response.json().keys())

@@ -21,13 +21,11 @@ def test_listen_endpoint(mock_listen, test_client):
         HTTP Response Code 200 OK
         Listen for events on a channel.
     """
-    mock_listen.return_value = 'Listening for events on channel 1'
+    mock_listen.return_value = "Listening for events on channel 1"
 
     response = test_client.get(
         "listen/1",
-        headers={
-            "Authorization": BEARER_TOKEN
-        },
+        headers={"Authorization": BEARER_TOKEN},
     )
     assert response.status_code == 200
 
@@ -43,12 +41,10 @@ def test_listen_endpoint_not_found(test_client):
     """
     response = test_client.get(
         "listen/1",
-        headers={
-            "Authorization": BEARER_TOKEN
-        },
+        headers={"Authorization": BEARER_TOKEN},
     )
     assert response.status_code == 404
-    assert 'detail' in response.json()
+    assert "detail" in response.json()
 
 
 def test_listen_endpoint_without_token(test_client):
@@ -61,8 +57,6 @@ def test_listen_endpoint_without_token(test_client):
     """
     response = test_client.get(
         "listen/1",
-        headers={
-            "Accept": "application/json"
-        },
+        headers={"Accept": "application/json"},
     )
     assert response.status_code == 401

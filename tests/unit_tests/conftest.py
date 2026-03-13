@@ -11,55 +11,55 @@
 """pytest fixtures for KernelCI API"""
 
 from unittest.mock import AsyncMock
+
 import fakeredis.aioredis
-from fastapi.testclient import TestClient
-from fastapi import Request, HTTPException, status
 import pytest
-from mongomock_motor import AsyncMongoMockClient
 from beanie import init_beanie
+from fastapi import HTTPException, Request, status
+from fastapi.testclient import TestClient
 from httpx import AsyncClient
+from mongomock_motor import AsyncMongoMockClient
 
 from api.main import (
     app,
-    versioned_app,
-    get_current_user,
     get_current_superuser,
+    get_current_user,
+    versioned_app,
 )
-from api.models import User, Subscription
+from api.models import Subscription, User
 from api.pubsub import PubSub
 
 BEARER_TOKEN = "Bearer \
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.\
 ci1smeJeuX779PptTkuaG1SEdkp5M1S1AgYvX8VdB20"
 
-ADMIN_BEARER_TOKEN = 'Bearer \
+ADMIN_BEARER_TOKEN = "Bearer \
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\
 eyJzdWIiOiJib2IiLCJzY29wZXMiOlsiYWRtaW4iXX0.\
-t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k'
+t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k"
 
-API_VERSION = 'latest'
-BASE_URL = 'http://testserver/' + API_VERSION + '/'
+API_VERSION = "latest"
+BASE_URL = "http://testserver/" + API_VERSION + "/"
 
 
 def mock_get_current_user(request: Request):
     """
     Get current active user
     """
-    token = request.headers.get('authorization')
+    token = request.headers.get("authorization")
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing token",
         )
     return User(
-        id='65265305c74695807499037f',
-        username='bob',
-        hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                        'xCZGmM8jWXUXJZ4L',
-        email='bob@kernelci.org',
+        id="65265305c74695807499037f",
+        username="bob",
+        hashed_password="$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.xCZGmM8jWXUXJZ4L",
+        email="bob@kernelci.org",
         is_active=True,
         is_superuser=False,
-        is_verified=True
+        is_verified=True,
     )
 
 
@@ -67,7 +67,7 @@ def mock_get_current_admin_user(request: Request):
     """
     Get current active admin user
     """
-    token = request.headers.get('authorization')
+    token = request.headers.get("authorization")
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -79,15 +79,14 @@ def mock_get_current_admin_user(request: Request):
             detail="Forbidden",
         )
     return User(
-        id='653a5e1a7e9312c86f8f86e1',
-        username='admin',
-        hashed_password='$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.'
-                        'xCZGmM8jWXUXJZ4K',
-        email='admin@kernelci.org',
+        id="653a5e1a7e9312c86f8f86e1",
+        username="admin",
+        hashed_password="$2b$12$CpJZx5ooxM11bCFXT76/z.o6HWs2sPJy4iP8.xCZGmM8jWXUXJZ4K",
+        email="admin@kernelci.org",
         groups=[],
         is_active=True,
         is_superuser=True,
-        is_verified=True
+        is_verified=True,
     )
 
 
@@ -96,7 +95,7 @@ app.dependency_overrides[get_current_user] = mock_get_current_user
 app.dependency_overrides[get_current_superuser] = mock_get_current_admin_user
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def test_client():
     """Fixture to get FastAPI Test client instance"""
     with TestClient(app=versioned_app, base_url=BASE_URL) as client:
@@ -116,8 +115,7 @@ async def test_async_client():
 def mock_db_create(mocker):
     """Mocks async call to Database class method used to create object"""
     async_mock = AsyncMock()
-    mocker.patch('api.db.Database.create',
-                 side_effect=async_mock)
+    mocker.patch("api.db.Database.create", side_effect=async_mock)
     return async_mock
 
 
@@ -125,8 +123,7 @@ def mock_db_create(mocker):
 def mock_db_count(mocker):
     """Mocks async call to Database class method used to count objects"""
     async_mock = AsyncMock()
-    mocker.patch('api.db.Database.count',
-                 side_effect=async_mock)
+    mocker.patch("api.db.Database.count", side_effect=async_mock)
     return async_mock
 
 
@@ -137,8 +134,7 @@ def mock_db_find_by_attributes(mocker):
     used to find a list of objects by attributes
     """
     async_mock = AsyncMock()
-    mocker.patch('api.db.Database.find_by_attributes',
-                 side_effect=async_mock)
+    mocker.patch("api.db.Database.find_by_attributes", side_effect=async_mock)
     return async_mock
 
 
@@ -149,8 +145,7 @@ def mock_db_find_by_id(mocker):
     used to find an object by id
     """
     async_mock = AsyncMock()
-    mocker.patch('api.db.Database.find_by_id',
-                 side_effect=async_mock)
+    mocker.patch("api.db.Database.find_by_id", side_effect=async_mock)
     return async_mock
 
 
@@ -158,8 +153,7 @@ def mock_db_find_by_id(mocker):
 def mock_db_delete_by_id(mocker):
     """Mocks async call to Database class method used to delete an object"""
     async_mock = AsyncMock()
-    mocker.patch('api.db.Database.delete_by_id',
-                 side_effect=async_mock)
+    mocker.patch("api.db.Database.delete_by_id", side_effect=async_mock)
     return async_mock
 
 
@@ -167,8 +161,7 @@ def mock_db_delete_by_id(mocker):
 def mock_db_find_one(mocker):
     """Mocks async call to database method used to find one object"""
     async_mock = AsyncMock()
-    mocker.patch('api.db.Database.find_one',
-                 side_effect=async_mock)
+    mocker.patch("api.db.Database.find_one", side_effect=async_mock)
     return async_mock
 
 
@@ -176,8 +169,7 @@ def mock_db_find_one(mocker):
 def mock_init_sub_id(mocker):
     """Mocks async call to PubSub method to initialize subscription id"""
     async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub._init_sub_id',
-                 side_effect=async_mock)
+    mocker.patch("api.pubsub.PubSub._init_sub_id", side_effect=async_mock)
     return async_mock
 
 
@@ -185,8 +177,7 @@ def mock_init_sub_id(mocker):
 def mock_listen(mocker):
     """Mocks async call to listen method of PubSub"""
     async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub.listen',
-                 side_effect=async_mock)
+    mocker.patch("api.pubsub.PubSub.listen", side_effect=async_mock)
     return async_mock
 
 
@@ -197,8 +188,7 @@ def mock_publish_cloudevent(mocker):
     used to publish cloud event
     """
     async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub.publish_cloudevent',
-                 side_effect=async_mock)
+    mocker.patch("api.pubsub.PubSub.publish_cloudevent", side_effect=async_mock)
     return async_mock
 
 
@@ -207,7 +197,7 @@ def mock_pubsub(mocker):
     """Mocks `_redis` member of PubSub class instance"""
     pubsub = PubSub()
     redis_mock = fakeredis.aioredis.FakeRedis()
-    mocker.patch.object(pubsub, '_redis', redis_mock)
+    mocker.patch.object(pubsub, "_redis", redis_mock)
     return pubsub
 
 
@@ -216,11 +206,10 @@ def mock_pubsub_subscriptions(mocker):
     """Mocks `_redis` and `_subscriptions` member of PubSub class instance"""
     pubsub = PubSub()
     redis_mock = fakeredis.aioredis.FakeRedis()
-    sub = Subscription(id=1, channel='test', user='test')
-    mocker.patch.object(pubsub, '_redis', redis_mock)
-    subscriptions_mock = dict(
-        {1: {'sub': sub, 'redis_sub': pubsub._redis.pubsub()}})
-    mocker.patch.object(pubsub, '_subscriptions', subscriptions_mock)
+    sub = Subscription(id=1, channel="test", user="test")
+    mocker.patch.object(pubsub, "_redis", redis_mock)
+    subscriptions_mock = dict({1: {"sub": sub, "redis_sub": pubsub._redis.pubsub()}})
+    mocker.patch.object(pubsub, "_subscriptions", subscriptions_mock)
     return pubsub
 
 
@@ -232,8 +221,8 @@ def mock_pubsub_publish(mocker):
     """
     pubsub = PubSub()
     redis_mock = fakeredis.aioredis.FakeRedis()
-    mocker.patch.object(pubsub, '_redis', redis_mock)
-    mocker.patch.object(pubsub._redis, 'execute_command')
+    mocker.patch.object(pubsub, "_redis", redis_mock)
+    mocker.patch.object(pubsub._redis, "execute_command")
     return pubsub
 
 
@@ -241,8 +230,7 @@ def mock_pubsub_publish(mocker):
 def mock_subscribe(mocker):
     """Mocks async call to subscribe method of PubSub"""
     async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub.subscribe',
-                 side_effect=async_mock)
+    mocker.patch("api.pubsub.PubSub.subscribe", side_effect=async_mock)
     return async_mock
 
 
@@ -250,8 +238,7 @@ def mock_subscribe(mocker):
 def mock_unsubscribe(mocker):
     """Mocks async call to unsubscribe method of PubSub"""
     async_mock = AsyncMock()
-    mocker.patch('api.pubsub.PubSub.unsubscribe',
-                 side_effect=async_mock)
+    mocker.patch("api.pubsub.PubSub.unsubscribe", side_effect=async_mock)
     return async_mock
 
 
@@ -260,10 +247,8 @@ async def mock_init_beanie(mocker):
     """Mocks async call to Database method to initialize Beanie"""
     async_mock = AsyncMock()
     client = AsyncMongoMockClient()
-    init = await init_beanie(
-        document_models=[User], database=client.get_database(name="db"))
-    mocker.patch('api.db.Database.initialize_beanie',
-                 side_effect=async_mock, return_value=init)
+    init = await init_beanie(document_models=[User], database=client.get_database(name="db"))
+    mocker.patch("api.db.Database.initialize_beanie", side_effect=async_mock, return_value=init)
     return async_mock
 
 
@@ -273,8 +258,7 @@ def mock_db_update(mocker):
     Mocks async call to Database class method used to update object
     """
     async_mock = AsyncMock()
-    mocker.patch('api.db.Database.update',
-                 side_effect=async_mock)
+    mocker.patch("api.db.Database.update", side_effect=async_mock)
     return async_mock
 
 
@@ -282,8 +266,7 @@ def mock_db_update(mocker):
 async def mock_beanie_get_user_by_id(mocker):
     """Mocks async call to external method to get model by id"""
     async_mock = AsyncMock()
-    mocker.patch('fastapi_users_db_beanie.BeanieUserDatabase.get',
-                 side_effect=async_mock)
+    mocker.patch("fastapi_users_db_beanie.BeanieUserDatabase.get", side_effect=async_mock)
     return async_mock
 
 
@@ -291,8 +274,7 @@ async def mock_beanie_get_user_by_id(mocker):
 async def mock_beanie_user_update(mocker):
     """Mocks async call to external method to update user"""
     async_mock = AsyncMock()
-    mocker.patch('fastapi_users_db_beanie.BeanieUserDatabase.update',
-                 side_effect=async_mock)
+    mocker.patch("fastapi_users_db_beanie.BeanieUserDatabase.update", side_effect=async_mock)
     return async_mock
 
 
@@ -302,8 +284,10 @@ def mock_auth_current_user(mocker):
     Mocks async call to external method to get authenticated user
     """
     async_mock = AsyncMock()
-    mocker.patch('fastapi_users.authentication.Authenticator._authenticate',
-                 side_effect=async_mock)
+    mocker.patch(
+        "fastapi_users.authentication.Authenticator._authenticate",
+        side_effect=async_mock,
+    )
     return async_mock
 
 
@@ -313,6 +297,5 @@ def mock_user_find(mocker):
     Mocks async call to external method to find user model using Beanie
     """
     async_mock = AsyncMock()
-    mocker.patch('api.models.User.find_one',
-                 side_effect=async_mock)
+    mocker.patch("api.models.User.find_one", side_effect=async_mock)
     return async_mock

@@ -9,6 +9,7 @@
 """Unit test functions for KernelCI API Pub/Sub"""
 
 import json
+
 import pytest
 
 
@@ -23,8 +24,8 @@ async def test_subscribe_single_channel(mock_pubsub):
         PubSub._subscriptions dict should have one entry. This entry's
         key should be equal 1.
     """
-    result = await mock_pubsub.subscribe('CHANNEL', 'test')
-    assert result.channel == 'CHANNEL'
+    result = await mock_pubsub.subscribe("CHANNEL", "test")
+    assert result.channel == "CHANNEL"
     assert result.id == 1
     assert len(mock_pubsub._subscriptions) == 1
     assert 1 in mock_pubsub._subscriptions
@@ -46,9 +47,9 @@ async def test_subscribe_multiple_channels(mock_pubsub):
     """
     # Reset `ID_KEY` value to get subscription ID starting from 1
     await mock_pubsub._redis.set(mock_pubsub.ID_KEY, 0)
-    channels = ((1, 'CHANNEL1'), (2, 'CHANNEL2'), (3, 'CHANNEL3'))
+    channels = ((1, "CHANNEL1"), (2, "CHANNEL2"), (3, "CHANNEL3"))
     for expected_id, expected_channel in channels:
-        result = await mock_pubsub.subscribe(expected_channel, 'test')
+        result = await mock_pubsub.subscribe(expected_channel, "test")
         assert result.channel == expected_channel
         assert result.id == expected_id
     assert len(mock_pubsub._subscriptions) == 3
@@ -98,7 +99,7 @@ async def test_pubsub_publish_couldevent(mock_pubsub_publish):
         return value, but a json to be published in a channel.
     """
 
-    data = 'validate json'
+    data = "validate json"
     attributes = {
         "specversion": "1.0",
         "id": "6878b661-96dc-4e93-8c92-26eb9ff8db64",
@@ -107,7 +108,7 @@ async def test_pubsub_publish_couldevent(mock_pubsub_publish):
         "time": "2022-01-31T21:29:29.675593+00:00",
     }
 
-    await mock_pubsub_publish.publish_cloudevent('CHANNEL1', data, attributes)
+    await mock_pubsub_publish.publish_cloudevent("CHANNEL1", data, attributes)
 
     expected_json = str.encode(
         '{"specversion": "1.0", '

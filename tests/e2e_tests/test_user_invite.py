@@ -7,6 +7,7 @@
 """End-to-end test functions for KernelCI API invite flow"""
 
 import json
+
 import pytest
 
 

@@ -11,9 +11,9 @@ import pytest
 
 @pytest.mark.asyncio
 @pytest.mark.dependency(
-    depends=[
-        'tests/e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel'],
-    scope='session')
+    depends=["tests/e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel"],
+    scope="session",
+)
 @pytest.mark.order("last")
 async def test_unsubscribe_node_channel(test_async_client):
     """
@@ -32,9 +32,9 @@ async def test_unsubscribe_node_channel(test_async_client):
 
 @pytest.mark.asyncio
 @pytest.mark.dependency(
-    depends=[
-        'tests/e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel'],
-    scope='session')
+    depends=["tests/e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel"],
+    scope="session",
+)
 @pytest.mark.order("last")
 async def test_unsubscribe_test_channel(test_async_client):
     """

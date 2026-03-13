@@ -9,8 +9,10 @@
 This module provides maintenance utilities for the KernelCI API, including
 functions to purge old nodes from the database and manage MongoDB connections.
 """
+
 import datetime
 import os
+
 from pymongo import MongoClient
 
 DEFAULT_MONGO_SERVICE = "mongodb://db:27017"
@@ -27,9 +29,7 @@ def purge_ids(db, collection, ids):
         ids (list): List of document IDs to delete.
     """
     print("Purging", len(ids), "from", collection)
-    db[collection].delete_many({
-        "_id": {"$in": ids}
-    })
+    db[collection].delete_many({"_id": {"$in": ids}})
 
 
 def connect_to_db():
@@ -58,9 +58,7 @@ async def purge_old_nodes(age_days=180, batch_size=1000):
     """
     date_end = datetime.datetime.today() - datetime.timedelta(days=age_days)
     db = connect_to_db()
-    nodes = db["node"].find({
-        "created": {"$lt": date_end}
-    })
+    nodes = db["node"].find({"created": {"$lt": date_end}})
     # We need to delete node in chunks of {batch_size}
     # to not block the main thread for too long
     deleted = 0
@@ -74,9 +72,5 @@ async def purge_old_nodes(age_days=180, batch_size=1000):
     if del_batch:
         deleted += len(del_batch)
         purge_ids(db, "node", del_batch)
-    db = {
-        'response': 'ok',
-        'deleted': deleted,
-        'age_days': age_days
-    }
+    db = {"response": "ok", "deleted": deleted, "age_days": age_days}
     return db

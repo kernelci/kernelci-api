@@ -111,4 +111,4 @@ jobs:
 
       - name: Run ruff lint check (E/W/F/I + complexity policy)
         run: |
-          /opt/venv/bin/ruff check --line-length 110 --select E,W,F,I,C90 --ignore E203,W503 api tests
+          /opt/venv/bin/ruff check --line-length 110 --select E,W,F,I,C901 --ignore E203 api tests

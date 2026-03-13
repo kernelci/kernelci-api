@@ -7,6 +7,7 @@
 """Test functions for KernelCI API node handler"""
 
 import json
+
 import pytest
 
 from .conftest import node_model_fields, paginated_response_keys
@@ -23,10 +24,10 @@ async def create_node(test_async_client, node):
         "node",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
         },
-        data=json.dumps(node)
-        )
+        data=json.dumps(node),
+    )
     assert response.status_code == 200
     assert response.json().keys() == node_model_fields
     return response
@@ -43,7 +44,7 @@ async def get_node_by_id(test_async_client, node_id):
         f"node/{node_id}",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
         },
     )
     assert response.status_code == 200
@@ -64,12 +65,12 @@ async def get_node_by_attribute(test_async_client, params):
         params=params,
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
         },
     )
     assert response.status_code == 200
     assert response.json().keys() == paginated_response_keys
-    assert response.json()['total'] >= 0
+    assert response.json()["total"] >= 0
     return response
 
 
@@ -84,9 +85,9 @@ async def update_node(test_async_client, node):
         f"node/{node['id']}",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
         },
-        data=json.dumps(node)
+        data=json.dumps(node),
     )
     assert response.status_code == 200
     assert response.json().keys() == node_model_fields

@@ -9,6 +9,7 @@
 import json
 
 from kernelci.api.models import Node, Revision
+
 from api.main import _user_can_edit_node
 from api.models import User, UserGroup
 from tests.unit_tests.conftest import BEARER_TOKEN

@@ -6,14 +6,19 @@
 
 """Database abstraction"""
 
-from bson import ObjectId
 from beanie import init_beanie
+from bson import ObjectId
 from fastapi_pagination.ext.motor import paginate
+from kernelci.api.models import (
+    EventHistory,
+    Hierarchy,
+    Node,
+    TelemetryEvent,
+    parse_node_obj,
+)
 from motor import motor_asyncio
 from redis import asyncio as aioredis
-from kernelci.api.models import (
-    EventHistory, Hierarchy, Node, TelemetryEvent, parse_node_obj
-)
+
 from .models import User, UserGroup
 
 
@@ -26,33 +31,30 @@ class Database:
     """
 
     COLLECTIONS = {
-        User: 'user',
-        Node: 'node',
-        UserGroup: 'usergroup',
-        EventHistory: 'eventhistory',
-        TelemetryEvent: 'telemetry',
+        User: "user",
+        Node: "node",
+        UserGroup: "usergroup",
+        EventHistory: "eventhistory",
+        TelemetryEvent: "telemetry",
     }
 
     OPERATOR_MAP = {
-        'lt': '$lt',
-        'lte': '$lte',
-        'gt': '$gt',
-        'gte': '$gte',
-        'ne': '$ne',
-        're': '$regex',
-        'in': '$in',
-        'nin': '$nin',
+        "lt": "$lt",
+        "lte": "$lte",
+        "gt": "$gt",
+        "gte": "$gte",
+        "ne": "$ne",
+        "re": "$regex",
+        "in": "$in",
+        "nin": "$nin",
     }
 
-    BOOL_VALUE_MAP = {
-        'true': True,
-        'false': False
-    }
+    BOOL_VALUE_MAP = {"true": True, "false": False}
 
-    def __init__(self, service='mongodb://db:27017', db_name='kernelci'):
+    def __init__(self, service="mongodb://db:27017", db_name="kernelci"):
         self._motor = motor_asyncio.AsyncIOMotorClient(service)
         # TBD: Make redis host configurable
-        self._redis = aioredis.from_url('redis://redis:6379')
+        self._redis = aioredis.from_url("redis://redis:6379")
         self._db = self._motor[db_name]
 
     async def initialize_beanie(self):
@@ -143,14 +145,13 @@ class Database:
                 for op_name, op_value in value.items():
                     op_key = self.OPERATOR_MAP.get(op_name)
                     if op_key:
-                        if op_key in ('$in', '$nin'):
+                        if op_key in ("$in", "$nin"):
                             # Create a list of values from ',' separated string
                             op_value = op_value.split(",")
                         if isinstance(op_value, str) and op_value.isdecimal():
                             op_value = int(op_value)
                         if translated_attributes.get(key):
-                            translated_attributes[key].update({
-                                op_key: op_value})
+                            translated_attributes[key].update({op_key: op_value})
                         else:
                             translated_attributes[key] = {op_key: op_value}
         return translated_attributes
@@ -160,7 +161,7 @@ class Database:
         for key, val in attributes.items():
             if isinstance(val, dict):
                 for sub_key, sub_val in val.items():
-                    if sub_key == 'int':
+                    if sub_key == "int":
                         attributes[key] = int(sub_val)
         return attributes
 
@@ -205,14 +206,13 @@ class Database:
         query = self._prepare_query(attributes)
         # find "limit" and "offset" keys in the query, retrieve them and
         # remove them from the query
-        limit = query.pop('limit', None)
-        offset = query.pop('offset', None)
+        limit = query.pop("limit", None)
+        offset = query.pop("offset", None)
         # convert to int if limit and offset are strings
         limit = int(limit) if limit is not None else None
         offset = int(offset) if offset is not None else None
         if limit is not None and offset is not None:
-            return await (col.find(query)
-                          .skip(offset).limit(limit).to_list(None))
+            return await col.find(query).skip(offset).limit(limit).to_list(None)
         if limit is not None:
             return await col.find(query).limit(limit).to_list(None)
         if offset is not None:
@@ -239,7 +239,7 @@ class Database:
         """
         if obj.id is not None:
             raise ValueError(f"Object cannot be created with id: {obj.id}")
-        delattr(obj, 'id')
+        delattr(obj, "id")
         col = self._get_collection(obj.__class__)
         res = await col.insert_one(obj.model_dump(by_alias=True))
         obj.id = res.inserted_id
@@ -251,8 +251,7 @@ class Database:
         result = await col.insert_many(documents)
         return result.inserted_ids
 
-    async def _create_recursively(self, hierarchy: Hierarchy, parent: Node,
-                                  cls, col):
+    async def _create_recursively(self, hierarchy: Hierarchy, parent: Node, cls, col):
         obj = parse_node_obj(hierarchy.node)
         if parent:
             obj.parent = parent.id
@@ -260,13 +259,11 @@ class Database:
             obj.update()
             if obj.parent == obj.id:
                 raise ValueError("Parent cannot be the same as the object")
-            res = await col.replace_one(
-                {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
-            )
+            res = await col.replace_one({"_id": ObjectId(obj.id)}, obj.dict(by_alias=True))
             if res.matched_count == 0:
                 raise ValueError(f"No object found with id: {obj.id}")
         else:
-            delattr(obj, 'id')
+            delattr(obj, "id")
             res = await col.insert_one(obj.dict(by_alias=True))
             obj.id = res.inserted_id
         obj = cls(**await col.find_one(ObjectId(obj.id)))
@@ -296,9 +293,7 @@ class Database:
             obj.update()
             if obj.parent == obj.id:
                 raise ValueError("Parent cannot be the same as the object")
-        res = await col.replace_one(
-            {'_id': ObjectId(obj.id)}, obj.dict(by_alias=True)
-        )
+        res = await col.replace_one({"_id": ObjectId(obj.id)}, obj.dict(by_alias=True))
         if res.matched_count == 0:
             raise ValueError(f"No object found with id: {obj.id}")
         return obj.__class__(**await col.find_one(ObjectId(obj.id)))

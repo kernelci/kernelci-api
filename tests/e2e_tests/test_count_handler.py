@@ -6,15 +6,11 @@
 
 """End-to-end test functions for KernelCI API count handler"""
 
-
 import pytest
 
 
 @pytest.mark.asyncio
-@pytest.mark.dependency(
-    depends=[
-        'tests/e2e_tests/test_pipeline.py::test_node_pipeline'],
-    scope='session')
+@pytest.mark.dependency(depends=["tests/e2e_tests/test_pipeline.py::test_node_pipeline"], scope="session")
 async def test_count_nodes(test_async_client):
     """
     Test Case : Test KernelCI API GET /count endpoint
@@ -28,10 +24,7 @@ async def test_count_nodes(test_async_client):
 
 
 @pytest.mark.asyncio
-@pytest.mark.dependency(
-    depends=[
-        'tests/e2e_tests/test_pipeline.py::test_node_pipeline'],
-    scope='session')
+@pytest.mark.dependency(depends=["tests/e2e_tests/test_pipeline.py::test_node_pipeline"], scope="session")
 async def test_count_nodes_matching_attributes(test_async_client):
     """
     Test Case : Test KernelCI API GET /count endpoint with attributes

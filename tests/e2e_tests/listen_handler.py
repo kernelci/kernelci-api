@@ -7,6 +7,7 @@
 """Helper function for KernelCI API listen handler"""
 
 import asyncio
+
 import pytest
 
 
@@ -16,13 +17,13 @@ def create_listen_task(test_async_client, subscription_id):
     API endpoint `/listen`.
     Returns the task instance.
     """
-    listen_path = '/'.join(['listen', str(subscription_id)])
+    listen_path = "/".join(["listen", str(subscription_id)])
     task_listen = asyncio.create_task(
         test_async_client.get(
             listen_path,
             headers={
                 "Accept": "application/json",
-                "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
+                "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
             },
         )
     )

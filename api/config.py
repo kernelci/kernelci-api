@@ -12,6 +12,7 @@ from pydantic_settings import BaseSettings
 # pylint: disable=too-few-public-methods
 class AuthSettings(BaseSettings):
     """Authentication settings"""
+
     secret_key: str
     algorithm: str = "HS256"
     # Set to None so tokens don't expire
@@ -23,6 +24,7 @@ class AuthSettings(BaseSettings):
 # pylint: disable=too-few-public-methods
 class PubSubSettings(BaseSettings):
     """Pub/Sub settings loaded from the environment"""
+
     cloud_events_source: str = "https://api.kernelci.org/"
     redis_host: str = "redis"
     redis_db_number: int = 1
@@ -36,6 +38,7 @@ class PubSubSettings(BaseSettings):
 # pylint: disable=too-few-public-methods
 class EmailSettings(BaseSettings):
     """Email settings"""
+
     smtp_host: str
     smtp_port: int
     email_sender: EmailStr

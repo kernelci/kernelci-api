@@ -7,6 +7,7 @@
 """End-to-end test functions for KernelCI API password reset handler"""
 
 import json
+
 import pytest
 
 
@@ -27,12 +28,8 @@ async def test_password_endpoint(test_async_client):
         "user/me",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
         },
-        data=json.dumps(
-            {
-                "password": "foo"
-            }
-        ),
+        data=json.dumps({"password": "foo"}),
     )
     assert response.status_code == 200

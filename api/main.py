@@ -9,89 +9,89 @@
 
 """KernelCI API main module"""
 
+import asyncio
+import ipaddress
 import os
 import re
-import asyncio
-import traceback
 import secrets
-import ipaddress
-import pymongo
-from typing import List, Union, Optional
-from datetime import datetime, timedelta, timezone
+import traceback
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional, Union
+
+import pymongo
+from beanie import PydanticObjectId
+from bson import ObjectId, errors
 from fastapi import (
+    Body,
     Depends,
     FastAPI,
-    HTTPException,
-    status,
-    Request,
     Form,
     Header,
+    HTTPException,
     Query,
-    Body,
+    Request,
     Response,
+    status,
 )
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
     JSONResponse,
     PlainTextResponse,
-    FileResponse,
-    HTMLResponse
 )
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
-from fastapi_versioning import VersionedFastAPI
-from bson import ObjectId, errors
 from fastapi_users import FastAPIUsers
-from beanie import PydanticObjectId
-from pydantic import BaseModel
+from fastapi_versioning import VersionedFastAPI
 from jose import jwt
 from jose.exceptions import JWTError
 from kernelci.api.models import (
-    Node,
-    Hierarchy,
-    PublishEvent,
-    parse_node_obj,
-    KernelVersion,
     EventHistory,
+    Hierarchy,
+    KernelVersion,
+    Node,
+    PublishEvent,
     TelemetryEvent,
+    parse_node_obj,
 )
+from pydantic import BaseModel
+
 from .auth import Authentication
+from .config import AuthSettings
 from .db import Database
-from .pubsub_mongo import PubSub
-from .user_manager import get_user_manager, create_user_manager
+from .maintenance import purge_old_nodes
+from .metrics import Metrics
 from .models import (
+    InviteAcceptRequest,
+    InviteUrlResponse,
     PageModel,
     Subscription,
     SubscriptionStats,
     User,
-    UserRead,
     UserCreate,
     UserCreateRequest,
-    UserInviteRequest,
-    UserInviteResponse,
-    UserUpdate,
-    UserUpdateRequest,
     UserGroup,
     UserGroupCreateRequest,
-    InviteAcceptRequest,
-    InviteUrlResponse,
+    UserInviteRequest,
+    UserInviteResponse,
+    UserRead,
+    UserUpdate,
+    UserUpdateRequest,
 )
-from .metrics import Metrics
-from .maintenance import purge_old_nodes
-from .config import AuthSettings
+from .pubsub_mongo import PubSub
+from .user_manager import create_user_manager, get_user_manager
 
 SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES = 15  # How often to run cleanup task
-SUBSCRIPTION_MAX_AGE_MINUTES = 15           # Max age before stale
-SUBSCRIPTION_CLEANUP_RETRY_MINUTES = 1      # Retry interval if cleanup fails
+SUBSCRIPTION_MAX_AGE_MINUTES = 15  # Max age before stale
+SUBSCRIPTION_CLEANUP_RETRY_MINUTES = 1  # Retry interval if cleanup fails
 DEFAULT_MONGO_SERVICE = "mongodb://db:27017"
 
 
 def _validate_startup_environment():
     """Validate required environment variables before app initialization."""
-    required_env_vars = (
-        "SECRET_KEY",
-    )
+    required_env_vars = ("SECRET_KEY",)
     missing = []
     empty = []
     for name in required_env_vars:
@@ -104,17 +104,12 @@ def _validate_startup_environment():
     if missing or empty:
         details = []
         if missing:
-            details.append(
-                "missing: " + ", ".join(sorted(missing))
-            )
+            details.append("missing: " + ", ".join(sorted(missing)))
         if empty:
-            details.append(
-                "empty: " + ", ".join(sorted(empty))
-            )
+            details.append("empty: " + ", ".join(sorted(empty)))
         raise RuntimeError(
             "Startup environment validation failed. "
-            "Set required environment variables before starting the API. "
-            + "; ".join(details)
+            "Set required environment variables before starting the API. " + "; ".join(details)
         )
 
 
@@ -131,14 +126,14 @@ async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
     await ensure_legacy_node_editors()
     yield
 
+
 # List of all the supported API versions.  This is a placeholder until the API
 # actually supports multiple versions with different sets of endpoints and
 # models etc.
-API_VERSIONS = ['v0']
+API_VERSIONS = ["v0"]
 
 metrics = Metrics()
 app = FastAPI(lifespan=lifespan, debug=True, docs_url=None, redoc_url=None)
-
 db = Database(service=os.getenv("MONGO_SERVICE", DEFAULT_MONGO_SERVICE))
 auth = Authentication(token_url="user/login")
 pubsub = None  # pylint: disable=invalid-name
@@ -162,10 +157,9 @@ async def subscription_cleanup_task():
     while True:
         try:
             await asyncio.sleep(SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES * 60)
-            cleaned = await pubsub.cleanup_stale_subscriptions(
-                SUBSCRIPTION_MAX_AGE_MINUTES)
+            cleaned = await pubsub.cleanup_stale_subscriptions(SUBSCRIPTION_MAX_AGE_MINUTES)
             if cleaned > 0:
-                metrics.add('subscriptions_cleaned', 1)
+                metrics.add("subscriptions_cleaned", 1)
                 print(f"Cleaned up {cleaned} stale subscriptions")
         except (ConnectionError, OSError, RuntimeError) as e:
             print(f"Subscription cleanup error: {e}")
@@ -189,8 +183,8 @@ async def initialize_beanie():
 
 async def ensure_legacy_node_editors():
     """Grant legacy node edit privileges to specific users."""
-    legacy_usernames = {'staging.kernelci.org', 'production'}
-    group_name = 'node:edit:any'
+    legacy_usernames = {"staging.kernelci.org", "production"}
+    group_name = "node:edit:any"
     group = await db.find_one(UserGroup, name=group_name)
     if not group:
         group = await db.create(UserGroup(name=group_name))
@@ -213,21 +207,22 @@ async def ensure_initial_admin_user():
     initial_password = os.getenv("KCI_INITIAL_PASSWORD")
     if not initial_password:
         raise RuntimeError(
-            "No admin user exists. Set KCI_INITIAL_PASSWORD to bootstrap "
-            "the initial admin user."
+            "No admin user exists. Set KCI_INITIAL_PASSWORD to bootstrap the initial admin user."
         )
 
     username = os.getenv("KCI_INITIAL_ADMIN_USERNAME") or "admin"
     email = os.getenv("KCI_INITIAL_ADMIN_EMAIL") or f"{username}@kernelci.org"
 
     try:
-        await db.create(User(
-            username=username,
-            hashed_password=Authentication.get_password_hash(initial_password),
-            email=email,
-            is_superuser=1,
-            is_verified=1,
-        ))
+        await db.create(
+            User(
+                username=username,
+                hashed_password=Authentication.get_password_hash(initial_password),
+                email=email,
+                is_superuser=1,
+                is_verified=1,
+            )
+        )
         print(f"Created initial admin user '{username}' ({email}).")
     except pymongo.errors.DuplicateKeyError as exc:
         # Handle startup races across multiple API instances.
@@ -252,9 +247,7 @@ async def value_error_exception_handler(request: Request, exc: ValueError):
 
 
 @app.exception_handler(errors.InvalidId)
-async def invalid_id_exception_handler(
-        request: Request,
-        exc: errors.InvalidId):
+async def invalid_id_exception_handler(request: Request, exc: errors.InvalidId):
     """Global exception handler for `errors.InvalidId`
     The exception is raised from Database when invalid ObjectId is received"""
     return JSONResponse(
@@ -263,27 +256,30 @@ async def invalid_id_exception_handler(
     )
 
 
-@app.get('/')
+@app.get("/")
 async def root():
     """Root endpoint handler"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    index_path = os.path.join(root_dir, 'templates', 'index.html')
-    with open(index_path, 'r', encoding='utf-8') as file:
+    index_path = os.path.join(root_dir, "templates", "index.html")
+    with open(index_path, "r", encoding="utf-8") as file:
         return HTMLResponse(file.read())
+
 
 # -----------------------------------------------------------------------------
 # Users
 
 
-def get_current_user(user: User = Depends(
-        fastapi_users_instance.current_user(active=True))):
+def get_current_user(
+    user: User = Depends(fastapi_users_instance.current_user(active=True)),
+):
     """Get current active user"""
     return user
 
 
-def get_current_superuser(user: User = Depends(
-        fastapi_users_instance.current_user(active=True, superuser=True))):
+def get_current_superuser(
+    user: User = Depends(fastapi_users_instance.current_user(active=True, superuser=True)),
+):
     """Get current active superuser"""
     return user
 
@@ -340,44 +336,54 @@ def _decode_invite_token(token: str) -> dict:
     return payload
 
 
+def _is_proxy_request(request: Request) -> bool:
+    client = request.client
+    if not client or not client.host:
+        return False
+
+    try:
+        ip_addr = ipaddress.ip_address(client.host)
+    except ValueError:
+        return False
+
+    return not ip_addr.is_global
+
+
+def _parse_forwarded_header(header: str) -> tuple[str | None, str | None]:
+    forwarded_host = None
+    forwarded_proto = None
+
+    first_hop = header.split(",", 1)[0]
+    for pair in first_hop.split(";"):
+        if "=" not in pair:
+            continue
+        key, value = pair.split("=", 1)
+        key = key.strip().lower()
+        value = value.strip().strip('"')
+        if key == "host":
+            forwarded_host = value
+        elif key == "proto":
+            forwarded_proto = value
+
+    return forwarded_host, forwarded_proto
+
+
 def _resolve_public_base_url(request: Request) -> str:
     settings = AuthSettings()
     if settings.public_base_url:
         return settings.public_base_url.rstrip("/")
 
-    def _is_proxy_addr() -> bool:
-        client = request.client
-        if not client or not client.host:
-            return False
-        try:
-            ip_addr = ipaddress.ip_address(client.host)
-        except ValueError:
-            return False
-        return not ip_addr.is_global
-
+    is_proxy_request = _is_proxy_request(request)
     forwarded_host = None
     forwarded_proto = None
-    forwarded_header = request.headers.get("forwarded")
-    if forwarded_header and _is_proxy_addr():
-        first_hop = forwarded_header.split(",", 1)[0]
-        for pair in first_hop.split(";"):
-            if "=" not in pair:
-                continue
-            key, value = pair.split("=", 1)
-            key = key.strip().lower()
-            value = value.strip().strip('"')
-            if key == "host":
-                forwarded_host = value
-            elif key == "proto":
-                forwarded_proto = value
 
-    if _is_proxy_addr():
-        forwarded_host = forwarded_host or request.headers.get(
-            "x-forwarded-host"
-        )
-        forwarded_proto = forwarded_proto or request.headers.get(
-            "x-forwarded-proto"
-        )
+    forwarded_header = request.headers.get("forwarded")
+    if forwarded_header and is_proxy_request:
+        forwarded_host, forwarded_proto = _parse_forwarded_header(forwarded_header)
+
+    if is_proxy_request:
+        forwarded_host = forwarded_host or request.headers.get("x-forwarded-host")
+        forwarded_proto = forwarded_proto or request.headers.get("x-forwarded-proto")
 
     if forwarded_host:
         scheme = forwarded_proto or request.url.scheme
@@ -391,7 +397,7 @@ def _accept_invite_url(public_base_url: str) -> str:
 
 
 async def _find_existing_user_for_invite(
-        invite: UserInviteRequest,
+    invite: UserInviteRequest,
 ) -> User | None:
     existing_by_username = await db.find_one(User, username=invite.username)
     if existing_by_username:
@@ -423,8 +429,8 @@ def _validate_invite_resend(existing_user: User, invite: UserInviteRequest):
 
 
 async def _create_user_for_invite(
-        request: Request,
-        invite: UserInviteRequest,
+    request: Request,
+    invite: UserInviteRequest,
 ) -> User:
     groups: List[UserGroup] = []
     if invite.groups:
@@ -439,8 +445,7 @@ async def _create_user_for_invite(
     )
     user_create.groups = groups
 
-    created_user = await register_router.routes[0].endpoint(
-        request, user_create, user_manager)
+    created_user = await register_router.routes[0].endpoint(request, user_create, user_manager)
 
     if invite.is_superuser:
         user_from_id = await db.find_by_id(User, created_user.id)
@@ -451,20 +456,25 @@ async def _create_user_for_invite(
 
 
 app.include_router(
-    fastapi_users_instance.get_auth_router(auth_backend,
-                                           requires_verification=True),
+    fastapi_users_instance.get_auth_router(auth_backend, requires_verification=True),
     prefix="/user",
-    tags=["user"]
+    tags=["user"],
 )
 
-register_router = fastapi_users_instance.get_register_router(
-    UserRead, UserCreate)
+register_router = fastapi_users_instance.get_register_router(UserRead, UserCreate)
 
 
-@app.post("/user/register", response_model=UserRead, tags=["user"],
-          response_model_by_alias=False)
-async def register(request: Request, user: UserCreateRequest,
-                   current_user: User = Depends(get_current_superuser)):
+@app.post(
+    "/user/register",
+    response_model=UserRead,
+    tags=["user"],
+    response_model_by_alias=False,
+)
+async def register(
+    request: Request,
+    user: UserCreateRequest,
+    current_user: User = Depends(get_current_superuser),
+):
     """User registration route
 
     Custom user registration router to ensure unique username.
@@ -481,23 +491,30 @@ async def register(request: Request, user: UserCreateRequest,
 @app.get("/user/invite", response_class=HTMLResponse, include_in_schema=False)
 async def invite_user_page():
     """Web UI for inviting a user (admin token required)"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    page_path = os.path.join(root_dir, 'templates', 'invite.html')
-    with open(page_path, 'r', encoding='utf-8') as file:
+    page_path = os.path.join(root_dir, "templates", "invite.html")
+    with open(page_path, "r", encoding="utf-8") as file:
         return HTMLResponse(file.read())
 
 
-@app.post("/user/invite", response_model=UserInviteResponse, tags=["user"],
-          response_model_by_alias=False)
-async def invite_user(request: Request, invite: UserInviteRequest,
-                      current_user: User = Depends(get_current_superuser)):
+@app.post(
+    "/user/invite",
+    response_model=UserInviteResponse,
+    tags=["user"],
+    response_model_by_alias=False,
+)
+async def invite_user(
+    request: Request,
+    invite: UserInviteRequest,
+    current_user: User = Depends(get_current_superuser),
+):
     """Invite a user (admin-only)
 
     Creates the user with a random password and sends a single invite link
     to set a password and verify the account.
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     existing_user = await _find_existing_user_for_invite(invite)
     if existing_user:
         _validate_invite_resend(existing_user, invite)
@@ -539,19 +556,17 @@ async def invite_user(request: Request, invite: UserInviteRequest,
 )
 async def accept_invite_page():
     """Web UI for accepting an invite (sets password + verifies)"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    page_path = os.path.join(root_dir, 'templates', 'accept-invite.html')
-    with open(page_path, 'r', encoding='utf-8') as file:
+    page_path = os.path.join(root_dir, "templates", "accept-invite.html")
+    with open(page_path, "r", encoding="utf-8") as file:
         return HTMLResponse(file.read())
 
 
 @app.get("/user/invite/url", response_model=InviteUrlResponse, tags=["user"])
-async def invite_url_preview(request: Request,
-                             current_user: User = Depends(
-                                 get_current_superuser)):
+async def invite_url_preview(request: Request, current_user: User = Depends(get_current_superuser)):
     """Preview the resolved public URL used in invite links (admin-only)"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     public_base_url = _resolve_public_base_url(request)
     return InviteUrlResponse(
         public_base_url=public_base_url,
@@ -559,11 +574,15 @@ async def invite_url_preview(request: Request,
     )
 
 
-@app.post("/user/accept-invite", response_model=UserRead, tags=["user"],
-          response_model_by_alias=False)
+@app.post(
+    "/user/accept-invite",
+    response_model=UserRead,
+    tags=["user"],
+    response_model_by_alias=False,
+)
 async def accept_invite(accept: InviteAcceptRequest):
     """Accept an invite token, set password, and verify the user"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     payload = _decode_invite_token(accept.token)
     user_id = payload.get("sub")
     email = payload.get("email")
@@ -590,9 +609,7 @@ async def accept_invite(accept: InviteAcceptRequest):
             detail="Invite already accepted",
         )
 
-    user_from_id.hashed_password = user_manager.password_helper.hash(
-        accept.password
-    )
+    user_from_id.hashed_password = user_manager.password_helper.hash(accept.password)
     user_from_id.is_verified = True
     updated_user = await db.update(user_from_id)
 
@@ -609,41 +626,45 @@ app.include_router(
     tags=["user"],
 )
 
-users_router = fastapi_users_instance.get_users_router(
-    UserRead, UserUpdate, requires_verification=True)
+users_router = fastapi_users_instance.get_users_router(UserRead, UserUpdate, requires_verification=True)
 
 app.add_api_route(
     path="/whoami",
     tags=["user"],
     methods=["GET"],
     description="Get current user information",
-    endpoint=users_router.routes[0].endpoint)
+    endpoint=users_router.routes[0].endpoint,
+)
 app.add_api_route(
     path="/user/{id}",
     tags=["user"],
     methods=["GET"],
     description="Get user information by ID",
     dependencies=[Depends(get_current_user)],
-    endpoint=users_router.routes[2].endpoint)
+    endpoint=users_router.routes[2].endpoint,
+)
 app.add_api_route(
     path="/user/{id}",
     tags=["user"],
     methods=["DELETE"],
     description="Delete user by ID",
     dependencies=[Depends(get_current_superuser)],
-    endpoint=users_router.routes[4].endpoint)
+    endpoint=users_router.routes[4].endpoint,
+)
 
 
-@app.patch("/user/me", response_model=UserRead, tags=["user"],
-           response_model_by_alias=False)
-async def update_me(request: Request, user: UserUpdateRequest,
-                    current_user: User = Depends(get_current_user)):
+@app.patch("/user/me", response_model=UserRead, tags=["user"], response_model_by_alias=False)
+async def update_me(
+    request: Request,
+    user: UserUpdateRequest,
+    current_user: User = Depends(get_current_user),
+):
     """User update route
 
     Custom user update router handler will only allow users to update
     its own profile.
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     if user.groups:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -663,26 +684,29 @@ async def update_me(request: Request, user: UserUpdateRequest,
             if not group:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=(
-                        "User group does not exist with name: "
-                        f"{group_name}"
-                    ),
+                    detail=(f"User group does not exist with name: {group_name}"),
                 )
             groups.append(group)
-    user_update = UserUpdate(**(user.model_dump(
-         exclude={'groups', 'is_superuser'}, exclude_none=True)))
+    user_update = UserUpdate(**(user.model_dump(exclude={"groups", "is_superuser"}, exclude_none=True)))
     if groups:
         user_update.groups = groups
-    return await users_router.routes[1].endpoint(
-        request, user_update, current_user, user_manager)
+    return await users_router.routes[1].endpoint(request, user_update, current_user, user_manager)
 
 
-@app.patch("/user/{user_id}", response_model=UserRead, tags=["user"],
-           response_model_by_alias=False)
-async def update_user(user_id: str, request: Request, user: UserUpdateRequest,
-                      current_user: User = Depends(get_current_superuser)):
+@app.patch(
+    "/user/{user_id}",
+    response_model=UserRead,
+    tags=["user"],
+    response_model_by_alias=False,
+)
+async def update_user(
+    user_id: str,
+    request: Request,
+    user: UserUpdateRequest,
+    current_user: User = Depends(get_current_superuser),
+):
     """Router to allow admin users to update other user account"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     user_from_id = await db.find_by_id(User, user_id)
     if not user_from_id:
         raise HTTPException(
@@ -705,21 +729,15 @@ async def update_user(user_id: str, request: Request, user: UserUpdateRequest,
             if not group:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=(
-                        "User group does not exist with name: "
-                        f"{group_name}"
-                    ),
+                    detail=(f"User group does not exist with name: {group_name}"),
                 )
             groups.append(group)
-    user_update = UserUpdate(**(user.model_dump(
-         exclude={'groups'}, exclude_none=True)))
+    user_update = UserUpdate(**(user.model_dump(exclude={"groups"}, exclude_none=True)))
 
     if groups:
         user_update.groups = groups
 
-    updated_user = await users_router.routes[3].endpoint(
-        user_update, request, user_from_id, user_manager
-    )
+    updated_user = await users_router.routes[3].endpoint(user_update, request, user_from_id, user_manager)
     # Update superuser explicitly since fastapi-users update route ignores it.
     if user.is_superuser is not None:
         user_from_id = await db.find_by_id(User, updated_user.id)
@@ -729,25 +747,26 @@ async def update_user(user_id: str, request: Request, user: UserUpdateRequest,
 
 
 @app.get("/user-groups", response_model=PageModel, tags=["user"])
-async def get_user_groups(request: Request,
-                          current_user: User = Depends(get_current_superuser)):
+async def get_user_groups(request: Request, current_user: User = Depends(get_current_superuser)):
     """List user groups (admin-only)."""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     query_params = dict(request.query_params)
-    for pg_key in ['limit', 'offset']:
+    for pg_key in ["limit", "offset"]:
         query_params.pop(pg_key, None)
     paginated_resp = await db.find_by_attributes(UserGroup, query_params)
-    paginated_resp.items = serialize_paginated_data(
-        UserGroup, paginated_resp.items)
+    paginated_resp.items = serialize_paginated_data(UserGroup, paginated_resp.items)
     return paginated_resp
 
 
-@app.get("/user-groups/{group_id}", response_model=UserGroup, tags=["user"],
-         response_model_by_alias=False)
-async def get_user_group(group_id: str,
-                         current_user: User = Depends(get_current_superuser)):
+@app.get(
+    "/user-groups/{group_id}",
+    response_model=UserGroup,
+    tags=["user"],
+    response_model_by_alias=False,
+)
+async def get_user_group(group_id: str, current_user: User = Depends(get_current_superuser)):
     """Get a user group by id (admin-only)."""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     group = await db.find_by_id(UserGroup, group_id)
     if not group:
         raise HTTPException(
@@ -757,13 +776,17 @@ async def get_user_group(group_id: str,
     return group
 
 
-@app.post("/user-groups", response_model=UserGroup, tags=["user"],
-          response_model_by_alias=False)
-async def create_user_group(group: UserGroupCreateRequest,
-                            current_user: User = Depends(
-                                get_current_superuser)):
+@app.post(
+    "/user-groups",
+    response_model=UserGroup,
+    tags=["user"],
+    response_model_by_alias=False,
+)
+async def create_user_group(
+    group: UserGroupCreateRequest, current_user: User = Depends(get_current_superuser)
+):
     """Create a user group (admin-only)."""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     existing = await db.find_one(UserGroup, name=group.name)
     if existing:
         raise HTTPException(
@@ -773,13 +796,10 @@ async def create_user_group(group: UserGroupCreateRequest,
     return await db.create(UserGroup(name=group.name))
 
 
-@app.delete("/user-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT,
-            tags=["user"])
-async def delete_user_group(group_id: str,
-                            current_user: User = Depends(
-                                get_current_superuser)):
+@app.delete("/user-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["user"])
+async def delete_user_group(group_id: str, current_user: User = Depends(get_current_superuser)):
     """Delete a user group (admin-only)."""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     group = await db.find_by_id(UserGroup, group_id)
     if not group:
         raise HTTPException(
@@ -790,10 +810,7 @@ async def delete_user_group(group_id: str,
     if assigned_count:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "User group is assigned to users and cannot be deleted. "
-                "Remove it from users first."
-            ),
+            detail=("User group is assigned to users and cannot be deleted. Remove it from users first."),
         )
     await db.delete_by_id(UserGroup, group_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -801,10 +818,10 @@ async def delete_user_group(group_id: str,
 
 def _get_node_runtime(node: Node) -> Optional[str]:
     """Best-effort runtime lookup from node data."""
-    data = getattr(node, 'data', None)
+    data = getattr(node, "data", None)
     if isinstance(data, dict):
-        return data.get('runtime')
-    return getattr(data, 'runtime', None)
+        return data.get("runtime")
+    return getattr(data, "runtime", None)
 
 
 def _user_can_edit_node(user: User, node: Node) -> bool:
@@ -814,23 +831,20 @@ def _user_can_edit_node(user: User, node: Node) -> bool:
     if user.username == node.owner:
         return True
     user_group_names = {group.name for group in user.groups}
-    if 'node:edit:any' in user_group_names:
+    if "node:edit:any" in user_group_names:
         return True
-    if any(group_name in user_group_names
-           for group_name in getattr(node, 'user_groups', [])):
+    if any(group_name in user_group_names for group_name in getattr(node, "user_groups", [])):
         return True
     runtime = _get_node_runtime(node)
     if runtime:
-        runtime_editor = ":".join(['runtime', runtime, 'node-editor'])
-        runtime_admin = ":".join(['runtime', runtime, 'node-admin'])
-        if (runtime_editor in user_group_names
-                or runtime_admin in user_group_names):
+        runtime_editor = ":".join(["runtime", runtime, "node-editor"])
+        runtime_admin = ":".join(["runtime", runtime, "node-admin"])
+        if runtime_editor in user_group_names or runtime_admin in user_group_names:
             return True
     return False
 
 
-async def authorize_user(node_id: str,
-                         user: User = Depends(get_current_user)):
+async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
     """Return the user if active, authenticated, and authorized"""
 
     # Only the user that created the node or any other user from the permitted
@@ -839,40 +853,43 @@ async def authorize_user(node_id: str,
     if not node_from_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Node not found with id: {node_id}"
+            detail=f"Node not found with id: {node_id}",
         )
     if not _user_can_edit_node(user, node_from_id):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized to complete the operation"
+            detail="Unauthorized to complete the operation",
         )
     return user
 
 
-@app.get('/users', response_model=PageModel, tags=["user"],
-         response_model_exclude={"items": {"__all__": {
-                                    "hashed_password"}}})
-async def get_users(request: Request,
-                    current_user: User = Depends(get_current_user)):
+@app.get(
+    "/users",
+    response_model=PageModel,
+    tags=["user"],
+    response_model_exclude={"items": {"__all__": {"hashed_password"}}},
+)
+async def get_users(request: Request, current_user: User = Depends(get_current_user)):
     """Get all the users if no request parameters have passed.
-       Get the matching users otherwise."""
-    metrics.add('http_requests_total', 1)
+    Get the matching users otherwise."""
+    metrics.add("http_requests_total", 1)
     query_params = dict(request.query_params)
     # Drop pagination parameters from query as they're already in arguments
-    for pg_key in ['limit', 'offset']:
+    for pg_key in ["limit", "offset"]:
         query_params.pop(pg_key, None)
     paginated_resp = await db.find_by_attributes(User, query_params)
-    paginated_resp.items = serialize_paginated_data(
-        User, paginated_resp.items)
+    paginated_resp.items = serialize_paginated_data(User, paginated_resp.items)
     return paginated_resp
 
 
 @app.post("/user/update-password", tags=["user"])
-async def update_password(request: Request,
-                          credentials: OAuth2PasswordRequestForm = Depends(),
-                          new_password: str = Form(None)):
+async def update_password(
+    request: Request,
+    credentials: OAuth2PasswordRequestForm = Depends(),
+    new_password: str = Form(None),
+):
     """Update user password"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     user = await user_manager.authenticate(credentials)
     if user is None or not user.is_active:
         raise HTTPException(
@@ -881,17 +898,14 @@ async def update_password(request: Request,
         )
     user_update = UserUpdate(password=new_password)
     user_from_username = await db.find_one(User, username=credentials.username)
-    await users_router.routes[3].endpoint(
-        user_update, request, user_from_username, user_manager
-    )
+    await users_router.routes[3].endpoint(user_update, request, user_from_username, user_manager)
 
 
 # EventHistory is now stored by pubsub.publish_cloudevent()
 # No need for separate _get_eventhistory function
 
 
-def _parse_event_id_filter(query_params: dict, event_id: str,
-                           event_ids: str) -> None:
+def _parse_event_id_filter(query_params: dict, event_id: str, event_ids: str) -> None:
     """Parse and validate event id/ids filter parameters.
 
     Modifies query_params in place to add _id filter.
@@ -900,31 +914,66 @@ def _parse_event_id_filter(query_params: dict, event_id: str,
     if event_id and event_ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provide either id or ids, not both"
+            detail="Provide either id or ids, not both",
         )
     if event_id:
         try:
-            query_params['_id'] = ObjectId(event_id)
+            query_params["_id"] = ObjectId(event_id)
         except (errors.InvalidId, TypeError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid id format"
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid id format") from exc
     elif event_ids:
         try:
-            ids_list = [ObjectId(x.strip())
-                        for x in event_ids.split(',') if x.strip()]
+            ids_list = [ObjectId(x.strip()) for x in event_ids.split(",") if x.strip()]
         except (errors.InvalidId, TypeError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid ids format"
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ids format") from exc
         if not ids_list:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="ids must contain at least one id"
+                detail="ids must contain at least one id",
             )
-        query_params['_id'] = {'$in': ids_list}
+        query_params["_id"] = {"$in": ids_list}
+
+
+def _apply_simple_filters(query_params: dict, simple_filters: dict):
+    for param, field in simple_filters.items():
+        value = query_params.pop(param, None)
+        if value:
+            query_params[field] = value
+
+
+def _apply_node_filter(query_params: dict, node_id: str):
+    if not node_id:
+        return
+
+    if "data.id" in query_params:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provide either node_id or data.id, not both",
+        )
+    query_params["data.id"] = node_id
+
+
+def _apply_from_filter(query_params: dict, from_ts: str):
+    if not from_ts:
+        return
+
+    if isinstance(from_ts, str):
+        try:
+            from_ts = datetime.fromisoformat(from_ts)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid 'from' parameter, must be an ISO 8601 datetime",
+            ) from exc
+    query_params["timestamp"] = {"$gt": from_ts}
+
+
+def _apply_recursive_validation(recursive, limit):
+    if recursive and (not limit or int(limit) > 1000):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Recursive limit is too large, max is 1000",
+        )
 
 
 def _build_events_query(query_params: dict) -> tuple:
@@ -933,68 +982,43 @@ def _build_events_query(query_params: dict) -> tuple:
     Returns (recursive, processed_query_params).
     Raises HTTPException on validation errors.
     """
-    # Simple filters: param_name -> query_field
     simple_filters = {
-        'kind': 'data.kind',
-        'state': 'data.state',
-        'result': 'data.result',
-        'op': 'data.op',
-        'name': 'data.name',
-        'group': 'data.group',
-        'owner': 'data.owner',
-        'channel': 'channel',
+        "kind": "data.kind",
+        "state": "data.state",
+        "result": "data.result",
+        "op": "data.op",
+        "name": "data.name",
+        "group": "data.group",
+        "owner": "data.owner",
+        "channel": "channel",
     }
 
-    recursive = query_params.pop('recursive', None)
-    limit = query_params.pop('limit', None)
-    from_ts = query_params.pop('from', None)
-    node_id = query_params.pop('node_id', None)
-    path = query_params.pop('path', None)
+    recursive = query_params.pop("recursive", None)
+    limit = query_params.pop("limit", None)
+    from_ts = query_params.pop("from", None)
+    node_id = query_params.pop("node_id", None)
+    path = query_params.pop("path", None)
 
-    # Apply simple filters
-    for param, field in simple_filters.items():
-        value = query_params.pop(param, None)
-        if value:
-            query_params[field] = value
+    _apply_simple_filters(query_params, simple_filters)
+    _apply_node_filter(query_params, node_id)
 
-    if node_id:
-        if 'data.id' in query_params:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Provide either node_id or data.id, not both"
-            )
-        query_params['data.id'] = node_id
-
-    event_id = query_params.pop('id', None)
-    event_ids = query_params.pop('ids', None)
+    event_id = query_params.pop("id", None)
+    event_ids = query_params.pop("ids", None)
     _parse_event_id_filter(query_params, event_id, event_ids)
 
-    if from_ts:
-        if isinstance(from_ts, str):
-            try:
-                from_ts = datetime.fromisoformat(from_ts)
-            except ValueError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid 'from' parameter, must be an ISO 8601 datetime"
-                ) from exc
-        query_params['timestamp'] = {'$gt': from_ts}
+    _apply_from_filter(query_params, from_ts)
     if path:
-        query_params['data.path'] = {'$regex': path}
+        query_params["data.path"] = {"$regex": path}
     if limit:
-        query_params['limit'] = int(limit)
+        query_params["limit"] = int(limit)
 
-    if recursive and (not limit or int(limit) > 1000):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Recursive limit is too large, max is 1000"
-        )
+    _apply_recursive_validation(recursive, limit)
 
     return recursive, query_params
 
 
 # TBD: Restrict response by Pydantic model
-@app.get('/events')
+@app.get("/events")
 async def get_events(request: Request):
     """Get all the events if no request parameters have passed.
        Format: [{event1}, {event2}, ...] or if recursive is set to true,
@@ -1017,19 +1041,19 @@ async def get_events(request: Request):
        - recursive: Retrieve node together with event
     This API endpoint is under development and may change in future.
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     query_params = dict(request.query_params)
     recursive, query_params = _build_events_query(query_params)
 
     resp = await db.find_by_attributes_nonpaginated(EventHistory, query_params)
     resp_list = []
     for item in resp:
-        item['id'] = str(item['_id'])
-        item.pop('_id')
+        item["id"] = str(item["_id"])
+        item.pop("_id")
         if recursive:
-            node = await db.find_by_id(Node, item['data']['id'])
+            node = await db.find_by_id(Node, item["data"]["id"])
             if node:
-                item['node'] = node
+                item["node"] = node
         resp_list.append(item)
     json_comp = jsonable_encoder(resp_list)
     return JSONResponse(content=json_comp)
@@ -1042,7 +1066,8 @@ async def get_events(request: Request):
 # query patterns and allows us to optimize indexes and storage
 # separately.
 
-@app.post('/telemetry', response_model=dict, tags=["telemetry"])
+
+@app.post("/telemetry", response_model=dict, tags=["telemetry"])
 async def post_telemetry(
     events: List[dict],
     current_user: User = Depends(get_current_user),
@@ -1053,7 +1078,7 @@ async def post_telemetry(
     least 'kind' and 'runtime' fields. Events are validated against
     the TelemetryEvent model before insertion.
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     if not events:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1069,13 +1094,13 @@ async def post_telemetry(
                 detail=f"Invalid telemetry event: {exc}",
             ) from exc
         doc = obj.model_dump(by_alias=True)
-        doc.pop('_id', None)
+        doc.pop("_id", None)
         docs.append(doc)
     inserted_ids = await db.insert_many(TelemetryEvent, docs)
     return {"inserted": len(inserted_ids)}
 
 
-@app.get('/telemetry', response_model=PageModel, tags=["telemetry"])
+@app.get("/telemetry", response_model=PageModel, tags=["telemetry"])
 async def get_telemetry(request: Request):
     """Query telemetry events with optional filters.
 
@@ -1083,51 +1108,53 @@ async def get_telemetry(request: Request):
     via 'since' and 'until' parameters (ISO 8601 format).
     Results are paginated (default limit=50).
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     query_params = dict(request.query_params)
 
-    for pg_key in ['limit', 'offset']:
+    for pg_key in ["limit", "offset"]:
         query_params.pop(pg_key, None)
 
-    since = query_params.pop('since', None)
-    until = query_params.pop('until', None)
+    since = query_params.pop("since", None)
+    until = query_params.pop("until", None)
     if since or until:
         ts_filter = {}
         if since:
-            ts_filter['$gte'] = datetime.fromisoformat(since)
+            ts_filter["$gte"] = datetime.fromisoformat(since)
         if until:
-            ts_filter['$lte'] = datetime.fromisoformat(until)
-        query_params['ts'] = ts_filter
+            ts_filter["$lte"] = datetime.fromisoformat(until)
+        query_params["ts"] = ts_filter
 
     # Convert string 'true'/'false' for boolean fields
-    if 'is_infra_error' in query_params:
-        val = query_params['is_infra_error'].lower()
-        if val not in ['true', 'false']:
+    if "is_infra_error" in query_params:
+        val = query_params["is_infra_error"].lower()
+        if val not in ["true", "false"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Bad is_infra_error value, use 'true' or 'false'",
             )
-        if val == 'true':
-            query_params['is_infra_error'] = True
+        if val == "true":
+            query_params["is_infra_error"] = True
         else:
-            query_params['is_infra_error'] = False
+            query_params["is_infra_error"] = False
 
-    paginated_resp = await db.find_by_attributes(
-        TelemetryEvent, query_params
-    )
-    paginated_resp.items = serialize_paginated_data(
-        TelemetryEvent, paginated_resp.items
-    )
+    paginated_resp = await db.find_by_attributes(TelemetryEvent, query_params)
+    paginated_resp.items = serialize_paginated_data(TelemetryEvent, paginated_resp.items)
     return paginated_resp
 
 
 TELEMETRY_STATS_GROUP_FIELDS = {
-    'runtime', 'device_type', 'job_name', 'tree', 'branch',
-    'arch', 'kind', 'error_type',
+    "runtime",
+    "device_type",
+    "job_name",
+    "tree",
+    "branch",
+    "arch",
+    "kind",
+    "error_type",
 }
 
 
-@app.get('/telemetry/stats', tags=["telemetry"])
+@app.get("/telemetry/stats", tags=["telemetry"])
 async def get_telemetry_stats(request: Request):
     """Get aggregated telemetry statistics.
 
@@ -1149,16 +1176,16 @@ async def get_telemetry_stats(request: Request):
     Returns grouped counts with pass/fail/incomplete/infra_error
     breakdowns for result-bearing events.
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     query_params = dict(request.query_params)
 
-    group_by_str = query_params.pop('group_by', None)
+    group_by_str = query_params.pop("group_by", None)
     if not group_by_str:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="'group_by' parameter is required",
         )
-    group_by = [f.strip() for f in group_by_str.split(',')]
+    group_by = [f.strip() for f in group_by_str.split(",")]
     invalid = set(group_by) - TELEMETRY_STATS_GROUP_FIELDS
     if invalid:
         raise HTTPException(
@@ -1168,76 +1195,82 @@ async def get_telemetry_stats(request: Request):
 
     match_stage = {
         key: query_params.pop(key)
-        for key in ('kind', 'runtime', 'device_type', 'job_name',
-                    'tree', 'branch', 'arch')
+        for key in (
+            "kind",
+            "runtime",
+            "device_type",
+            "job_name",
+            "tree",
+            "branch",
+            "arch",
+        )
         if query_params.get(key)
     }
 
-    since = query_params.pop('since', None)
-    until = query_params.pop('until', None)
+    since = query_params.pop("since", None)
+    until = query_params.pop("until", None)
     if since or until:
-        match_stage['ts'] = {
-            **({'$gte': datetime.fromisoformat(since)} if since else {}),
-            **({'$lte': datetime.fromisoformat(until)} if until else {}),
+        match_stage["ts"] = {
+            **({"$gte": datetime.fromisoformat(since)} if since else {}),
+            **({"$lte": datetime.fromisoformat(until)} if until else {}),
         }
 
-    pipeline = [{'$match': match_stage}] if match_stage else []
-    pipeline.append({
-        '$group': {
-            '_id': {f: f'${f}' for f in group_by},
-            'total': {'$sum': 1},
-            'pass': {'$sum': {
-                '$cond': [{'$eq': ['$result', 'pass']}, 1, 0]
-            }},
-            'fail': {'$sum': {
-                '$cond': [{'$eq': ['$result', 'fail']}, 1, 0]
-            }},
-            'incomplete': {'$sum': {
-                '$cond': [{'$eq': ['$result', 'incomplete']}, 1, 0]
-            }},
-            'skip': {'$sum': {
-                '$cond': [{'$eq': ['$result', 'skip']}, 1, 0]
-            }},
-            'infra_error': {'$sum': {
-                '$cond': ['$is_infra_error', 1, 0]
-            }},
+    pipeline = [{"$match": match_stage}] if match_stage else []
+    pipeline.append(
+        {
+            "$group": {
+                "_id": {f: f"${f}" for f in group_by},
+                "total": {"$sum": 1},
+                "pass": {"$sum": {"$cond": [{"$eq": ["$result", "pass"]}, 1, 0]}},
+                "fail": {"$sum": {"$cond": [{"$eq": ["$result", "fail"]}, 1, 0]}},
+                "incomplete": {"$sum": {"$cond": [{"$eq": ["$result", "incomplete"]}, 1, 0]}},
+                "skip": {"$sum": {"$cond": [{"$eq": ["$result", "skip"]}, 1, 0]}},
+                "infra_error": {"$sum": {"$cond": ["$is_infra_error", 1, 0]}},
+            }
         }
-    })
-    pipeline.append({'$sort': {'total': -1}})
+    )
+    pipeline.append({"$sort": {"total": -1}})
 
     results = await db.aggregate(TelemetryEvent, pipeline)
-    return JSONResponse(content=jsonable_encoder([
-        {
-            **doc['_id'].copy(),
-            'total': doc['total'],
-            'pass': doc['pass'],
-            'fail': doc['fail'],
-            'incomplete': doc['incomplete'],
-            'skip': doc['skip'],
-            'infra_error': doc['infra_error'],
-        }
-        for doc in results
-    ]))
+    return JSONResponse(
+        content=jsonable_encoder(
+            [
+                {
+                    **doc["_id"].copy(),
+                    "total": doc["total"],
+                    "pass": doc["pass"],
+                    "fail": doc["fail"],
+                    "incomplete": doc["incomplete"],
+                    "skip": doc["skip"],
+                    "infra_error": doc["infra_error"],
+                }
+                for doc in results
+            ]
+        )
+    )
+
 
 # This is test value, can adjust based on expected query patterns and volumes.
 ANOMALY_WINDOW_MAP = {
-    '1h': 1, '3h': 3, '6h': 6, '12h': 12, '24h': 24, '48h': 48,
+    "1h": 1,
+    "3h": 3,
+    "6h": 6,
+    "12h": 12,
+    "24h": 24,
+    "48h": 48,
 }
 
 
-@app.get('/telemetry/anomalies', tags=["telemetry"])
+@app.get("/telemetry/anomalies", tags=["telemetry"])
 async def get_telemetry_anomalies(
-    window: str = Query(
-        '6h', description='Time window: 1h, 3h, 6h, 12h, 24h, 48h'
-    ),
+    window: str = Query("6h", description="Time window: 1h, 3h, 6h, 12h, 24h, 48h"),
     threshold: float = Query(
-        0.5, ge=0.0, le=1.0,
-        description='Min failure/infra error rate to flag (0.0-1.0)'
+        0.5,
+        ge=0.0,
+        le=1.0,
+        description="Min failure/infra error rate to flag (0.0-1.0)",
     ),
-    min_total: int = Query(
-        3, ge=1,
-        description='Min events in window to consider (avoids noise)'
-    ),
+    min_total: int = Query(3, ge=1, description="Min events in window to consider (avoids noise)"),
 ):
     """Detect anomalies in telemetry data.
 
@@ -1247,106 +1280,101 @@ async def get_telemetry_anomalies(
 
     Returns a list sorted by severity (highest error rate first).
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
 
     hours = ANOMALY_WINDOW_MAP.get(window)
     if not hours:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid window '{window}'. "
-                   f"Use: {', '.join(ANOMALY_WINDOW_MAP.keys())}",
+            detail=f"Invalid window '{window}'. Use: {', '.join(ANOMALY_WINDOW_MAP.keys())}",
         )
     since = datetime.utcnow() - timedelta(hours=hours)
 
     # Anomaly 1: High infra error / failure rate per runtime+device_type
     result_pipeline = [
-        {'$match': {
-            'kind': {'$in': ['job_result', 'test_result']},
-            'ts': {'$gte': since},
-        }},
-        {'$group': {
-            '_id': {
-                'runtime': '$runtime',
-                'device_type': '$device_type',
-            },
-            'total': {'$sum': 1},
-            'fail': {'$sum': {
-                '$cond': [{'$eq': ['$result', 'fail']}, 1, 0]
-            }},
-            'incomplete': {'$sum': {
-                '$cond': [{'$eq': ['$result', 'incomplete']}, 1, 0]
-            }},
-            'infra_error': {'$sum': {
-                '$cond': ['$is_infra_error', 1, 0]
-            }},
-        }},
-        {'$match': {'total': {'$gte': min_total}}},
-        {'$addFields': {
-            'infra_rate': {
-                '$divide': ['$infra_error', '$total']
-            },
-            'fail_rate': {
-                '$divide': [
-                    {'$add': ['$fail', '$incomplete']}, '$total'
+        {
+            "$match": {
+                "kind": {"$in": ["job_result", "test_result"]},
+                "ts": {"$gte": since},
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "runtime": "$runtime",
+                    "device_type": "$device_type",
+                },
+                "total": {"$sum": 1},
+                "fail": {"$sum": {"$cond": [{"$eq": ["$result", "fail"]}, 1, 0]}},
+                "incomplete": {"$sum": {"$cond": [{"$eq": ["$result", "incomplete"]}, 1, 0]}},
+                "infra_error": {"$sum": {"$cond": ["$is_infra_error", 1, 0]}},
+            }
+        },
+        {"$match": {"total": {"$gte": min_total}}},
+        {
+            "$addFields": {
+                "infra_rate": {"$divide": ["$infra_error", "$total"]},
+                "fail_rate": {"$divide": [{"$add": ["$fail", "$incomplete"]}, "$total"]},
+            }
+        },
+        {
+            "$match": {
+                "$or": [
+                    {"infra_rate": {"$gte": threshold}},
+                    {"fail_rate": {"$gte": threshold}},
                 ]
-            },
-        }},
-        {'$match': {
-            '$or': [
-                {'infra_rate': {'$gte': threshold}},
-                {'fail_rate': {'$gte': threshold}},
-            ]
-        }},
-        {'$sort': {'infra_rate': -1, 'fail_rate': -1}},
+            }
+        },
+        {"$sort": {"infra_rate": -1, "fail_rate": -1}},
     ]
 
     # Anomaly 2: Submission/connectivity errors per runtime
     error_pipeline = [
-        {'$match': {
-            'kind': {'$in': ['runtime_error', 'job_skip']},
-            'ts': {'$gte': since},
-        }},
-        {'$group': {
-            '_id': {
-                'runtime': '$runtime',
-                'error_type': '$error_type',
-            },
-            'count': {'$sum': 1},
-        }},
-        {'$match': {'count': {'$gte': min_total}}},
-        {'$sort': {'count': -1}},
+        {
+            "$match": {
+                "kind": {"$in": ["runtime_error", "job_skip"]},
+                "ts": {"$gte": since},
+            }
+        },
+        {
+            "$group": {
+                "_id": {
+                    "runtime": "$runtime",
+                    "error_type": "$error_type",
+                },
+                "count": {"$sum": 1},
+            }
+        },
+        {"$match": {"count": {"$gte": min_total}}},
+        {"$sort": {"count": -1}},
     ]
 
-    result_anomalies = await db.aggregate(
-        TelemetryEvent, result_pipeline
-    )
-    error_anomalies = await db.aggregate(
-        TelemetryEvent, error_pipeline
-    )
+    result_anomalies = await db.aggregate(TelemetryEvent, result_pipeline)
+    error_anomalies = await db.aggregate(TelemetryEvent, error_pipeline)
 
     output = {
-        'window': window,
-        'threshold': threshold,
-        'min_total': min_total,
-        'since': since.isoformat(),
-        'result_anomalies': [],
-        'error_anomalies': [],
+        "window": window,
+        "threshold": threshold,
+        "min_total": min_total,
+        "since": since.isoformat(),
+        "result_anomalies": [],
+        "error_anomalies": [],
     }
 
     for doc in result_anomalies:
-        row = doc['_id'].copy()
-        row['total'] = doc['total']
-        row['fail'] = doc['fail']
-        row['incomplete'] = doc['incomplete']
-        row['infra_error'] = doc['infra_error']
-        row['infra_rate'] = round(doc['infra_rate'], 3)
-        row['fail_rate'] = round(doc['fail_rate'], 3)
-        output['result_anomalies'].append(row)
+        row = doc["_id"].copy()
+        row["total"] = doc["total"]
+        row["fail"] = doc["fail"]
+        row["incomplete"] = doc["incomplete"]
+        row["infra_error"] = doc["infra_error"]
+        row["infra_rate"] = round(doc["infra_rate"], 3)
+        row["fail_rate"] = round(doc["fail_rate"], 3)
+        output["result_anomalies"].append(row)
 
     for doc in error_anomalies:
-        row = doc['_id'].copy()
-        row['count'] = doc['count']
-        output['error_anomalies'].append(row)
+        row = doc["_id"].copy()
+        row["count"] = doc["count"]
+        output["error_anomalies"].append(row)
 
     return JSONResponse(content=jsonable_encoder(output))
 
@@ -1355,17 +1383,17 @@ async def get_telemetry_anomalies(
 # Nodes
 def _get_node_event_data(operation, node, is_hierarchy=False):
     return {
-        'op': operation,
-        'id': str(node.id),
-        'kind': node.kind,
-        'name': node.name,
-        'path': node.path,
-        'group': node.group,
-        'state': node.state,
-        'result': node.result,
-        'owner': node.owner,
-        'data': node.data,
-        'is_hierarchy': is_hierarchy,
+        "op": operation,
+        "id": str(node.id),
+        "kind": node.kind,
+        "name": node.name,
+        "path": node.path,
+        "group": node.group,
+        "state": node.state,
+        "result": node.result,
+        "owner": node.owner,
+        "data": node.data,
+        "is_hierarchy": is_hierarchy,
     }
 
 
@@ -1373,22 +1401,21 @@ async def translate_null_query_params(query_params: dict):
     """Translate null query parameters to None"""
     translated = query_params.copy()
     for key, value in query_params.items():
-        if value == 'null':
+        if value == "null":
             translated[key] = None
     return translated
 
 
-@app.get('/node/{node_id}', response_model=Union[Node, None],
-         response_model_by_alias=False)
+@app.get("/node/{node_id}", response_model=Union[Node, None], response_model_by_alias=False)
 async def get_node(node_id: str):
     """Get node information from the provided node id"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     try:
         return await db.find_by_id(Node, node_id)
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Node not found with the kind: {str(error)}"
+            detail=f"Node not found with the kind: {str(error)}",
         ) from error
 
 
@@ -1403,19 +1430,19 @@ def serialize_paginated_data(model, data: list):
     """
     serialized_data = []
     for obj in data:
-        serialized_data.append(model(**obj).model_dump(mode='json'))
+        serialized_data.append(model(**obj).model_dump(mode="json"))
     return serialized_data
 
 
-@app.get('/nodes', response_model=PageModel)
+@app.get("/nodes", response_model=PageModel)
 async def get_nodes(request: Request):
     """Get all the nodes if no request parameters have passed.
-       Get all the matching nodes otherwise, within the pagination limit."""
-    metrics.add('http_requests_total', 1)
+    Get all the matching nodes otherwise, within the pagination limit."""
+    metrics.add("http_requests_total", 1)
     query_params = dict(request.query_params)
 
     # Drop pagination parameters from query as they're already in arguments
-    for pg_key in ['limit', 'offset']:
+    for pg_key in ["limit", "offset"]:
         query_params.pop(pg_key, None)
 
     query_params = await translate_null_query_params(query_params)
@@ -1426,14 +1453,14 @@ async def get_nodes(request: Request):
         model = Node
         translated_params = model.translate_fields(query_params)
         paginated_resp = await db.find_by_attributes(model, translated_params)
-        paginated_resp.items = serialize_paginated_data(
-            model, paginated_resp.items)
+        paginated_resp.items = serialize_paginated_data(model, paginated_resp.items)
         return paginated_resp
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Node not found with the kind: {str(error)}"
+            detail=f"Node not found with the kind: {str(error)}",
         ) from error
+
 
 add_pagination(app)
 
@@ -1445,7 +1472,7 @@ async def db_find_node_nonpaginated(query_params):
     return await db.find_by_attributes_nonpaginated(model, translated_params)
 
 
-@app.get('/nodes/fast', response_model=List[Node])
+@app.get("/nodes/fast", response_model=List[Node])
 async def get_nodes_fast(request: Request):
     """Get all the nodes if no request parameters have passed.
     This is non-paginated version of get_nodes.
@@ -1459,28 +1486,25 @@ async def get_nodes_fast(request: Request):
     try:
         # Query using the base Node model, regardless of the specific
         # node type, use asyncio.wait_for with timeout 30 seconds
-        resp = await asyncio.wait_for(
-            db_find_node_nonpaginated(query_params),
-            timeout=15
-        )
+        resp = await asyncio.wait_for(db_find_node_nonpaginated(query_params), timeout=15)
         return resp
     except asyncio.TimeoutError as error:
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail=f"Timeout while fetching nodes: {str(error)}"
+            detail=f"Timeout while fetching nodes: {str(error)}",
         ) from error
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Node not found with the kind: {str(error)}"
+            detail=f"Node not found with the kind: {str(error)}",
         ) from error
 
 
-@app.get('/count', response_model=int)
+@app.get("/count", response_model=int)
 async def get_nodes_count(request: Request):
     """Get the count of all the nodes if no request parameters have passed.
-       Get the count of all the matching nodes otherwise."""
-    metrics.add('http_requests_total', 1)
+    Get the count of all the matching nodes otherwise."""
+    metrics.add("http_requests_total", 1)
     query_params = dict(request.query_params)
 
     query_params = await translate_null_query_params(query_params)
@@ -1494,7 +1518,7 @@ async def get_nodes_count(request: Request):
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Node not found with the kind: {str(error)}"
+            detail=f"Node not found with the kind: {str(error)}",
         ) from error
 
 
@@ -1504,26 +1528,29 @@ async def _verify_user_group_existence(user_groups: List[str]):
         if not await db.find_one(UserGroup, name=group_name):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"User group does not exist with name: {group_name}")
+                detail=f"User group does not exist with name: {group_name}",
+            )
 
 
 def _translate_version_fields(node: Node):
     """Translate Node version fields"""
     data = node.data
     if data:
-        version = data.get('kernel_revision', {}).get('version')
+        version = data.get("kernel_revision", {}).get("version")
         if version:
             version = KernelVersion.translate_version_fields(version)
-            node.data['kernel_revision']['version'] = version
+            node.data["kernel_revision"]["version"] = version
     return node
 
 
-@app.post('/node', response_model=Node, response_model_by_alias=False)
-async def post_node(node: Node,
-                    authorization: str | None = Header(default=None),
-                    current_user: User = Depends(get_current_user)):
+@app.post("/node", response_model=Node, response_model_by_alias=False)
+async def post_node(
+    node: Node,
+    authorization: str | None = Header(default=None),
+    current_user: User = Depends(get_current_user),
+):
     """Create a new node"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     # [TODO] Remove translation below once we can use it in the pipeline
     node = _translate_version_fields(node)
 
@@ -1536,7 +1563,7 @@ async def post_node(node: Node,
         if not parent:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Parent not found with id: {node.parent}"
+                detail=f"Parent not found with id: {node.parent}",
             )
 
     await _verify_user_group_existence(node.user_groups)
@@ -1546,17 +1573,17 @@ async def post_node(node: Node,
     # specific kind. The concrete Node submodel (Kbuild, Checkout, etc.)
     # is only used for data format validation
     obj = await db.create(node)
-    data = _get_node_event_data('created', obj)
+    data = _get_node_event_data("created", obj)
     attributes = {}
-    if data.get('owner', None):
-        attributes['owner'] = data['owner']
+    if data.get("owner", None):
+        attributes["owner"] = data["owner"]
     # publish_cloudevent now stores to eventhistory collection
-    await pubsub.publish_cloudevent('node', data, attributes)
+    await pubsub.publish_cloudevent("node", data, attributes)
     return obj
 
 
 def is_same_flags(old_node, new_node):
-    """ Compare processed_by_kcidb_bridge flags
+    """Compare processed_by_kcidb_bridge flags
     Returns True if flags are same, False otherwise
     """
     old_flag = old_node.processed_by_kcidb_bridge
@@ -1566,18 +1593,21 @@ def is_same_flags(old_node, new_node):
     return False
 
 
-@app.put('/node/{node_id}', response_model=Node, response_model_by_alias=False)
-async def put_node(node_id: str, node: Node,
-                   user: str = Depends(authorize_user),
-                   noevent: Optional[bool] = Query(None)):
+@app.put("/node/{node_id}", response_model=Node, response_model_by_alias=False)
+async def put_node(
+    node_id: str,
+    node: Node,
+    user: str = Depends(authorize_user),
+    noevent: Optional[bool] = Query(None),
+):
     """Update an already added node"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     node.id = ObjectId(node_id)
     node_from_id = await db.find_by_id(Node, node_id)
     if not node_from_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Node not found with id: {node.id}"
+            detail=f"Node not found with id: {node.id}",
         )
 
     # [TODO] Remove translation below once we can use it in the pipeline
@@ -1586,20 +1616,15 @@ async def put_node(node_id: str, node: Node,
     # Sanity checks
     # Note: do not update node ownership fields, don't update 'state'
     # until we've checked the state transition is valid.
-    update_data = node.model_dump(
-        exclude={'owner', 'submitter', 'user_groups', 'state'})
+    update_data = node.model_dump(exclude={"owner", "submitter", "user_groups", "state"})
     new_node_def = node_from_id.model_copy(update=update_data)
     # 1- Parse and validate node to specific subtype
     specialized_node = parse_node_obj(new_node_def)
 
     # 2 - State transition checks
-    is_valid, message = specialized_node.validate_node_state_transition(
-        node.state)
+    is_valid, message = specialized_node.validate_node_state_transition(node.state)
     if not is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=message
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
     # if state changes, reset processed_by_kcidb_bridge flag
     if node.state != new_node_def.state:
         new_node_def.processed_by_kcidb_bridge = False
@@ -1614,31 +1639,31 @@ async def put_node(node_id: str, node: Node,
 
     # Update node in the DB
     obj = await db.update(new_node_def)
-    data = _get_node_event_data('updated', obj)
+    data = _get_node_event_data("updated", obj)
     attributes = {}
-    if data.get('owner', None):
-        attributes['owner'] = data['owner']
+    if data.get("owner", None):
+        attributes["owner"] = data["owner"]
     if not noevent:
         # publish_cloudevent now stores to eventhistory collection
-        await pubsub.publish_cloudevent('node', data, attributes)
+        await pubsub.publish_cloudevent("node", data, attributes)
     return obj
 
 
 class NodeUpdateRequest(BaseModel):
     """Request model for updating multiple nodes"""
+
     nodes: List[str]
     field: str
     value: str
 
 
-@app.put('/batch/nodeset', response_model=int)
-async def put_batch_nodeset(data: NodeUpdateRequest,
-                            user: str = Depends(get_current_user)):
+@app.put("/batch/nodeset", response_model=int)
+async def put_batch_nodeset(data: NodeUpdateRequest, user: str = Depends(get_current_user)):
     """
     Set a field to a value for multiple nodes
     TBD: Make db.bulkupdate to update multiple nodes in one go
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     updated = 0
     nodes = data.nodes
     field = data.field
@@ -1648,31 +1673,27 @@ async def put_batch_nodeset(data: NodeUpdateRequest,
         if not node_from_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Node not found with id: {node_id}"
+                detail=f"Node not found with id: {node_id}",
             )
         # Verify authorization, and ignore if not permitted.
         if not _user_can_edit_node(user, node_from_id):
             continue
         # right now we support only field:
         # processed_by_kcidb_bridge, also value should be boolean
-        if field == 'processed_by_kcidb_bridge':
-            if value in ['true', 'True']:
+        if field == "processed_by_kcidb_bridge":
+            if value in ["true", "True"]:
                 value = True
-            elif value in ['false', 'False']:
+            elif value in ["false", "False"]:
                 value = False
             setattr(node_from_id, field, value)
             await db.update(node_from_id)
             updated += 1
         else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Field not supported"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Field not supported")
     return updated
 
 
-async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy,
-                                          submitter: str, treeid: str):
+async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy, submitter: str, treeid: str):
     """Set node ownership information for a hierarchy of nodes"""
     if not hierarchy.node.owner:
         hierarchy.node.owner = user.username
@@ -1682,57 +1703,59 @@ async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy,
         await _set_node_ownership_recursively(user, node, submitter, treeid)
 
 
-@app.put('/nodes/{node_id}', response_model=List[Node],
-         response_model_by_alias=False)
+@app.put("/nodes/{node_id}", response_model=List[Node], response_model_by_alias=False)
 async def put_nodes(
-        node_id: str, nodes: Hierarchy,
-        authorization: str | None = Header(default=None),
-        user: str = Depends(authorize_user)):
+    node_id: str,
+    nodes: Hierarchy,
+    authorization: str | None = Header(default=None),
+    user: str = Depends(authorize_user),
+):
     """Add a hierarchy of nodes to an existing root node"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     nodes.node.id = ObjectId(node_id)
     # Retrieve the root node from the DB and submitter
     node_from_id = await db.find_by_id(Node, node_id)
     if not node_from_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Node not found with id: {node_id}"
+            detail=f"Node not found with id: {node_id}",
         )
     submitter = node_from_id.submitter
     treeid = node_from_id.treeid
 
     await _set_node_ownership_recursively(user, nodes, submitter, treeid)
     obj_list = await db.create_hierarchy(nodes, Node)
-    data = _get_node_event_data('updated', obj_list[0], True)
+    data = _get_node_event_data("updated", obj_list[0], True)
     attributes = {}
-    if data.get('owner', None):
-        attributes['owner'] = data['owner']
+    if data.get("owner", None):
+        attributes["owner"] = data["owner"]
     # publish_cloudevent now stores to eventhistory collection
-    await pubsub.publish_cloudevent('node', data, attributes)
+    await pubsub.publish_cloudevent("node", data, attributes)
     return obj_list
 
 
 # -----------------------------------------------------------------------------
 # Key/Value namespace enabled store
-@app.get('/kv/{namespace}/{key}', response_model=Union[str, None])
-async def get_kv(namespace: str, key: str,
-                 user: User = Depends(get_current_user)):
-
+@app.get("/kv/{namespace}/{key}", response_model=Union[str, None])
+async def get_kv(namespace: str, key: str, user: User = Depends(get_current_user)):
     """Get a key value pair from the store"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     return await db.get_kv(namespace, key)
 
 
-@app.post('/kv/{namespace}/{key}', response_model=Optional[str])
-async def post_kv(namespace: str, key: str,
-                  value: Optional[str] = Body(default=None),
-                  user: User = Depends(get_current_user)):
+@app.post("/kv/{namespace}/{key}", response_model=Optional[str])
+async def post_kv(
+    namespace: str,
+    key: str,
+    value: Optional[str] = Body(default=None),
+    user: User = Depends(get_current_user),
+):
     """Set a key-value pair in the store
     namespace and key are part of the URL
     value is part of the request body.
     If value is not provided, we need to call delete_kv to remove the key.
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     if not value:
         await db.del_kv(namespace, key)
         return "OK"
@@ -1743,11 +1766,10 @@ async def post_kv(namespace: str, key: str,
 
 
 # Delete a key-value pair from the store
-@app.delete('/kv/{namespace}/{key}', response_model=Optional[str])
-async def delete_kv(namespace: str, key: str,
-                    user: User = Depends(get_current_user)):
+@app.delete("/kv/{namespace}/{key}", response_model=Optional[str])
+async def delete_kv(namespace: str, key: str, user: User = Depends(get_current_user)):
     """Delete a key-value pair from the store"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     await db.del_kv(namespace, key)
     response = "Key-value pair deleted successfully"
     return response
@@ -1756,17 +1778,21 @@ async def delete_kv(namespace: str, key: str,
 # -----------------------------------------------------------------------------
 # Pub/Sub
 
-@app.post('/subscribe/{channel}', response_model=Subscription)
-async def subscribe(channel: str, user: User = Depends(get_current_user),
-                    promisc: Optional[bool] = Query(None),
-                    subscriber_id: Optional[str] = Query(
-                        None,
-                        description="Unique subscriber ID for durable "
-                                    "delivery. If provided, missed events "
-                                    "will be delivered on reconnection. "
-                                    "Without this, events are "
-                                    "fire-and-forget."
-                    )):
+
+@app.post("/subscribe/{channel}", response_model=Subscription)
+async def subscribe(
+    channel: str,
+    user: User = Depends(get_current_user),
+    promisc: Optional[bool] = Query(None),
+    subscriber_id: Optional[str] = Query(
+        None,
+        description="Unique subscriber ID for durable "
+        "delivery. If provided, missed events "
+        "will be delivered on reconnection. "
+        "Without this, events are "
+        "fire-and-forget.",
+    ),
+):
     """Subscribe handler for Pub/Sub channel
 
     Args:
@@ -1778,65 +1804,61 @@ async def subscribe(channel: str, user: User = Depends(get_current_user),
             identifier like "scheduler-prod-1" or "dashboard-main".
             Without subscriber_id, standard fire-and-forget pub/sub.
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     options = {}
     if promisc:
-        options['promiscuous'] = promisc
+        options["promiscuous"] = promisc
     if subscriber_id:
-        options['subscriber_id'] = subscriber_id
+        options["subscriber_id"] = subscriber_id
     return await pubsub.subscribe(channel, user.username, options)
 
 
-@app.post('/unsubscribe/{sub_id}')
+@app.post("/unsubscribe/{sub_id}")
 async def unsubscribe(sub_id: int, user: User = Depends(get_current_user)):
     """Unsubscribe handler for Pub/Sub channel"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     try:
         await pubsub.unsubscribe(sub_id, user.username)
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Subscription id not found: {str(error)}"
+            detail=f"Subscription id not found: {str(error)}",
         ) from error
     except RuntimeError as error:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(error)
-        ) from error
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(error)) from error
 
 
-@app.get('/listen/{sub_id}')
+@app.get("/listen/{sub_id}")
 async def listen(sub_id: int, user: User = Depends(get_current_user)):
     """Listen messages from a subscribed Pub/Sub channel"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     try:
         return await pubsub.listen(sub_id, user.username)
     except KeyError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Subscription id not found: {str(error)}"
+            detail=f"Subscription id not found: {str(error)}",
         ) from error
     except RuntimeError as error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error while listening to sub id {sub_id}: {str(error)}"
+            detail=f"Error while listening to sub id {sub_id}: {str(error)}",
         ) from error
 
 
-@app.post('/publish/{channel}')
-async def publish(event: PublishEvent, channel: str,
-                  user: User = Depends(get_current_user)):
+@app.post("/publish/{channel}")
+async def publish(event: PublishEvent, channel: str, user: User = Depends(get_current_user)):
     """Publish an event on the provided Pub/Sub channel"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     event_dict = PublishEvent.dict(event)
     # 1 - Extract data and attributes from the event
     # 2 - Add the owner as an extra attribute
     # 3 - Collect all the other extra attributes, if available, without
     #     overwriting any of the standard ones in the dict
-    data = event_dict.pop('data')
+    data = event_dict.pop("data")
     extra_attributes = event_dict.pop("attributes")
     attributes = event_dict
-    attributes['owner'] = user.username
+    attributes["owner"] = user.username
     if extra_attributes:
         for k in extra_attributes:
             if k not in attributes:
@@ -1844,212 +1866,198 @@ async def publish(event: PublishEvent, channel: str,
     await pubsub.publish_cloudevent(channel, data, attributes)
 
 
-@app.post('/push/{list_name}')
-async def push(raw: dict, list_name: str,
-               user: User = Depends(get_current_user)):
+@app.post("/push/{list_name}")
+async def push(raw: dict, list_name: str, user: User = Depends(get_current_user)):
     """Push a message on the provided list"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     attributes = dict(raw)
-    data = attributes.pop('data')
+    data = attributes.pop("data")
     await pubsub.push_cloudevent(list_name, data, attributes)
 
 
-@app.get('/pop/{list_name}')
+@app.get("/pop/{list_name}")
 async def pop(list_name: str, user: User = Depends(get_current_user)):
     """Pop a message from a given list"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     return await pubsub.pop(list_name)
 
 
-@app.get('/stats/subscriptions', response_model=List[SubscriptionStats])
+@app.get("/stats/subscriptions", response_model=List[SubscriptionStats])
 async def stats(user: User = Depends(get_current_superuser)):
     """Get details of all existing subscriptions"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     return await pubsub.subscription_stats()
 
 
-@app.get('/viewer')
+@app.get("/viewer")
 async def viewer():
     """Serve simple HTML page to view the API /static/viewer.html
     Set various no-cache tag we might update it often"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    viewer_path = os.path.join(root_dir, 'templates', 'viewer.html')
-    with open(viewer_path, 'r', encoding='utf-8') as file:
+    viewer_path = os.path.join(root_dir, "templates", "viewer.html")
+    with open(viewer_path, "r", encoding="utf-8") as file:
         # set header to text/html and no-cache stuff
         hdr = {
-            'Content-Type': 'text/html',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+            "Content-Type": "text/html",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
         }
         return PlainTextResponse(file.read(), headers=hdr)
 
 
-@app.get('/dashboard')
+@app.get("/dashboard")
 async def dashboard():
     """Serve simple HTML page to view the API dashboard.html
     Set various no-cache tag we might update it often"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    dashboard_path = os.path.join(root_dir, 'templates', 'dashboard.html')
-    with open(dashboard_path, 'r', encoding='utf-8') as file:
+    dashboard_path = os.path.join(root_dir, "templates", "dashboard.html")
+    with open(dashboard_path, "r", encoding="utf-8") as file:
         # set header to text/html and no-cache stuff
         hdr = {
-            'Content-Type': 'text/html',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+            "Content-Type": "text/html",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
         }
         return PlainTextResponse(file.read(), headers=hdr)
 
 
-@app.get('/manage')
+@app.get("/manage")
 async def manage():
     """Serve simple HTML page to submit custom nodes"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    manage_path = os.path.join(root_dir, 'templates', 'manage.html')
-    with open(manage_path, 'r', encoding='utf-8') as file:
+    manage_path = os.path.join(root_dir, "templates", "manage.html")
+    with open(manage_path, "r", encoding="utf-8") as file:
         # set header to text/html and no-cache stuff
         hdr = {
-            'Content-Type': 'text/html',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+            "Content-Type": "text/html",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
         }
         return PlainTextResponse(file.read(), headers=hdr)
 
 
-@app.get('/analytics')
+@app.get("/analytics")
 async def analytics_page():
     """Serve pipeline analytics dashboard with telemetry data"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    analytics_path = os.path.join(root_dir, 'templates', 'analytics.html')
-    with open(analytics_path, 'r', encoding='utf-8') as file:
+    analytics_path = os.path.join(root_dir, "templates", "analytics.html")
+    with open(analytics_path, "r", encoding="utf-8") as file:
         hdr = {
-            'Content-Type': 'text/html',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+            "Content-Type": "text/html",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
         }
         return PlainTextResponse(file.read(), headers=hdr)
 
 
-@app.get('/stats')
+@app.get("/stats")
 async def stats_page():
     """Serve simple HTML page to view infrastructure statistics"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    stats_path = os.path.join(root_dir, 'templates', 'stats.html')
-    with open(stats_path, 'r', encoding='utf-8') as file:
+    stats_path = os.path.join(root_dir, "templates", "stats.html")
+    with open(stats_path, "r", encoding="utf-8") as file:
         # set header to text/html and no-cache stuff
         hdr = {
-            'Content-Type': 'text/html',
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+            "Content-Type": "text/html",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
         }
         return PlainTextResponse(file.read(), headers=hdr)
 
 
-@app.get('/icons/{icon_name}')
+@app.get("/icons/{icon_name}")
 async def icons(icon_name: str):
     """Serve icons from /static/icons"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
-    if not re.match(r'^[A-Za-z0-9_.-]+\.png$', icon_name):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid icon name"
-        )
-    icon_path = os.path.join(root_dir, 'templates', icon_name)
+    if not re.match(r"^[A-Za-z0-9_.-]+\.png$", icon_name):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid icon name")
+    icon_path = os.path.join(root_dir, "templates", icon_name)
     return FileResponse(icon_path)
 
 
-@app.get('/static/css/{filename}')
+@app.get("/static/css/{filename}")
 async def serve_css(filename: str):
     """Serve CSS files from api/static/css/"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
     print(f"[CSS] Request for: {filename}")
     print(f"[CSS] root_dir: {root_dir}")
     # Security: only allow safe filenames
-    if not re.match(r'^[A-Za-z0-9_.-]+\.css$', filename):
+    if not re.match(r"^[A-Za-z0-9_.-]+\.css$", filename):
         print(f"[CSS] Invalid filename pattern: {filename}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid filename"
-        )
-    file_path = os.path.join(root_dir, 'static', 'css', filename)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename")
+    file_path = os.path.join(root_dir, "static", "css", filename)
     print(f"[CSS] Looking for file at: {file_path}")
     print(f"[CSS] File exists: {os.path.isfile(file_path)}")
     if not os.path.isfile(file_path):
         print(f"[CSS] File not found: {file_path}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="File not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
     print(f"[CSS] Serving file: {file_path}")
     return FileResponse(
         file_path,
         media_type="text/css",
         headers={
-            'Cache-Control': 'public, max-age=3600',  # Cache for 1 hour
-        }
+            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+        },
     )
 
 
-@app.get('/static/js/{filename}')
+@app.get("/static/js/{filename}")
 async def serve_js(filename: str):
     """Serve JavaScript files from api/static/js/"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
     print(f"[JS] Request for: {filename}")
     print(f"[JS] root_dir: {root_dir}")
     # Security: only allow safe filenames
-    if not re.match(r'^[A-Za-z0-9_.-]+\.js$', filename):
+    if not re.match(r"^[A-Za-z0-9_.-]+\.js$", filename):
         print(f"[JS] Invalid filename pattern: {filename}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid filename"
-        )
-    file_path = os.path.join(root_dir, 'static', 'js', filename)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename")
+    file_path = os.path.join(root_dir, "static", "js", filename)
     print(f"[JS] Looking for file at: {file_path}")
     print(f"[JS] File exists: {os.path.isfile(file_path)}")
     if not os.path.isfile(file_path):
         print(f"[JS] File not found: {file_path}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="File not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
     print(f"[JS] Serving file: {file_path}")
     return FileResponse(
         file_path,
         media_type="application/javascript",
         headers={
-            'Cache-Control': 'public, max-age=3600',  # Cache for 1 hour
-        }
+            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+        },
     )
 
 
-@app.get('/metrics')
+@app.get("/metrics")
 async def get_metrics():
     """Get metrics"""
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     # return metrics as plaintext in prometheus format
     all_metrics = metrics.all()
-    response = ''
+    response = ""
     for key, value in all_metrics.items():
         response += f'{key}{{instance="api"}} {value}\n'
     return PlainTextResponse(response)
 
 
-@app.get('/maintenance/purge-old-nodes')
-async def purge_handler(current_user: User = Depends(get_current_superuser),
-                        days: int = 180,
-                        batch_size: int = 1000):
+@app.get("/maintenance/purge-old-nodes")
+async def purge_handler(
+    current_user: User = Depends(get_current_superuser),
+    days: int = 180,
+    batch_size: int = 1000,
+):
     """Purge old nodes from the database
     This is a maintenance operation and should be performed
     only by superusers.
@@ -2057,22 +2065,24 @@ async def purge_handler(current_user: User = Depends(get_current_superuser),
     - days: Number of days to keep nodes, default is 180.
     - batch_size: Number of nodes to delete in one batch, default is 1000.
     """
-    metrics.add('http_requests_total', 1)
+    metrics.add("http_requests_total", 1)
     return await purge_old_nodes(age_days=days, batch_size=batch_size)
 
 
-versioned_app = VersionedFastAPI(app,
-                                 version_format='{major}',
-                                 prefix_format='/v{major}',
-                                 enable_latest=True,
-                                 default_version=(0, 0),
-                                 on_startup=[
-                                     pubsub_startup,
-                                     create_indexes,
-                                     initialize_beanie,
-                                     ensure_legacy_node_editors,
-                                     start_background_tasks,
-                                 ])
+versioned_app = VersionedFastAPI(
+    app,
+    version_format="{major}",
+    prefix_format="/v{major}",
+    enable_latest=True,
+    default_version=(0, 0),
+    on_startup=[
+        pubsub_startup,
+        create_indexes,
+        initialize_beanie,
+        ensure_legacy_node_editors,
+        start_background_tasks,
+    ],
+)
 
 
 # traceback_exception_handler is a global exception handler that will be
@@ -2083,7 +2093,7 @@ def traceback_exception_handler(request: Request, exc: Exception):
     traceback.print_exception(type(exc), exc, exc.__traceback__)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"message": "Internal server error, check container logs"}
+        content={"message": "Internal server error, check container logs"},
     )
 
 
@@ -2092,31 +2102,25 @@ def traceback_exception_handler(request: Request, exc: Exception):
 # https://github.com/DeanWay/fastapi-versioning/issues/30
 for sub_app in versioned_app.routes:
     if hasattr(sub_app.app, "add_exception_handler"):
-        sub_app.app.add_exception_handler(
-            ValueError, value_error_exception_handler
-        )
-        sub_app.app.add_exception_handler(
-            errors.InvalidId, invalid_id_exception_handler
-        )
+        sub_app.app.add_exception_handler(ValueError, value_error_exception_handler)
+        sub_app.app.add_exception_handler(errors.InvalidId, invalid_id_exception_handler)
         # print traceback for all other exceptions
-        sub_app.app.add_exception_handler(
-            Exception, traceback_exception_handler
-        )
+        sub_app.app.add_exception_handler(Exception, traceback_exception_handler)
 
 
 @versioned_app.middleware("http")
 async def redirect_http_requests(request: Request, call_next):
     """Redirect request with version prefix when no version is provided"""
     response = None
-    path = request.scope['path']
-    match = re.match(r'^/(v[\d.]+)', path)
+    path = request.scope["path"]
+    match = re.match(r"^/(v[\d.]+)", path)
     if match:
         prefix = match.group(1)
         if prefix not in API_VERSIONS:
             response = PlainTextResponse(
                 f"Unsupported API version: {prefix}",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
-    elif not path.startswith('/latest'):
-        request.scope['path'] = '/latest' + path
+    elif not path.startswith("/latest"):
+        request.scope["path"] = "/latest" + path
     return response or await call_next(request)

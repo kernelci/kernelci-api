@@ -6,12 +6,13 @@
 
 """User authentication utilities"""
 
-from passlib.context import CryptContext
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
     JWTStrategy,
 )
+from passlib.context import CryptContext
+
 from .config import AuthSettings
 
 
@@ -34,7 +35,7 @@ class Authentication:
         return JWTStrategy(
             secret=self._settings.secret_key,
             algorithm=self._settings.algorithm,
-            lifetime_seconds=self._settings.access_token_expire_seconds
+            lifetime_seconds=self._settings.access_token_expire_seconds,
         )
 
     def get_user_authentication_backend(self):

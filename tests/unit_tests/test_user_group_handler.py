@@ -49,8 +49,7 @@ def test_create_user_group(mock_db_find_one, mock_db_create, test_client):
     assert response.json()["name"] == "runtime:pull-labs-demo:node-editor"
 
 
-def test_delete_user_group(mock_db_find_by_id, mock_db_count,
-                           mock_db_delete_by_id, test_client):
+def test_delete_user_group(mock_db_find_by_id, mock_db_count, mock_db_delete_by_id, test_client):
     """DELETE /user-groups/{id} removes an unused user group."""
     mock_db_find_by_id.return_value = UserGroup(name="team-a")
     mock_db_count.return_value = 0
@@ -69,8 +68,7 @@ def test_delete_user_group(mock_db_find_by_id, mock_db_count,
     )
 
 
-def test_delete_user_group_when_assigned(mock_db_find_by_id, mock_db_count,
-                                         test_client):
+def test_delete_user_group_when_assigned(mock_db_find_by_id, mock_db_count, test_client):
     """DELETE /user-groups/{id} rejects when group is assigned to users."""
     mock_db_find_by_id.return_value = UserGroup(name="team-a")
     mock_db_count.return_value = 2

@@ -12,7 +12,18 @@
 """Server-side model definitions"""
 
 from datetime import datetime
-from typing import Optional, TypeVar, List
+from typing import List, Optional, TypeVar
+
+from beanie import (
+    Document,
+    Indexed,
+    PydanticObjectId,
+)
+from fastapi import Query
+from fastapi_pagination import LimitOffsetPage, LimitOffsetParams
+from fastapi_users import schemas
+from fastapi_users.db import BeanieBaseUser
+from kernelci.api.models_base import DatabaseModel, ModelId
 from pydantic import (
     BaseModel,
     EmailStr,
@@ -20,45 +31,25 @@ from pydantic import (
     field_validator,
 )
 from typing_extensions import Annotated
-from fastapi import Query
-from fastapi_pagination import LimitOffsetPage, LimitOffsetParams
-from fastapi_users.db import BeanieBaseUser
-from fastapi_users import schemas
-from beanie import (
-    Indexed,
-    Document,
-    PydanticObjectId,
-)
-from kernelci.api.models_base import DatabaseModel, ModelId
-
 
 # PubSub model definitions
 
+
 class Subscription(BaseModel):
     """Pub/Sub subscription object model"""
-    id: int = Field(
-        description='Subscription ID'
-    )
-    channel: str = Field(
-        description='Subscription channel name'
-    )
-    user: str = Field(
-        description=("Username of the user that created the "
-                     "subscription (owner)")
-    )
-    promiscuous: bool = Field(
-        description='Listen to all users messages',
-        default=False)
+
+    id: int = Field(description="Subscription ID")
+    channel: str = Field(description="Subscription channel name")
+    user: str = Field(description=("Username of the user that created the subscription (owner)"))
+    promiscuous: bool = Field(description="Listen to all users messages", default=False)
 
 
 class SubscriptionStats(Subscription):
     """Pub/Sub subscription statistics object model"""
-    created: datetime = Field(
-        description='Timestamp of connection creation'
-    )
+
+    created: datetime = Field(description="Timestamp of connection creation")
     last_poll: Optional[datetime] = Field(
-        default=None,
-        description='Timestamp when connection last polled for data'
+        default=None, description="Timestamp when connection last polled for data"
     )
 
 
@@ -66,71 +57,63 @@ class SubscriptionStats(Subscription):
 # Note: Event storage uses EventHistory model from kernelci-core
 # (stored in 'eventhistory' collection with sequence_id, channel, owner fields)
 
+
 class SubscriberState(BaseModel):
     """Tracks subscriber position for durable event delivery
 
     Only created when subscriber_id is provided during subscription.
     Enables catch-up on missed events after reconnection.
     """
-    subscriber_id: str = Field(
-        description='Unique subscriber identifier (client-provided)'
-    )
-    channel: str = Field(
-        description='Subscribed channel name'
-    )
-    user: str = Field(
-        description='Username of subscriber (for ownership validation)'
-    )
-    promiscuous: bool = Field(
-        default=False,
-        description='If true, receive all messages regardless of owner'
-    )
+
+    subscriber_id: str = Field(description="Unique subscriber identifier (client-provided)")
+    channel: str = Field(description="Subscribed channel name")
+    user: str = Field(description="Username of subscriber (for ownership validation)")
+    promiscuous: bool = Field(default=False, description="If true, receive all messages regardless of owner")
     last_event_id: int = Field(
-        default=0,
-        description='Last acknowledged event ID (implicit ACK on next poll)'
+        default=0, description="Last acknowledged event ID (implicit ACK on next poll)"
     )
     created_at: datetime = Field(
-        default_factory=datetime.utcnow,
-        description='Subscription creation timestamp'
+        default_factory=datetime.utcnow, description="Subscription creation timestamp"
     )
     last_poll: Optional[datetime] = Field(
-        default=None,
-        description='Last poll timestamp (used for stale cleanup)'
+        default=None, description="Last poll timestamp (used for stale cleanup)"
     )
 
 
 # User model definitions
 
+
 class UserGroup(DatabaseModel):
     """API model to group associated user accounts"""
-    name: str = Field(
-        description="User group name"
-    )
+
+    name: str = Field(description="User group name")
 
     @classmethod
     def get_indexes(cls):
         """Get an index to bind unique constraint to group name"""
         return [
-            cls.Index('name', {'unique': True}),
+            cls.Index("name", {"unique": True}),
         ]
 
 
 class UserGroupCreateRequest(BaseModel):
     """Create user group request schema for API router"""
+
     name: str = Field(description="User group name")
 
 
-class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
-           DatabaseModel):
+class User(
+    BeanieBaseUser,
+    Document,  # pylint: disable=too-many-ancestors
+    DatabaseModel,
+):
     """API User model"""
-    username: Annotated[str, Indexed(unique=True)]
-    groups: List[UserGroup] = Field(
-        default=[],
-        description="A list of groups that the user belongs to"
-    )
 
-    @field_validator('groups')
-    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+    username: Annotated[str, Indexed(unique=True)]
+    groups: List[UserGroup] = Field(default=[], description="A list of groups that the user belongs to")
+
+    @field_validator("groups")
+    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
         """Unique group constraint"""
         unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
@@ -139,6 +122,7 @@ class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
 
     class Settings(BeanieBaseUser.Settings):
         """Configurations"""
+
         # MongoDB collection name for model
         name = "user"
 
@@ -146,17 +130,18 @@ class User(BeanieBaseUser, Document,  # pylint: disable=too-many-ancestors
     def get_indexes(cls):
         """Get indices"""
         return [
-            cls.Index('email', {'unique': True}),
+            cls.Index("email", {"unique": True}),
         ]
 
 
 class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
     """Schema for reading a user"""
+
     username: Annotated[str, Indexed(unique=True)]
     groups: List[UserGroup] = Field(default=[])
 
-    @field_validator('groups')
-    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+    @field_validator("groups")
+    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
         """Unique group constraint"""
         unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
@@ -166,11 +151,12 @@ class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
 
 class UserCreateRequest(schemas.BaseUserCreate):
     """Create user request schema for API router"""
+
     username: Annotated[str, Indexed(unique=True)]
     groups: List[str] = Field(default=[])
 
-    @field_validator('groups')
-    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+    @field_validator("groups")
+    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
         """Unique group constraint"""
         unique_names = set(groups)
         if len(unique_names) != len(groups):
@@ -180,11 +166,12 @@ class UserCreateRequest(schemas.BaseUserCreate):
 
 class UserCreate(schemas.BaseUserCreate):
     """Schema used for sending create user request to 'fastapi-users' router"""
+
     username: Annotated[str, Indexed(unique=True)]
     groups: List[UserGroup] = Field(default=[])
 
-    @field_validator('groups')
-    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+    @field_validator("groups")
+    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
         """Unique group constraint"""
         unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
@@ -194,12 +181,12 @@ class UserCreate(schemas.BaseUserCreate):
 
 class UserUpdateRequest(schemas.BaseUserUpdate):
     """Update user request schema for API router"""
-    username: Annotated[Optional[str], Indexed(unique=True),
-                        Field(default=None)]
+
+    username: Annotated[Optional[str], Indexed(unique=True), Field(default=None)]
     groups: List[str] = Field(default=[])
 
-    @field_validator('groups')
-    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+    @field_validator("groups")
+    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
         """Unique group constraint"""
         unique_names = set(groups)
         if len(unique_names) != len(groups):
@@ -209,12 +196,12 @@ class UserUpdateRequest(schemas.BaseUserUpdate):
 
 class UserUpdate(schemas.BaseUserUpdate):
     """Schema used for sending update user request to 'fastapi-users' router"""
-    username: Annotated[Optional[str], Indexed(unique=True),
-                        Field(default=None)]
+
+    username: Annotated[Optional[str], Indexed(unique=True), Field(default=None)]
     groups: List[UserGroup] = Field(default=[])
 
-    @field_validator('groups')
-    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+    @field_validator("groups")
+    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
         """Unique group constraint"""
         unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
@@ -223,6 +210,7 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 
 # Invite-only user onboarding models
+
 
 class UserInviteRequest(BaseModel):
     """Admin invite request schema for API router"""
@@ -235,8 +223,8 @@ class UserInviteRequest(BaseModel):
     return_token: bool = False
     resend_if_exists: bool = False
 
-    @field_validator('groups')
-    def validate_groups(cls, groups):   # pylint: disable=no-self-argument
+    @field_validator("groups")
+    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
         """Unique group constraint"""
         unique_names = set(groups)
         if len(unique_names) != len(groups):
@@ -270,6 +258,7 @@ class InviteUrlResponse(BaseModel):
 
 
 # Pagination models
+
 
 class CustomLimitOffsetParams(LimitOffsetParams):
     """Model to set custom constraint on limit

@@ -14,9 +14,9 @@ from .test_node_handler import create_node, get_node_by_id, update_node
 
 
 @pytest.mark.dependency(
-    depends=[
-        'tests/e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel'],
-    scope='session')
+    depends=["tests/e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel"],
+    scope="session",
+)
 @pytest.mark.order(4)
 @pytest.mark.asyncio
 async def test_node_pipeline(test_async_client):
@@ -37,9 +37,7 @@ async def test_node_pipeline(test_async_client):
     """
 
     # Create Task to listen pubsub event on 'node' channel
-    task_listen = create_listen_task(
-        test_async_client,
-        pytest.node_channel_subscription_id)  # pylint: disable=no-member
+    task_listen = create_listen_task(test_async_client, pytest.node_channel_subscription_id)  # pylint: disable=no-member
 
     # Create a node
     node = {
@@ -49,36 +47,42 @@ async def test_node_pipeline(test_async_client):
         "data": {
             "kernel_revision": {
                 "tree": "mainline",
-                "url": (
-                    "https://git.kernel.org/pub/scm/"
-                    "linux/kernel/git/torvalds/linux.git"
-                ),
+                "url": ("https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"),
                 "branch": "master",
                 "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb28",
-                "describe": "v5.16-rc4-31-g2a987e65025e"
+                "describe": "v5.16-rc4-31-g2a987e65025e",
             }
-        }
+        },
     }
     response = await create_node(test_async_client, node)
 
     # Get result of pubsub event listen task
     await task_listen
-    event_data = from_json(task_listen.result().json().get('data')).data
-    assert event_data != 'BEEP'
-    keys = {'op', 'id', 'kind', 'name', 'path',
-            'group', 'state', 'result', 'owner', 'data', 'is_hierarchy'}
+    event_data = from_json(task_listen.result().json().get("data")).data
+    assert event_data != "BEEP"
+    keys = {
+        "op",
+        "id",
+        "kind",
+        "name",
+        "path",
+        "group",
+        "state",
+        "result",
+        "owner",
+        "data",
+        "is_hierarchy",
+    }
     assert keys == event_data.keys()
-    assert event_data.get('op') == 'created'
-    assert event_data.get('id') == response.json()['id']
+    assert event_data.get("op") == "created"
+    assert event_data.get("id") == response.json()["id"]
 
     # Get node id from event data and get created node by id
-    response = await get_node_by_id(test_async_client, event_data.get('id'))
+    response = await get_node_by_id(test_async_client, event_data.get("id"))
     node = response.json()
 
     # Create Task to listen 'updated' event on 'node' channel
-    task_listen = create_listen_task(
-        test_async_client,
-        pytest.node_channel_subscription_id)  # pylint: disable=no-member
+    task_listen = create_listen_task(test_async_client, pytest.node_channel_subscription_id)  # pylint: disable=no-member
 
     # Update node.state
     node.update({"state": "done"})
@@ -87,9 +91,20 @@ async def test_node_pipeline(test_async_client):
 
     # Get result of pubsub event listen task
     await task_listen
-    event_data = from_json(task_listen.result().json().get('data')).data
-    assert event_data != 'BEEP'
-    keys = {'op', 'id', 'kind', 'name', 'path',
-            'group', 'state', 'result', 'owner', 'data', 'is_hierarchy'}
+    event_data = from_json(task_listen.result().json().get("data")).data
+    assert event_data != "BEEP"
+    keys = {
+        "op",
+        "id",
+        "kind",
+        "name",
+        "path",
+        "group",
+        "state",
+        "result",
+        "owner",
+        "data",
+        "is_hierarchy",
+    }
     assert keys == event_data.keys()
-    assert event_data.get('op') == 'updated'
+    assert event_data.get("op") == "updated"
