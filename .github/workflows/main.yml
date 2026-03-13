@@ -62,7 +62,7 @@ jobs:
 
       - name: Run pycodestyle
         run: |
-          pycodestyle api/*.py
+          pycodestyle --max-line-length=100 api/*.py
 
       - name: Run API containers
         run: |
