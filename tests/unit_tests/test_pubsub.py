@@ -99,16 +99,24 @@ async def test_pubsub_publish_couldevent(mock_pubsub_publish):
     """
 
     data = 'validate json'
-    attributes = { "specversion": "1.0",  "id": "6878b661-96dc-4e93-8c92-26eb9ff8db64",
-    "source": "https://api.kernelci.org/", "type": "api.kernelci.org",
-    "time": "2022-01-31T21:29:29.675593+00:00"}
+    attributes = {
+        "specversion": "1.0",
+        "id": "6878b661-96dc-4e93-8c92-26eb9ff8db64",
+        "source": "https://api.kernelci.org/",
+        "type": "api.kernelci.org",
+        "time": "2022-01-31T21:29:29.675593+00:00",
+    }
 
     await mock_pubsub_publish.publish_cloudevent('CHANNEL1', data, attributes)
 
-    expected_json = str.encode('{"specversion": "1.0", '\
-    '"id": "6878b661-96dc-4e93-8c92-26eb9ff8db64", "source": "https://api.kernelci.org/", '\
-    '"type": "api.kernelci.org", "time": "2022-01-31T21:29:29.675593+00:00", '\
-    '"data": "validate json"}')
+    expected_json = str.encode(
+        '{"specversion": "1.0", '
+        '"id": "6878b661-96dc-4e93-8c92-26eb9ff8db64", '
+        '"source": "https://api.kernelci.org/", '
+        '"type": "api.kernelci.org", '
+        '"time": "2022-01-31T21:29:29.675593+00:00", '
+        '"data": "validate json"}'
+    )
 
     json_arg = mock_pubsub_publish._redis.execute_command.call_args.args[2]
 

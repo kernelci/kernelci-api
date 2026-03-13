@@ -73,7 +73,7 @@ class Database:
         Get value from redis key-value store
         Create a keyname by concatenating namespace and key
         """
-        keyname = f"{namespace}:{key}"
+        keyname = ":".join([namespace, key])
         return await self._redis.get(keyname)
 
     async def set_kv(self, namespace, key, value):
@@ -81,7 +81,7 @@ class Database:
         Set value in redis key-value store
         Create a keyname by concatenating namespace and key
         """
-        keyname = f"{namespace}:{key}"
+        keyname = ":".join([namespace, key])
         return await self._redis.set(keyname, value)
 
     async def del_kv(self, namespace, key):
@@ -89,7 +89,7 @@ class Database:
         Delete key from redis key-value store
         Create a keyname by concatenating namespace and key
         """
-        keyname = f"{namespace}:{key}"
+        keyname = ":".join([namespace, key])
         return await self._redis.delete(keyname)
 
     async def exists_kv(self, namespace, key):
@@ -97,7 +97,7 @@ class Database:
         Check if key exists in redis key-value store
         Create a keyname by concatenating namespace and key
         """
-        keyname = f"{namespace}:{key}"
+        keyname = ":".join([namespace, key])
         return await self._redis.exists(keyname)
 
     async def create_indexes(self):

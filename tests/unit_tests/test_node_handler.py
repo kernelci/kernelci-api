@@ -12,9 +12,10 @@
 
 import json
 
-from tests.unit_tests.conftest import BEARER_TOKEN
 from kernelci.api.models import Node, Revision
+
 from api.models import PageModel
+from tests.unit_tests.conftest import BEARER_TOKEN
 
 
 def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
@@ -40,7 +41,7 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent,
         name="checkout",
         path=["checkout"],
         group="debug",
-        data= {'kernel_revision': revision_obj},
+        data={'kernel_revision': revision_obj},
         parent=None,
         state="closing",
         result=None,
@@ -216,7 +217,7 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id,
         name="checkout",
         path=["checkout"],
         group="blah",
-        data = {'kernel_revision': revision_obj},
+        data={'kernel_revision': revision_obj},
         parent=None,
         state="closing",
         result=None,

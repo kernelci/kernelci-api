@@ -306,7 +306,7 @@ def _resolve_public_base_url(request: Request) -> str:
 
     if forwarded_host:
         scheme = forwarded_proto or request.url.scheme
-        return f"{scheme}://{forwarded_host}".rstrip("/")
+        return (scheme + "://" + forwarded_host).rstrip("/")
 
     return str(request.base_url).rstrip("/")
 
@@ -746,8 +746,8 @@ def _user_can_edit_node(user: User, node: Node) -> bool:
         return True
     runtime = _get_node_runtime(node)
     if runtime:
-        runtime_editor = f'runtime:{runtime}:node-editor'
-        runtime_admin = f'runtime:{runtime}:node-admin'
+        runtime_editor = ":".join(['runtime', runtime, 'node-editor'])
+        runtime_admin = ":".join(['runtime', runtime, 'node-admin'])
         if (runtime_editor in user_group_names
                 or runtime_admin in user_group_names):
             return True

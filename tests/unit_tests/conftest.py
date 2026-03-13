@@ -38,7 +38,7 @@ eyJzdWIiOiJib2IiLCJzY29wZXMiOlsiYWRtaW4iXX0.\
 t3bAE-pHSzZaSHp7FMlImqgYvL6f_0xDUD-nQwxEm3k'
 
 API_VERSION = 'latest'
-BASE_URL = f'http://testserver/{API_VERSION}/'
+BASE_URL = 'http://testserver/' + API_VERSION + '/'
 
 
 def mock_get_current_user(request: Request):
@@ -89,6 +89,7 @@ def mock_get_current_admin_user(request: Request):
         is_superuser=True,
         is_verified=True
     )
+
 
 # Mock dependency callables for getting current user
 app.dependency_overrides[get_current_user] = mock_get_current_user

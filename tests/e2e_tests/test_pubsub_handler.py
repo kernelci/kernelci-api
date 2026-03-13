@@ -23,8 +23,9 @@ async def test_pubsub_handler(test_async_client):
     Use pubsub listener task to verify published event message.
     """
     # Create Task to listen pubsub event on 'test_channel' channel
-    task_listen = create_listen_task(test_async_client,
-                                     pytest.test_channel_subscription_id)  # pylint: disable=no-member
+    task_listen = create_listen_task(
+        test_async_client,
+        pytest.test_channel_subscription_id)  # pylint: disable=no-member
 
     # Created and publish CloudEvent
     attributes = {

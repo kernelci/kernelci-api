@@ -129,7 +129,7 @@ async def test_create_user_endpoint_negative(test_async_client):
 
 @pytest.mark.asyncio
 async def test_create_user_with_group(test_async_client, mock_db_find_one,
-                                      mock_db_update,mock_db_find_by_id):
+                                      mock_db_update, mock_db_find_by_id):
     """
     Test Case : Test KernelCI API /user/register endpoint to create a user
     with a user group
