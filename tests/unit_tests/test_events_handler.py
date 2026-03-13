@@ -34,7 +34,7 @@ def test_get_events_filter_by_ids(mock_db_find_by_attributes, test_client):
     oid1, oid2 = ObjectId(), ObjectId()
     mock_db_find_by_attributes.return_value = []
 
-    resp = test_client.get(f"events?ids={oid1},{oid2}")
+    resp = test_client.get("events?ids=" + oid1 + "," + oid2)
 
     assert resp.status_code == 200
     called_model, called_query = mock_db_find_by_attributes.call_args.args

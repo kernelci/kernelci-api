@@ -10,8 +10,9 @@ import pytest
 from httpx import AsyncClient
 from motor.motor_asyncio import AsyncIOMotorClient
 
-from api.main import versioned_app
 from kernelci.api.models import Node, Regression
+
+from api.main import versioned_app
 
 BASE_URL = 'http://api:8000/latest/'
 DB_URL = 'mongodb://db:27017'

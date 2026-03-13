@@ -294,8 +294,10 @@ def main():
         ("update-user", "Patch user by id/email/username"),
         ("whoami", "Show current user"),
     ]
-    command_list = "\n".join(f"  {name:<18} {desc}" for name, desc in command_help)
-    default_paths = "\n".join(f"  - {path}" for path in DEFAULT_CONFIG_PATHS)
+    command_list = "\n".join(
+        "  {:<18} {}".format(name, desc) for name, desc in command_help)
+    default_paths = "\n".join(
+        "  - {}".format(path) for path in DEFAULT_CONFIG_PATHS)
     parser = argparse.ArgumentParser(
         description="KernelCI API user management helper",
         epilog=(
