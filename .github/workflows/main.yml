@@ -15,12 +15,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  check:
+  tests:
     runs-on: ubuntu-22.04
+    name: tests
 
     strategy:
       matrix:
-        python-version: ['3.10', '3.11']
+        python-version: ['3.11']
 
     steps:
 
@@ -80,39 +81,34 @@ jobs:
           docker compose -f test-docker-compose.yaml down
 
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:24.04
     name: Lint
 
     steps:
+      - name: Install base tooling
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends git python3 python3-venv python3-pip
+
+      - name: Create Python virtual environment
+        run: |
+          python3 -m venv /opt/venv
+          /opt/venv/bin/pip install --no-cache-dir --upgrade pip
+
       - name: Check out source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 32  # This is necessary to get the commits
 
-      - name: Get changed python files between base and head
-        run: >
-          echo "CHANGED_FILES=$(echo $(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} -- | grep \.py$))" >> $GITHUB_ENV
-
-      - if: env.CHANGED_FILES
-        name: Set up Python
-        uses: actions/setup-python@master
-        with:
-          python-version: "3.10"
-
-      - if: env.CHANGED_FILES
-        name: Install Python packages
+      - name: Install linting dependencies
         run: |
-          pip install -r docker/api/requirements-tests.txt
+          /opt/venv/bin/pip install --no-cache-dir ruff
 
-      - if: env.CHANGED_FILES
-        uses: marian-code/python-lint-annotate@v4
-        with:
-          python-root-list: ${{ env.CHANGED_FILES }}
-          use-black: false
-          use-flake8: false
-          use-isort: false
-          use-mypy: false
-          use-pycodestyle: true
-          use-pydocstyle: false
-          use-vulture: false
-          python-version: "3.10"
+      - name: Run ruff format check (line-length policy)
+        run: /opt/venv/bin/ruff format --check --diff --line-length 110 api tests
+
+      - name: Run ruff lint check (E/W/F/I + complexity policy)
+        run: |
+          /opt/venv/bin/ruff check --line-length 110 --select E,W,F,I,C90 --ignore E203,W503 api tests
