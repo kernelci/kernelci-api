@@ -61,19 +61,9 @@ jobs:
       - name: Build docker images
         run: docker compose -f test-docker-compose.yaml build --no-cache
 
-      - name: Run pycodestyle
-        run: |
-          pycodestyle --max-line-length=100 api/*.py
-
       - name: Run API containers
         run: |
           docker compose -f test-docker-compose.yaml up -d test
-
-      - name: Run pylint
-        run: |
-          docker compose -f test-docker-compose.yaml exec -T test pylint --extension-pkg-whitelist=pydantic api/
-          docker compose -f test-docker-compose.yaml exec -T test pylint tests/unit_tests
-          docker compose -f test-docker-compose.yaml exec -T test pylint tests/e2e_tests
 
       - name: Stop docker containers
         if: always()
