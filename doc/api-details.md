@@ -265,6 +265,35 @@ $ curl -X 'POST' \
 This will return an authorization bearer token.
 
 
+### Validate token
+
+To verify that an existing token is valid and see which user it belongs to, use
+the `GET /whoami` endpoint:
+
+```
+$ curl -X 'GET' \
+'http://localhost:8001/latest/whoami' \
+-H 'accept: application/json' \
+-H 'Authorization: Bearer <USER-AUTHORIZATION-TOKEN>'
+```
+
+If the token is valid, the response will contain the user information:
+
+```
+{"id":"6526448e7d140ee220971a0e","email":"admin@kernelci.org","is_active":true,"is_superuser":true,"is_verified":true,"username":"admin","groups":[]}
+```
+
+If the token is invalid or expired, the API will return a `401 Unauthorized`
+response:
+
+```
+{"detail":"Unauthorized"}
+```
+
+This is useful for debugging authentication issues or confirming that a token
+is still active before using it in scripts or pipeline configurations.
+
+
 ### Get all existing users
 
 To get information of all added user accounts, user `GET /users` request.
