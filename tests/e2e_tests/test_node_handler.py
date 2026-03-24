@@ -91,3 +91,23 @@ async def update_node(test_async_client, node):
     )
     assert response.status_code == 200
     assert response.json().keys() == node_model_fields
+
+
+async def patch_node(test_async_client, node_id, patch_data):
+    """
+    Test Case : Test KernelCI API PATCH /node/{node_id} endpoint
+    Expected Result :
+        HTTP Response Code 200 OK
+        JSON with updated Node object
+    """
+    response = await test_async_client.patch(
+        f"node/{node_id}",
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
+        },
+        data=json.dumps(patch_data),
+    )
+    assert response.status_code == 200
+    assert response.json().keys() == node_model_fields
+    return response
