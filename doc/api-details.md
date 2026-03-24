@@ -69,7 +69,7 @@ Invite a new user (and return the token/link in the response for CLI usage):
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/user/invite' \
+  'https://api.kernelci.org/latest/user/invite' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <ADMIN-AUTHORIZATION-TOKEN>' \
@@ -96,7 +96,7 @@ To preview which public URL will be used in invite links (admin-only):
 
 ```
 $ curl -X 'GET' \
-  'http://localhost:8001/latest/user/invite/url' \
+  'https://api.kernelci.org/latest/user/invite/url' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer <ADMIN-AUTHORIZATION-TOKEN>'
 ```
@@ -107,7 +107,7 @@ To accept an invite and set the password (no authentication required):
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/user/accept-invite' \
+  'https://api.kernelci.org/latest/user/accept-invite' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -140,11 +140,11 @@ Example config:
 default_instance = "local"
 
 [instances.local]
-url = "http://localhost:8001/latest"
+url = "https://api.kernelci.org/latest"
 token = "<admin-or-user-token>"
 
 [instances.staging]
-url = "https://staging.kernelci.org/latest"
+url = "https://staging.kernelci.org:9000/latest"
 token = "<admin-or-user-token>"
 ```
 
@@ -190,7 +190,7 @@ Invite a user and return the token/link:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/user/invite' \
+  'https://api.kernelci.org/latest/user/invite' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <ADMIN-AUTHORIZATION-TOKEN>' \
@@ -219,9 +219,9 @@ Sample response:
     "groups": [{"id":"648ff894bd39930355ed16ad","name":"kernelci"}]
   },
   "email_sent": false,
-  "public_base_url": "http://localhost:8001",
-  "accept_invite_url": "http://localhost:8001/user/accept-invite",
-  "invite_url": "http://localhost:8001/user/accept-invite?token=<INVITE-TOKEN>",
+  "public_base_url": "https://api.kernelci.org",
+  "accept_invite_url": "https://api.kernelci.org/user/accept-invite",
+  "invite_url": "https://api.kernelci.org/user/accept-invite?token=<INVITE-TOKEN>",
   "token": "<INVITE-TOKEN>"
 }
 ```
@@ -230,7 +230,7 @@ Accept an invite:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/user/accept-invite' \
+  'https://api.kernelci.org/latest/user/accept-invite' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -243,7 +243,7 @@ Get an auth token:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/user/login' \
+  'https://api.kernelci.org/latest/user/login' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'username=alice&password=<new-password>'
@@ -257,7 +257,7 @@ authorization token to use certain API endpoints requiring user authorization.
 
 ```
 $ curl -X 'POST' \
-'http://localhost:8001/latest/user/login' \
+'https://api.kernelci.org/latest/user/login' \
 -H 'accept: application/json' \
 -H 'Content-Type: application/x-www-form-urlencoded' \
 -d 'username=test&password=test'
@@ -272,7 +272,7 @@ the `GET /whoami` endpoint:
 
 ```
 $ curl -X 'GET' \
-'http://localhost:8001/latest/whoami' \
+'https://api.kernelci.org/latest/whoami' \
 -H 'accept: application/json' \
 -H 'Authorization: Bearer <USER-AUTHORIZATION-TOKEN>'
 ```
@@ -300,7 +300,7 @@ To get information of all added user accounts, user `GET /users` request.
 
 ```
 $ curl -X 'GET' \
-'http://localhost:8001/latest/users' \
+'https://api.kernelci.org/latest/users' \
 -H 'accept: application/json' \
 -H 'Authorization: <USER-AUTHORIZATION-TOKEN>'
 {"items":[{"id":"6526448e7d140ee220971a0e","email":"admin@gmail.com","is_active":true,"is_superuser":true,"is_verified":true,"username":"admin","groups":[]},{"id":"615f30020eb7c3c6616e5ac3","email":"test-user@kernelci.org","is_active":true,"is_superuser":true,"is_verified":false,"username":"test-user","groups":[{"id":"648ff894bd39930355ed16ad","name":"kernelci"}]}],"total":2,"limit":50,"offset":0}
@@ -312,7 +312,7 @@ $ curl -X 'GET' \
 To get user by ID, use `/user` endpoint with user ID as a path parameter:
 ```
 $ curl -X 'GET' \
-'http://localhost:8001/latest/user/6526448e7d140ee220971a0e' \
+'https://api.kernelci.org/latest/user/6526448e7d140ee220971a0e' \
 -H 'accept: application/json' \
 -H 'Content-Type: application/json' \
 -H 'Authorization: Bearer <USER-AUTHORIZATION-TOKEN>'
@@ -328,7 +328,7 @@ First, send request to `POST /user/forgot-password` endpoint with the
 user email address:
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/user/forgot-password' \
+  'https://api.kernelci.org/latest/user/forgot-password' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -340,7 +340,7 @@ The user will receive password reset token via email. The token should
 be sent to `POST /user/reset-password` request along with the new password to be set for the account:
 ```
 $ curl -X 'POST' \T' \
-  'http://localhost:8001/latest/user/reset-password' \
+  'https://api.kernelci.org/latest/user/reset-password' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -359,7 +359,7 @@ password along with the username for the account:
 
 ```
 $ curl -X 'POST' \
-'http://localhost:8001/latest/user/update-password' \
+'https://api.kernelci.org/latest/user/update-password' \
 -H 'accept: application/json' \
 -H 'Content-Type: application/x-www-form-urlencoded' \
 -d 'username=test&password=<current-password>&new_password=<new-password>'
@@ -373,7 +373,7 @@ A user can update certain information for its own account, such as
 For example,
 ```
 $ curl -X 'PATCH' \
-'http://localhost:8001/latest/user/me' \
+'https://api.kernelci.org/latest/user/me' \
 -H 'accept: application/json' \
 -H 'Content-Type: application/json' \
 -H 'Authorization: Bearer <USER-AUTHORIZATION-TOKEN>' \
@@ -395,7 +395,7 @@ For example, the below command will update an existing `test` user with a new em
 
 ```
 $ curl -X 'PATCH' \
-'http://localhost:8001/latest/user/615f30020eb7c3c6616e5ac3' \
+'https://api.kernelci.org/latest/user/615f30020eb7c3c6616e5ac3' \
 -H 'accept: application/json' \
 -H 'Content-Type: application/json' \
 -H 'Authorization: Bearer <ADMIN-USER-AUTHORIZATION-TOKEN>' \
@@ -571,7 +571,7 @@ Only admin users can delete existing user account by providing user ID to
 `DELETE /user/<user-id>` endpoint:
 ```
 $ curl -X 'DELETE' \
-'http://localhost:8001/latest/user/658d1edecf0bce203d594f1c' \
+'https://api.kernelci.org/latest/user/658d1edecf0bce203d594f1c' \
 -H 'Authorization: Bearer <ADMIN-USER-AUTHORIZATION-TOKEN>'
 ```
 
@@ -592,7 +592,7 @@ attributes. This requires an authentication token:
 
 ```
 $ curl -X 'POST' \
-  'http://localhost:8001/latest/node' \
+  'https://api.kernelci.org/latest/node' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1SEdkp5M1S1AgYvX8VdB20' \
   -H 'Content-Type: application/json' \
@@ -648,7 +648,7 @@ Reading Node doesn't require authentication, so plain URLs can be used.
 To get node by ID, use `/node` endpoint with node ID as a path parameter:
 
 ```
-$ curl http://localhost:8001/latest/node/61bda8f2eb1a63d2b7152418 | jq
+$ curl https://api.kernelci.org/latest/node/61bda8f2eb1a63d2b7152418 | jq
 
 {
   "id": "61bda8f2eb1a63d2b7152418",
@@ -683,7 +683,7 @@ $ curl http://localhost:8001/latest/node/61bda8f2eb1a63d2b7152418 | jq
 To get all the nodes as a list, use the `/nodes` API endpoint:
 
 ```
-$ curl http://localhost:8001/latest/nodes
+$ curl https://api.kernelci.org/latest/nodes
 {
   "items": [
     {
@@ -767,7 +767,7 @@ parameters. All the attributes except node ID can be passed to this endpoint.
 In case of ID, please use `/node` endpoint with node ID as described above.
 
 ```
-$ curl 'http://localhost:8001/latest/nodes?kind=checkout&data.kernel_revision.tree=mainline' | jq
+$ curl 'https://api.kernelci.org/latest/nodes?kind=checkout&data.kernel_revision.tree=mainline' | jq
 
 {
   "items": [
@@ -851,7 +851,7 @@ than), `gt`(greater than), `lte`(less than or equal to), `gte`(greater
 than or equal to) and `re` (regular expression matching).
 
 ```
-$ curl 'http://localhost:8001/latest/nodes?kind=checkout&created__gt=2022-12-06T04:59:08.102000'
+$ curl 'https://api.kernelci.org/latest/nodes?kind=checkout&created__gt=2022-12-06T04:59:08.102000'
 ```
 
 > **Note** In order to support comparison operators in URL request parameters, models can not contain `__` in the field name.
@@ -860,7 +860,7 @@ Additionally, the `re` operator offers some basic regular expression
 matching capabilities for query parameters. For instance:
 
 ```
-$ curl 'http://localhost:8001/latest/nodes?kind=kbuild&name__re=x86'
+$ curl 'https://api.kernelci.org/latest/nodes?kind=kbuild&name__re=x86'
 ```
 
 returns all Kbuild nodes with the string "x86" in the node name.
@@ -869,7 +869,7 @@ API also supports multiple operator queries for the same field name.
 For example, date range queries can be triggered as below:
 
 ```
-$ curl 'https://localhost:8001/nodes?created__gt=2024-02-26T13:21:55.301000&created__lt=2024-11-01&kind=checkout'
+$ curl 'https://api.kernelci.org/nodes?created__gt=2024-02-26T13:21:55.301000&created__lt=2024-11-01&kind=checkout'
 ```
 The above query will return all the checkout nodes in the specific
 date range provided, i.e., nodes created between `2024-02-26T13:21:55.301000` and `2024-11-01` date-time range.
@@ -879,8 +879,8 @@ Nodes with `null` fields can also be retrieved using the endpoint.
 For example, the below command will get all the nodes with `parent` field set to `null`:
 
 ```
-$ curl 'http://localhost:8001/latest/nodes?parent=null'
-"items":[{"_id":"63c549319fb3b62c7626e7f9","kind":"node","name":"checkout","path":["checkout"],"group":null,"data":{"kernel_revision":{"tree":"kernelci","url":"https://github.com/kernelci/linux.git","branch":"staging-mainline","commit":"1385303d0d85c68473d8901d69c7153b03a3150b","describe":"staging-mainline-20230115.1","version":{"version":6,"patchlevel":2,"sublevel":null,"extra":"-rc4-2-g1385303d0d85","name":null}}},"parent":null,"state":"available","result":null,"artifacts":{"tarball":"http://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20230115.1.tar.gz"},"created":"2023-01-16T12:55:13.879000","updated":"2023-01-16T12:55:51.780000","timeout":"2023-01-16T13:55:13.877000","holdoff":"2023-01-16T13:05:51.776000"},{"_id":"63c549329fb3b62c7626e7fa","kind":"node","name":"checkout","path":["checkout"],"group":null,"data":{"kernel_revision":{"tree":"kernelci","url":"https://github.com/kernelci/linux.git","branch":"staging-next","commit":"39384a5d7e2eb2f28039a92c022aed886a675fbf","describe":"staging-next-20230116.0","version":{"version":6,"patchlevel":2,"sublevel":null,"extra":"-rc4-5011-g39384a5d7e2e","name":null}}},"parent":null,"state":"available","result":null,"artifacts":{"tarball":"http://172.17.0.1:8002/linux-kernelci-staging-next-staging-next-20230116.0.tar.gz"},"created":"2023-01-16T12:55:14.706000","updated":"2023-01-16T12:56:30.886000","timeout":"2023-01-16T13:55:14.703000","holdoff":"2023-01-16T13:06:30.882000"}],"total":2,"limit":50,"offset":0}
+$ curl 'https://api.kernelci.org/latest/nodes?parent=null'
+"items":[{"_id":"63c549319fb3b62c7626e7f9","kind":"node","name":"checkout","path":["checkout"],"group":null,"data":{"kernel_revision":{"tree":"kernelci","url":"https://github.com/kernelci/linux.git","branch":"staging-mainline","commit":"1385303d0d85c68473d8901d69c7153b03a3150b","describe":"staging-mainline-20230115.1","version":{"version":6,"patchlevel":2,"sublevel":null,"extra":"-rc4-2-g1385303d0d85","name":null}}},"parent":null,"state":"available","result":null,"artifacts":{"tarball":"https://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20230115.1.tar.gz"},"created":"2023-01-16T12:55:13.879000","updated":"2023-01-16T12:55:51.780000","timeout":"2023-01-16T13:55:13.877000","holdoff":"2023-01-16T13:05:51.776000"},{"_id":"63c549329fb3b62c7626e7fa","kind":"node","name":"checkout","path":["checkout"],"group":null,"data":{"kernel_revision":{"tree":"kernelci","url":"https://github.com/kernelci/linux.git","branch":"staging-next","commit":"39384a5d7e2eb2f28039a92c022aed886a675fbf","describe":"staging-next-20230116.0","version":{"version":6,"patchlevel":2,"sublevel":null,"extra":"-rc4-5011-g39384a5d7e2e","name":null}}},"parent":null,"state":"available","result":null,"artifacts":{"tarball":"https://172.17.0.1:8002/linux-kernelci-staging-next-staging-next-20230116.0.tar.gz"},"created":"2023-01-16T12:55:14.706000","updated":"2023-01-16T12:56:30.886000","timeout":"2023-01-16T13:55:14.703000","holdoff":"2023-01-16T13:06:30.882000"}],"total":2,"limit":50,"offset":0}
 ```
 
 Please make sure that the query parameter provided with the `null` value in the request exists in the `Node` schema. Otherwise, the API will behave unexpectedly and return all the nodes.
@@ -892,7 +892,7 @@ To update an existing node, use PUT request to `node/{node_id}` endpoint.
 
 ```
 $ curl -X 'PUT' \
-  'http://localhost:8001/latest/node/61bda8f2eb1a63d2b7152418' \
+  'https://api.kernelci.org/latest/node/61bda8f2eb1a63d2b7152418' \
   -H 'accept: application/json' \
   -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJib2IifQ.ci1smeJeuX779PptTkuaG1SEdkp5M1S1AgYvX8VdB20' \
   -H 'Content-Type: application/json' \
@@ -917,34 +917,34 @@ $ curl -X 'PUT' \
 To get a count of all the nodes, use GET request to `/count` endpoint.
 
 ```
-$ curl http://localhost:8001/latest/count
+$ curl https://api.kernelci.org/latest/count
 4
 ```
 
 To get count of nodes matching provided attributes, use `/count` endpoint with query parameters. All the Node attributes except ID and timestamps(created, updated, timeout, and holdoff) can be passed to this endpoint.
 ```
-$ curl http://localhost:8001/latest/count?name=checkout
+$ curl https://api.kernelci.org/latest/count?name=checkout
 3
-$ curl http://localhost:8001/latest/count?data.kernel_revision.branch=staging-mainline
+$ curl https://api.kernelci.org/latest/count?data.kernel_revision.branch=staging-mainline
 1
 ```
 
 In case of providing multiple attributes, it will return count of nodes matching all the attributes.
 ```
-$ curl 'http://localhost:8001/latest/count?name=checkout&artifacts.tarball=http://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20220927.0.tar.gz'
+$ curl 'https://api.kernelci.org/latest/count?name=checkout&artifacts.tarball=https://172.17.0.1:8002/linux-kernelci-staging-mainline-staging-mainline-20220927.0.tar.gz'
 1
 ```
 
 Same as `/nodes`, the `/count` endpoint also supports comparison operators for request query parameters.
 ```
-$ curl 'http://localhost:8001/latest/count?name=checkout&created__lt=2022-12-06T04:59:08.102000'
+$ curl 'https://api.kernelci.org/latest/count?name=checkout&created__lt=2022-12-06T04:59:08.102000'
 3
 ```
 
 To query the count of nodes with `null` attributes, use the endpoint with
 query parameters set to `null`.
 ```
-$ curl 'http://localhost:8001/latest/count?result=null'
+$ curl 'https://api.kernelci.org/latest/count?result=null'
 2
 ```
 
@@ -1069,18 +1069,18 @@ The API provides different endpoints for publishing and listening to events.
 
 For example, subscribe to a channel first:
 ```
-curl -X 'POST' 'http://localhost:8001/latest/subscribe/abc' -H 'Authorization: Bearer TOKEN'
+curl -X 'POST' 'https://api.kernelci.org/latest/subscribe/abc' -H 'Authorization: Bearer TOKEN'
 {"id":800,"channel":"abc","user":"bob"}
 ```
 
 Use the subscription ID from the response to listen to the events:
 ```
-$ curl -X 'GET' 'http://localhost:8001/latest/listen/800' -H 'Authorization: Bearer TOKEN'
+$ curl -X 'GET' 'https://api.kernelci.org/latest/listen/800' -H 'Authorization: Bearer TOKEN'
 ```
 
 Then in a second terminal publish `CloudEvent` message:
 ```
-$ curl -X 'POST' 'http://localhost:8001/latest/publish/abc' -H 'Authorization: Bearer TOKEN' -H 'Content-Type: application/json' \
+$ curl -X 'POST' 'https://api.kernelci.org/latest/publish/abc' -H 'Authorization: Bearer TOKEN' -H 'Content-Type: application/json' \
 -d '{"data": {"sample_key":"sample_value"}}'
 ```
 Other `CloudEvent` fields such as "type", "source", and "attributes" can also
@@ -1088,13 +1088,13 @@ be sent to the request dictionary above.
 
 You should see the message appear in the first terminal inside "data" dictionary:
 ```
-$ curl -X 'GET' 'http://localhost:8001/latest/listen/800' -H 'Authorization: Bearer TOKEN'
+$ curl -X 'GET' 'https://api.kernelci.org/latest/listen/800' -H 'Authorization: Bearer TOKEN'
 {"type":"message","pattern":null,"channel":"abc","data":"{\"specversion\": \"1.0\", \"id\": \"9e67036c-650e-4688-b4dd-5b2eafd21f5f\", \"source\": \"https://api.kernelci.org/\", \"type\": \"api.kernelci.org\", \"time\": \"2024-01-04T10:48:39.974782+00:00\", \"data\": {\"sample_key\": \"sample_value\"}, \"owner\": \"bob\"}"}
 ```
 
 Now, unsubscribe from the channel:
 ```
-$ curl -X 'GET' 'http://localhost:8001/latest/unsubscribe/800' -H 'Authorization: Bearer TOKEN'
+$ curl -X 'GET' 'https://api.kernelci.org/latest/unsubscribe/800' -H 'Authorization: Bearer TOKEN'
 ```
 
 Meanwhile, something like this should be seen in the API logs:
@@ -1171,47 +1171,47 @@ The `/events` endpoint supports the following query parameters:
 
 **Get all events (limited to default pagination):**
 ```
-$ curl http://localhost:8001/latest/events
+$ curl https://api.kernelci.org/latest/events
 ```
 
 **Get events for completed jobs with passing results:**
 ```
-$ curl 'http://localhost:8001/latest/events?kind=job&state=done&result=pass'
+$ curl 'https://api.kernelci.org/latest/events?kind=job&state=done&result=pass'
 ```
 
 **Get recently created events (last hour):**
 ```
-$ curl 'http://localhost:8001/latest/events?op=created&from=2025-01-10T12:00:00'
+$ curl 'https://api.kernelci.org/latest/events?op=created&from=2025-01-10T12:00:00'
 ```
 
 **Get events for a specific node path pattern (regex):**
 ```
-$ curl 'http://localhost:8001/latest/events?path=.*linux-next.*&limit=50'
+$ curl 'https://api.kernelci.org/latest/events?path=.*linux-next.*&limit=50'
 ```
 
 **Get events for a specific group:**
 ```
-$ curl 'http://localhost:8001/latest/events?group=kunit-x86_64&state=done'
+$ curl 'https://api.kernelci.org/latest/events?group=kunit-x86_64&state=done'
 ```
 
 **Get events by owner:**
 ```
-$ curl 'http://localhost:8001/latest/events?owner=admin&kind=checkout'
+$ curl 'https://api.kernelci.org/latest/events?owner=admin&kind=checkout'
 ```
 
 **Get events with full node data:**
 ```
-$ curl 'http://localhost:8001/latest/events?state=done&result=fail&recursive=true&limit=10'
+$ curl 'https://api.kernelci.org/latest/events?state=done&result=fail&recursive=true&limit=10'
 ```
 
 **Get events for a specific node ID:**
 ```
-$ curl 'http://localhost:8001/latest/events?node_id=65a1355ee98651d0fe81e412'
+$ curl 'https://api.kernelci.org/latest/events?node_id=65a1355ee98651d0fe81e412'
 ```
 
 **Combine multiple filters:**
 ```
-$ curl 'http://localhost:8001/latest/events?kind=test&state=done&result=fail&group=kselftest&from=2025-01-01&limit=100'
+$ curl 'https://api.kernelci.org/latest/events?kind=test&state=done&result=fail&group=kselftest&from=2025-01-01&limit=100'
 ```
 
 ### Sample Response
