@@ -17,7 +17,7 @@ import pytest
 from beanie import init_beanie
 from fastapi import HTTPException, Request, status
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from mongomock_motor import AsyncMongoMockClient
 
 from api.main import (
@@ -105,7 +105,8 @@ def test_client():
 @pytest.fixture
 async def test_async_client():
     """Fixture to get Test client for asynchronous tests"""
-    async with AsyncClient(app=versioned_app, base_url=BASE_URL) as client:
+    transport = ASGITransport(app=versioned_app)
+    async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
         await versioned_app.router.startup()
         yield client
         await versioned_app.router.shutdown()
@@ -208,7 +209,9 @@ def mock_pubsub_subscriptions(mocker):
     redis_mock = fakeredis.aioredis.FakeRedis()
     sub = Subscription(id=1, channel="test", user="test")
     mocker.patch.object(pubsub, "_redis", redis_mock)
-    subscriptions_mock = dict({1: {"sub": sub, "redis_sub": pubsub._redis.pubsub()}})
+    subscriptions_mock = dict(
+        {1: {"sub": sub, "redis_sub": pubsub._redis.pubsub()}}
+    )
     mocker.patch.object(pubsub, "_subscriptions", subscriptions_mock)
     return pubsub
 
@@ -247,8 +250,14 @@ async def mock_init_beanie(mocker):
     """Mocks async call to Database method to initialize Beanie"""
     async_mock = AsyncMock()
     client = AsyncMongoMockClient()
-    init = await init_beanie(document_models=[User], database=client.get_database(name="db"))
-    mocker.patch("api.db.Database.initialize_beanie", side_effect=async_mock, return_value=init)
+    init = await init_beanie(
+        document_models=[User], database=client.get_database(name="db")
+    )
+    mocker.patch(
+        "api.db.Database.initialize_beanie",
+        side_effect=async_mock,
+        return_value=init,
+    )
     return async_mock
 
 
@@ -266,7 +275,9 @@ def mock_db_update(mocker):
 async def mock_beanie_get_user_by_id(mocker):
     """Mocks async call to external method to get model by id"""
     async_mock = AsyncMock()
-    mocker.patch("fastapi_users_db_beanie.BeanieUserDatabase.get", side_effect=async_mock)
+    mocker.patch(
+        "fastapi_users_db_beanie.BeanieUserDatabase.get", side_effect=async_mock
+    )
     return async_mock
 
 
@@ -274,7 +285,10 @@ async def mock_beanie_get_user_by_id(mocker):
 async def mock_beanie_user_update(mocker):
     """Mocks async call to external method to update user"""
     async_mock = AsyncMock()
-    mocker.patch("fastapi_users_db_beanie.BeanieUserDatabase.update", side_effect=async_mock)
+    mocker.patch(
+        "fastapi_users_db_beanie.BeanieUserDatabase.update",
+        side_effect=async_mock,
+    )
     return async_mock
 
 

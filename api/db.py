@@ -151,7 +151,9 @@ class Database:
                         if isinstance(op_value, str) and op_value.isdecimal():
                             op_value = int(op_value)
                         if translated_attributes.get(key):
-                            translated_attributes[key].update({op_key: op_value})
+                            translated_attributes[key].update(
+                                {op_key: op_value}
+                            )
                         else:
                             translated_attributes[key] = {op_key: op_value}
         return translated_attributes
@@ -251,7 +253,9 @@ class Database:
         result = await col.insert_many(documents)
         return result.inserted_ids
 
-    async def _create_recursively(self, hierarchy: Hierarchy, parent: Node, cls, col):
+    async def _create_recursively(
+        self, hierarchy: Hierarchy, parent: Node, cls, col
+    ):
         obj = parse_node_obj(hierarchy.node)
         if parent:
             obj.parent = parent.id
@@ -259,7 +263,9 @@ class Database:
             obj.update()
             if obj.parent == obj.id:
                 raise ValueError("Parent cannot be the same as the object")
-            res = await col.replace_one({"_id": ObjectId(obj.id)}, obj.dict(by_alias=True))
+            res = await col.replace_one(
+                {"_id": ObjectId(obj.id)}, obj.dict(by_alias=True)
+            )
             if res.matched_count == 0:
                 raise ValueError(f"No object found with id: {obj.id}")
         else:
@@ -293,7 +299,9 @@ class Database:
             obj.update()
             if obj.parent == obj.id:
                 raise ValueError("Parent cannot be the same as the object")
-        res = await col.replace_one({"_id": ObjectId(obj.id)}, obj.dict(by_alias=True))
+        res = await col.replace_one(
+            {"_id": ObjectId(obj.id)}, obj.dict(by_alias=True)
+        )
         if res.matched_count == 0:
             raise ValueError(f"No object found with id: {obj.id}")
         return obj.__class__(**await col.find_one(ObjectId(obj.id)))

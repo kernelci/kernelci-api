@@ -11,7 +11,10 @@ import pytest
 from .test_node_handler import create_node, get_node_by_attribute
 
 
-@pytest.mark.dependency(depends=["tests/e2e_tests/test_pipeline.py::test_node_pipeline"], scope="session")
+@pytest.mark.dependency(
+    depends=["tests/e2e_tests/test_pipeline.py::test_node_pipeline"],
+    scope="session",
+)
 @pytest.mark.asyncio
 async def test_regression_handler(test_async_client):
     """
@@ -24,7 +27,9 @@ async def test_regression_handler(test_async_client):
     method.
     """
     # Get "checkout" node
-    response = await get_node_by_attribute(test_async_client, {"name": "checkout"})
+    response = await get_node_by_attribute(
+        test_async_client, {"name": "checkout"}
+    )
     checkout_node = response.json()["items"][0]
 
     # Create a 'kver' passed node
@@ -57,7 +62,9 @@ async def test_regression_handler(test_async_client):
 
     # Create a "kver" regression node
     regression_fields = ["group", "name", "path", "state"]
-    regression_node = {field: failed_node_obj[field] for field in regression_fields}
+    regression_node = {
+        field: failed_node_obj[field] for field in regression_fields
+    }
 
     regression_node["kind"] = "regression"
     regression_node["data"] = {

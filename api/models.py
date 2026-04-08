@@ -40,8 +40,14 @@ class Subscription(BaseModel):
 
     id: int = Field(description="Subscription ID")
     channel: str = Field(description="Subscription channel name")
-    user: str = Field(description=("Username of the user that created the subscription (owner)"))
-    promiscuous: bool = Field(description="Listen to all users messages", default=False)
+    user: str = Field(
+        description=(
+            "Username of the user that created the subscription (owner)"
+        )
+    )
+    promiscuous: bool = Field(
+        description="Listen to all users messages", default=False
+    )
 
 
 class SubscriptionStats(Subscription):
@@ -49,7 +55,8 @@ class SubscriptionStats(Subscription):
 
     created: datetime = Field(description="Timestamp of connection creation")
     last_poll: Optional[datetime] = Field(
-        default=None, description="Timestamp when connection last polled for data"
+        default=None,
+        description="Timestamp when connection last polled for data",
     )
 
 
@@ -65,15 +72,24 @@ class SubscriberState(BaseModel):
     Enables catch-up on missed events after reconnection.
     """
 
-    subscriber_id: str = Field(description="Unique subscriber identifier (client-provided)")
+    subscriber_id: str = Field(
+        description="Unique subscriber identifier (client-provided)"
+    )
     channel: str = Field(description="Subscribed channel name")
-    user: str = Field(description="Username of subscriber (for ownership validation)")
-    promiscuous: bool = Field(default=False, description="If true, receive all messages regardless of owner")
+    user: str = Field(
+        description="Username of subscriber (for ownership validation)"
+    )
+    promiscuous: bool = Field(
+        default=False,
+        description="If true, receive all messages regardless of owner",
+    )
     last_event_id: int = Field(
-        default=0, description="Last acknowledged event ID (implicit ACK on next poll)"
+        default=0,
+        description="Last acknowledged event ID (implicit ACK on next poll)",
     )
     created_at: datetime = Field(
-        default_factory=datetime.utcnow, description="Subscription creation timestamp"
+        default_factory=datetime.utcnow,
+        description="Subscription creation timestamp",
     )
     last_poll: Optional[datetime] = Field(
         default=None, description="Last poll timestamp (used for stale cleanup)"
@@ -110,7 +126,9 @@ class User(
     """API User model"""
 
     username: Annotated[str, Indexed(unique=True)]
-    groups: List[UserGroup] = Field(default=[], description="A list of groups that the user belongs to")
+    groups: List[UserGroup] = Field(
+        default=[], description="A list of groups that the user belongs to"
+    )
 
     @field_validator("groups")
     def validate_groups(cls, groups):  # pylint: disable=no-self-argument
@@ -182,7 +200,9 @@ class UserCreate(schemas.BaseUserCreate):
 class UserUpdateRequest(schemas.BaseUserUpdate):
     """Update user request schema for API router"""
 
-    username: Annotated[Optional[str], Indexed(unique=True), Field(default=None)]
+    username: Annotated[
+        Optional[str], Indexed(unique=True), Field(default=None)
+    ]
     groups: List[str] = Field(default=[])
 
     @field_validator("groups")
@@ -197,7 +217,9 @@ class UserUpdateRequest(schemas.BaseUserUpdate):
 class UserUpdate(schemas.BaseUserUpdate):
     """Schema used for sending update user request to 'fastapi-users' router"""
 
-    username: Annotated[Optional[str], Indexed(unique=True), Field(default=None)]
+    username: Annotated[
+        Optional[str], Indexed(unique=True), Field(default=None)
+    ]
     groups: List[UserGroup] = Field(default=[])
 
     @field_validator("groups")

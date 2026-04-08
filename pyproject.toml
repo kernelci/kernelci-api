@@ -41,7 +41,7 @@ tests = [
   "pytest-dependency == 0.6.1",
   "pytest-mock == 3.6.1",
   "pytest-order == 1.0.1",
-  "httpx == 0.23.3",
+  "httpx >= 0.27.0, < 1.0.0",
   "mongomock_motor == 0.0.21",
 ]
 dev = [
@@ -80,5 +80,6 @@ select = ["E", "F", "W", "I", "C901"]
 max-line-length = 110
 
 [tool.ruff.lint.per-file-ignores]
-# Legacy high-complexity entrypoint, to be refactored incrementally
+# Legacy high-complexity entrypoints, to be refactored incrementally
 "api/main.py" = ["C901"]
+"scripts/usermanager.py" = ["C901"]

@@ -5,16 +5,17 @@
 
 """Migration for Node objects to comply with the models after commits:
 
-    api.models: basic definitions of Node submodels
-    api.main: use node endpoints for all type of Node subtypes
-    api.db: remove regression collection
+api.models: basic definitions of Node submodels
+api.main: use node endpoints for all type of Node subtypes
+api.db: remove regression collection
 
 """
 
+import pymongo  # noqa: F401
 from bson.objectid import ObjectId
 
-name = '20231215122000_node_models'
-dependencies = ['20231102101356_user']
+name = "20231215122000_node_models"
+dependencies = ["20231102101356_user"]
 
 
 def node_upgrade_needed(node):
@@ -30,7 +31,7 @@ def node_upgrade_needed(node):
     """
     # The existence of a 'revision' key seems to be enough to detect a
     # pre-migration Node
-    if 'revision' in node:
+    if "revision" in node:
         return True
     else:
         return False
@@ -43,22 +44,17 @@ def upgrade(db: "pymongo.database.Database"):
         # Skip any node that's not in the old format
         if not node_upgrade_needed(node):
             continue
-        if not node.get('data'):
+        if not node.get("data"):
             # Initialize 'data' field if it's empty: a generic Node
             # with no specific type may have an emtpy 'data' field
-            db.node.update_one(
-                {'_id': node['_id']},
-                {'$set': {'data': {}}}
-            )
+            db.node.update_one({"_id": node["_id"]}, {"$set": {"data": {}}})
         # move 'revision' to 'data.kernel_revision'
         db.node.update_one(
-            {'_id': node['_id']},
+            {"_id": node["_id"]},
             {
-                '$set': {
-                    'data.kernel_revision': node['revision']
-                },
-                '$unset': {'revision': ''}
-            }
+                "$set": {"data.kernel_revision": node["revision"]},
+                "$unset": {"revision": ""},
+            },
         )
 
     # Re-format regressions: move them from "regression" to "node"
@@ -66,51 +62,55 @@ def upgrade(db: "pymongo.database.Database"):
     for regression in regressions:
         db.node.insert_one(
             {
-                'name': regression.get('name'),
-                'group': regression.get('group'),
-                'path': regression.get('path'),
-                'kind': 'regression',
-                'data': {
-                    'pass_node': ObjectId(regression['regression_data'][0]['_id']),
-                    'fail_node': ObjectId(regression['regression_data'][1]['_id'])
+                "name": regression.get("name"),
+                "group": regression.get("group"),
+                "path": regression.get("path"),
+                "kind": "regression",
+                "data": {
+                    "pass_node": ObjectId(
+                        regression["regression_data"][0]["_id"]
+                    ),
+                    "fail_node": ObjectId(
+                        regression["regression_data"][1]["_id"]
+                    ),
                 },
-                'artifacts': regression.get('artifacts'),
-                'created': regression.get('created'),
-                'updated': regression.get('updated'),
-                'timeout': regression.get('timeout'),
-                'owner': regression.get('owner'),
+                "artifacts": regression.get("artifacts"),
+                "created": regression.get("created"),
+                "updated": regression.get("updated"),
+                "timeout": regression.get("timeout"),
+                "owner": regression.get("owner"),
             }
         )
-        db.regression.delete_one({'_id': regression['_id']})
+        db.regression.delete_one({"_id": regression["_id"]})
 
 
-def downgrade(db: 'pymongo.database.Database'):
+def downgrade(db: "pymongo.database.Database"):
     # Move regressions back to "regression"
-    regressions = db.node.find({'kind': 'regression'})
+    regressions = db.node.find({"kind": "regression"})
     for regression in regressions:
         fail_node = db.node.find_one(
-            {'_id': ObjectId(regression['data']['fail_node'])}
+            {"_id": ObjectId(regression["data"]["fail_node"])}
         )
         db.regression.insert_one(
             {
-                'name': regression.get('name'),
-                'group': regression.get('group'),
-                'path': regression.get('path'),
-                'kind': 'regression',
-                'parent': regression['data']['fail_node'],
-                'regression_data': [
-                    regression['data']['pass_node'],
-                    regression['data']['fail_node']
+                "name": regression.get("name"),
+                "group": regression.get("group"),
+                "path": regression.get("path"),
+                "kind": "regression",
+                "parent": regression["data"]["fail_node"],
+                "regression_data": [
+                    regression["data"]["pass_node"],
+                    regression["data"]["fail_node"],
                 ],
-                'revision': fail_node['data']['kernel_revision'],
-                'artifacts': regression.get('artifacts'),
-                'created': regression.get('created'),
-                'updated': regression.get('updated'),
-                'timeout': regression.get('timeout'),
-                'owner': regression.get('owner'),
+                "revision": fail_node["data"]["kernel_revision"],
+                "artifacts": regression.get("artifacts"),
+                "created": regression.get("created"),
+                "updated": regression.get("updated"),
+                "timeout": regression.get("timeout"),
+                "owner": regression.get("owner"),
             }
         )
-        db.node.delete_one({'_id': regression['_id']})
+        db.node.delete_one({"_id": regression["_id"]})
 
     # Downgrade node format
     nodes = db.node.find()
@@ -120,18 +120,13 @@ def downgrade(db: 'pymongo.database.Database'):
             continue
         # move 'data.kernel_revision' to 'revision'
         db.node.update_one(
-            {'_id': node['_id']},
+            {"_id": node["_id"]},
             {
-                '$set': {
-                    'revision': node['data']['kernel_revision']
-                },
-                '$unset': {'data.kernel_revision': ''}
-            }
+                "$set": {"revision": node["data"]["kernel_revision"]},
+                "$unset": {"data.kernel_revision": ""},
+            },
         )
         # unset 'data' if it's empty
-        node['data'].pop('kernel_revision', None)
-        if len(node['data']) == 0:
-            db.node.update_one(
-                {'_id': node['_id']},
-                {'$unset': {'data': ''}}
-            )
+        node["data"].pop("kernel_revision", None)
+        if len(node["data"]) == 0:
+            db.node.update_one({"_id": node["_id"]}, {"$unset": {"data": ""}})

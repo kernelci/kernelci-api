@@ -7,7 +7,7 @@
 """pytest fixtures for KernelCI API end-to-end tests"""
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from kernelci.api.models import Node, Regression
 from motor.motor_asyncio import AsyncIOMotorClient
 
@@ -32,7 +32,8 @@ paginated_response_keys = {
 @pytest.fixture(scope="session")
 async def test_async_client():
     """Fixture to get Test client for asynchronous tests"""
-    async with AsyncClient(app=versioned_app, base_url=BASE_URL) as client:
+    transport = ASGITransport(app=versioned_app)
+    async with AsyncClient(transport=transport, base_url=BASE_URL) as client:
         await versioned_app.router.startup()
         yield client
         await versioned_app.router.shutdown()
