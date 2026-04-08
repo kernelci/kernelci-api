@@ -43,7 +43,9 @@ class PubSub:
             host = self._settings.redis_host
         if db_number is None:
             db_number = self._settings.redis_db_number
-        self._redis = aioredis.from_url("redis://" + host + "/" + str(db_number), health_check_interval=30)
+        self._redis = aioredis.from_url(
+            "redis://" + host + "/" + str(db_number), health_check_interval=30
+        )
         # self._subscriptions is a dict that matches a subscription id
         # (key) with a Subscription object ('sub') and a redis
         # PubSub object ('redis_sub'). For instance:
@@ -63,7 +65,9 @@ class PubSub:
             return
         if not self._keep_alive_timer or self._keep_alive_timer.done():
             loop = asyncio.get_running_loop()
-            self._keep_alive_timer = asyncio.run_coroutine_threadsafe(self._keep_alive(), loop)
+            self._keep_alive_timer = asyncio.run_coroutine_threadsafe(
+                self._keep_alive(), loop
+            )
 
     async def _keep_alive(self):
         while True:
@@ -140,7 +144,9 @@ class PubSub:
             self._subscriptions[sub_id]["last_poll"] = datetime.utcnow()
             msg = None
             try:
-                msg = await sub["redis_sub"].get_message(ignore_subscribe_messages=True, timeout=1.0)
+                msg = await sub["redis_sub"].get_message(
+                    ignore_subscribe_messages=True, timeout=1.0
+                )
             except aioredis.ConnectionError:
                 async with self._lock:
                     channel = self._subscriptions[sub_id]["sub"].channel

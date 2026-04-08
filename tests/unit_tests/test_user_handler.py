@@ -19,7 +19,9 @@ from tests.unit_tests.conftest import (
 
 
 @pytest.mark.asyncio
-async def test_create_regular_user(mock_db_find_one, mock_db_create, test_async_client):
+async def test_create_regular_user(
+    mock_db_find_one, mock_db_create, test_async_client
+):
     """
     Test Case : Test KernelCI API /user/register endpoint to create regular
     user when requested with admin user's bearer token
@@ -42,8 +44,17 @@ async def test_create_regular_user(mock_db_find_one, mock_db_create, test_async_
 
     response = await test_async_client.post(
         "user/register",
-        headers={"Accept": "application/json", "Authorization": ADMIN_BEARER_TOKEN},
-        data=json.dumps({"username": "test", "password": "test", "email": "test@kernelci.org"}),
+        headers={
+            "Accept": "application/json",
+            "Authorization": ADMIN_BEARER_TOKEN,
+        },
+        data=json.dumps(
+            {
+                "username": "test",
+                "password": "test",
+                "email": "test@kernelci.org",
+            }
+        ),
     )
     print(response.json())
     assert response.status_code == 200
@@ -59,7 +70,9 @@ async def test_create_regular_user(mock_db_find_one, mock_db_create, test_async_
 
 
 @pytest.mark.asyncio
-async def test_create_admin_user(test_async_client, mock_db_find_one, mock_db_find_by_id, mock_db_update):
+async def test_create_admin_user(
+    test_async_client, mock_db_find_one, mock_db_find_by_id, mock_db_update
+):
     """
     Test Case : Test KernelCI API /user/register endpoint to create admin user
     when requested with admin user's bearer token
@@ -83,7 +96,10 @@ async def test_create_admin_user(test_async_client, mock_db_find_one, mock_db_fi
 
     response = await test_async_client.post(
         "user/register",
-        headers={"Accept": "application/json", "Authorization": ADMIN_BEARER_TOKEN},
+        headers={
+            "Accept": "application/json",
+            "Authorization": ADMIN_BEARER_TOKEN,
+        },
         data=json.dumps(
             {
                 "username": "test_admin",
@@ -118,7 +134,13 @@ async def test_create_user_endpoint_negative(test_async_client):
     response = await test_async_client.post(
         "user/register",
         headers={"Accept": "application/json", "Authorization": BEARER_TOKEN},
-        data=json.dumps({"username": "test", "password": "test", "email": "test@kernelci.org"}),
+        data=json.dumps(
+            {
+                "username": "test",
+                "password": "test",
+                "email": "test@kernelci.org",
+            }
+        ),
     )
     print(response.json())
     assert response.status_code == 403
@@ -152,7 +174,10 @@ async def test_create_user_with_group(
 
     response = await test_async_client.post(
         "user/register",
-        headers={"Accept": "application/json", "Authorization": ADMIN_BEARER_TOKEN},
+        headers={
+            "Accept": "application/json",
+            "Authorization": ADMIN_BEARER_TOKEN,
+        },
         data=json.dumps(
             {
                 "username": "test",
@@ -176,7 +201,9 @@ async def test_create_user_with_group(
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id_endpoint(test_async_client, mock_beanie_get_user_by_id):
+async def test_get_user_by_id_endpoint(
+    test_async_client, mock_beanie_get_user_by_id
+):
     """
     Test Case : Test KernelCI API GET /user/{user_id} endpoint with admin
     token
@@ -197,7 +224,10 @@ async def test_get_user_by_id_endpoint(test_async_client, mock_beanie_get_user_b
 
     response = await test_async_client.get(
         "user/61bda8f2eb1a63d2b7152418",
-        headers={"Accept": "application/json", "Authorization": ADMIN_BEARER_TOKEN},
+        headers={
+            "Accept": "application/json",
+            "Authorization": ADMIN_BEARER_TOKEN,
+        },
     )
     print("response.json()", response.json())
     assert response.status_code == 200

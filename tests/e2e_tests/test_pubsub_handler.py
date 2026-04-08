@@ -13,7 +13,9 @@ from .listen_handler import create_listen_task
 
 
 @pytest.mark.dependency(
-    depends=["tests/e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel"],
+    depends=[
+        "tests/e2e_tests/test_subscribe_handler.py::test_subscribe_test_channel"
+    ],
     scope="session",
 )
 @pytest.mark.asyncio
@@ -24,7 +26,9 @@ async def test_pubsub_handler(test_async_client):
     Use pubsub listener task to verify published event message.
     """
     # Create Task to listen pubsub event on 'test_channel' channel
-    task_listen = create_listen_task(test_async_client, pytest.test_channel_subscription_id)  # pylint: disable=no-member
+    task_listen = create_listen_task(
+        test_async_client, pytest.test_channel_subscription_id
+    )  # pylint: disable=no-member
 
     # Created and publish CloudEvent
     attributes = {
@@ -35,7 +39,9 @@ async def test_pubsub_handler(test_async_client):
     event = CloudEvent(attributes, data)
     headers, body = to_structured(event)
     headers["Authorization"] = f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
-    response = await test_async_client.post("publish/test_channel", headers=headers, data=body)
+    response = await test_async_client.post(
+        "publish/test_channel", headers=headers, data=body
+    )
     assert response.status_code == 200
 
     # Get result of pubsub event listener

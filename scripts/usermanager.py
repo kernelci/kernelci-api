@@ -4,7 +4,6 @@ import getpass
 import json
 import os
 import re
-import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -17,7 +16,9 @@ except ImportError as exc:  # pragma: no cover - Python < 3.11
 
 DEFAULT_CONFIG_PATHS = [
     os.path.join(os.getcwd(), "usermanager.toml"),
-    os.path.join(os.path.expanduser("~"), ".config", "kernelci", "usermanager.toml"),
+    os.path.join(
+        os.path.expanduser("~"), ".config", "kernelci", "usermanager.toml"
+    ),
 ]
 
 
@@ -168,7 +169,9 @@ def _resolve_group_id(group_id, api_url, token):
     if _looks_like_object_id(group_id):
         return group_id
     query = urllib.parse.urlencode({"name": group_id})
-    status, body = _request_json("GET", f"{api_url}/user-groups?{query}", token=token)
+    status, body = _request_json(
+        "GET", f"{api_url}/user-groups?{query}", token=token
+    )
     if status >= 400:
         _print_response(status, body)
         raise SystemExit(1)
@@ -212,11 +215,15 @@ def _resolve_group_name(group_name, api_url, token):
 
 
 def _resolve_group_names(group_names, api_url, token):
-    return _dedupe([_resolve_group_name(name, api_url, token) for name in group_names])
+    return _dedupe(
+        [_resolve_group_name(name, api_url, token) for name in group_names]
+    )
 
 
 def _update_user_groups(resolved_id, add_groups, remove_groups, api_url, token):
-    status, body = _request_json("GET", f"{api_url}/user/{resolved_id}", token=token)
+    status, body = _request_json(
+        "GET", f"{api_url}/user/{resolved_id}", token=token
+    )
     if status >= 400:
         _print_response(status, body)
         raise SystemExit(1)
@@ -226,9 +233,13 @@ def _update_user_groups(resolved_id, add_groups, remove_groups, api_url, token):
         raise SystemExit("Failed to parse user response") from exc
     current_groups = _extract_group_names(payload)
     data = {
-        "groups": _apply_group_changes(current_groups, add_groups, remove_groups),
+        "groups": _apply_group_changes(
+            current_groups, add_groups, remove_groups
+        ),
     }
-    return _request_json("PATCH", f"{api_url}/user/{resolved_id}", data, token=token)
+    return _request_json(
+        "PATCH", f"{api_url}/user/{resolved_id}", data, token=token
+    )
 
 
 def _request_json(method, url, data=None, token=None, form=False):
@@ -295,9 +306,11 @@ def main():
         ("whoami", "Show current user"),
     ]
     command_list = "\n".join(
-        "  {:<18} {}".format(name, desc) for name, desc in command_help)
+        "  {:<18} {}".format(name, desc) for name, desc in command_help
+    )
     default_paths = "\n".join(
-        "  - {}".format(path) for path in DEFAULT_CONFIG_PATHS)
+        "  - {}".format(path) for path in DEFAULT_CONFIG_PATHS
+    )
     parser = argparse.ArgumentParser(
         description="KernelCI API user management helper",
         epilog=(
@@ -324,12 +337,14 @@ def main():
         help="Path to usermanager.toml (defaults to first match in the lookup list below)",
     )
     parser.add_argument(
-        "--api-url", help="API base URL, e.g. " "http://localhost:8001/latest"
+        "--api-url", help="API base URL, e.g. http://localhost:8001/latest"
     )
     parser.add_argument("--token", help="Bearer token for admin/user actions")
     parser.add_argument("--instance", help="Instance name from config")
     parser.add_argument(
-        "--token-label", default="Auth", help="Label used when prompting for a token"
+        "--token-label",
+        default="Auth",
+        help="Label used when prompting for a token",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -349,9 +364,13 @@ def main():
         help="Group name or id; can be used multiple times or with commas",
     )
 
-    subparsers.add_parser("config-example", help="Print a sample usermanager.toml")
+    subparsers.add_parser(
+        "config-example", help="Print a sample usermanager.toml"
+    )
 
-    create_group = subparsers.add_parser("create-group", help="Create user group")
+    create_group = subparsers.add_parser(
+        "create-group", help="Create user group"
+    )
     create_group.add_argument("name")
 
     deassign_group = subparsers.add_parser(
@@ -365,7 +384,9 @@ def main():
         help="Group name or id; can be used multiple times or with commas",
     )
 
-    delete_group = subparsers.add_parser("delete-group", help="Delete user group")
+    delete_group = subparsers.add_parser(
+        "delete-group", help="Delete user group"
+    )
     delete_group.add_argument("group_id")
 
     delete_user = subparsers.add_parser("delete-user", help="Delete user by id")
@@ -377,7 +398,9 @@ def main():
     generate_token.add_argument("--username", required=True)
     generate_token.add_argument("--password")
 
-    get_group = subparsers.add_parser("get-group", help="Get user group by id or name")
+    get_group = subparsers.add_parser(
+        "get-group", help="Get user group by id or name"
+    )
     get_group.add_argument("group_id")
 
     get_user = subparsers.add_parser("get-user", help="Get user by id")
@@ -393,11 +416,11 @@ def main():
     invite.add_argument("--return-token", action="store_true")
     invite.add_argument("--resend-if-exists", action="store_true")
 
-    invite_url = subparsers.add_parser("invite-url", help="Preview invite URL base")
+    subparsers.add_parser("invite-url", help="Preview invite URL base")
 
-    list_groups = subparsers.add_parser("list-groups", help="List user groups")
+    subparsers.add_parser("list-groups", help="List user groups")
 
-    list_users = subparsers.add_parser("list-users", help="List users")
+    subparsers.add_parser("list-users", help="List users")
 
     login = subparsers.add_parser("login", help="Get an auth token")
     login.add_argument("--username", required=True)
@@ -410,7 +433,10 @@ def main():
     update_user.add_argument("--email", help="Set email")
     update_user.add_argument("--password", help="Set password")
     update_user.add_argument(
-        "--superuser", dest="is_superuser", action="store_true", help="Grant superuser"
+        "--superuser",
+        dest="is_superuser",
+        action="store_true",
+        help="Grant superuser",
     )
     update_user.add_argument(
         "--no-superuser",
@@ -419,10 +445,16 @@ def main():
         help="Revoke superuser",
     )
     update_user.add_argument(
-        "--active", dest="is_active", action="store_true", help="Set is_active true"
+        "--active",
+        dest="is_active",
+        action="store_true",
+        help="Set is_active true",
     )
     update_user.add_argument(
-        "--inactive", dest="is_active", action="store_false", help="Set is_active false"
+        "--inactive",
+        dest="is_active",
+        action="store_false",
+        help="Set is_active false",
     )
     update_user.add_argument(
         "--verified",
@@ -436,7 +468,9 @@ def main():
         action="store_false",
         help="Set is_verified false",
     )
-    update_user.set_defaults(is_active=None, is_verified=None, is_superuser=None)
+    update_user.set_defaults(
+        is_active=None, is_verified=None, is_superuser=None
+    )
     update_user.add_argument(
         "--set-groups",
         help="Replace all groups with a comma-separated list",
@@ -454,7 +488,7 @@ def main():
         help="Remove group(s); can be used multiple times or with commas",
     )
 
-    whoami = subparsers.add_parser("whoami", help="Show current user")
+    subparsers.add_parser("whoami", help="Show current user")
 
     args = parser.parse_args()
 
@@ -529,7 +563,9 @@ def main():
             "POST", f"{api_url}/user/invite", payload, token=token
         )
     elif args.command == "invite-url":
-        status, body = _request_json("GET", f"{api_url}/user/invite/url", token=token)
+        status, body = _request_json(
+            "GET", f"{api_url}/user/invite/url", token=token
+        )
     elif args.command == "accept-invite":
         invite_token = _prompt_if_missing(
             args.token,
@@ -542,7 +578,9 @@ def main():
             secret=True,
         )
         payload = {"token": invite_token, "password": password}
-        status, body = _request_json("POST", f"{api_url}/user/accept-invite", payload)
+        status, body = _request_json(
+            "POST", f"{api_url}/user/accept-invite", payload
+        )
     elif args.command == "login":
         password = _prompt_if_missing(
             args.password,
@@ -655,7 +693,9 @@ def main():
         if not add_groups:
             raise SystemExit("No groups specified. Use --group.")
         add_groups = _resolve_group_names(add_groups, api_url, token)
-        status, body = _update_user_groups(resolved_id, add_groups, [], api_url, token)
+        status, body = _update_user_groups(
+            resolved_id, add_groups, [], api_url, token
+        )
     elif args.command == "deassign-group":
         resolved_id = _resolve_user_id(args.user_id, api_url, token)
         remove_groups = _parse_group_list(args.group)
@@ -666,7 +706,9 @@ def main():
             resolved_id, [], remove_groups, api_url, token
         )
     elif args.command == "list-groups":
-        status, body = _request_json("GET", f"{api_url}/user-groups", token=token)
+        status, body = _request_json(
+            "GET", f"{api_url}/user-groups", token=token
+        )
     elif args.command == "get-group":
         resolved_id = _resolve_group_id(args.group_id, api_url, token)
         status, body = _request_json(

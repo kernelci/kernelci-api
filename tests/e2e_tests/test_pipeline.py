@@ -10,11 +10,17 @@ import pytest
 from cloudevents.http import from_json
 
 from .listen_handler import create_listen_task
-from .test_node_handler import create_node, get_node_by_id, patch_node, update_node
+from .test_node_handler import (
+    create_node,
+    get_node_by_id,
+    update_node,
+)
 
 
 @pytest.mark.dependency(
-    depends=["tests/e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel"],
+    depends=[
+        "tests/e2e_tests/test_subscribe_handler.py::test_subscribe_node_channel"
+    ],
     scope="session",
 )
 @pytest.mark.order(4)
@@ -37,7 +43,9 @@ async def test_node_pipeline(test_async_client):
     """
 
     # Create Task to listen pubsub event on 'node' channel
-    task_listen = create_listen_task(test_async_client, pytest.node_channel_subscription_id)  # pylint: disable=no-member
+    task_listen = create_listen_task(
+        test_async_client, pytest.node_channel_subscription_id
+    )  # pylint: disable=no-member
 
     # Create a node
     node = {
@@ -47,7 +55,9 @@ async def test_node_pipeline(test_async_client):
         "data": {
             "kernel_revision": {
                 "tree": "mainline",
-                "url": ("https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"),
+                "url": (
+                    "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git"
+                ),
                 "branch": "master",
                 "commit": "2a987e65025e2b79c6d453b78cb5985ac6e5eb28",
                 "describe": "v5.16-rc4-31-g2a987e65025e",
@@ -82,7 +92,9 @@ async def test_node_pipeline(test_async_client):
     node = response.json()
 
     # Create Task to listen 'updated' event on 'node' channel
-    task_listen = create_listen_task(test_async_client, pytest.node_channel_subscription_id)  # pylint: disable=no-member
+    task_listen = create_listen_task(
+        test_async_client, pytest.node_channel_subscription_id
+    )  # pylint: disable=no-member
 
     # Update node.state
     node.update({"state": "done"})

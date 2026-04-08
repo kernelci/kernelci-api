@@ -17,7 +17,9 @@ from .conftest import db_create
 
 
 @pytest.mark.dependency(
-    depends=["tests/e2e_tests/test_user_group_handler.py::test_create_user_groups"],
+    depends=[
+        "tests/e2e_tests/test_user_group_handler.py::test_create_user_groups"
+    ],
     scope="session",
 )
 @pytest.mark.dependency()
@@ -82,7 +84,9 @@ async def test_create_regular_user(test_async_client):
             "Accept": "application/json",
             "Authorization": f"Bearer {pytest.ADMIN_BEARER_TOKEN}",
         },
-        data=json.dumps({"username": username, "password": password, "email": email}),
+        data=json.dumps(
+            {"username": username, "password": password, "email": email}
+        ),
     )
     assert response.status_code == 200
     assert (
@@ -171,7 +175,13 @@ async def test_create_user_negative(test_async_client):
             "Accept": "application/json",
             "Authorization": f"Bearer {pytest.BEARER_TOKEN}",
         },
-        data=json.dumps({"username": "test", "password": "test", "email": "test@kernelci.org"}),
+        data=json.dumps(
+            {
+                "username": "test",
+                "password": "test",
+                "email": "test@kernelci.org",
+            }
+        ),
     )
     assert response.status_code == 403
     assert response.json() == {"detail": "Forbidden"}
