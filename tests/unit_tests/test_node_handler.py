@@ -18,7 +18,9 @@ from api.models import PageModel
 from tests.unit_tests.conftest import BEARER_TOKEN
 
 
-def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent, test_client):
+def test_create_node_endpoint(
+    mock_db_create, mock_publish_cloudevent, test_client
+):
     """
     Test Case : Test KernelCI API /node endpoint
     Expected Result :
@@ -89,7 +91,9 @@ def test_create_node_endpoint(mock_db_create, mock_publish_cloudevent, test_clie
     }
 
 
-def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes, test_client):
+def test_get_nodes_by_attributes_endpoint(
+    mock_db_find_by_attributes, test_client
+):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
     endpoint for the positive path
@@ -156,7 +160,9 @@ def test_get_nodes_by_attributes_endpoint(mock_db_find_by_attributes, test_clien
     assert len(response.json()["items"]) > 0
 
 
-def test_get_nodes_by_attributes_endpoint_node_not_found(mock_db_find_by_attributes, test_client):
+def test_get_nodes_by_attributes_endpoint_node_not_found(
+    mock_db_find_by_attributes, test_client
+):
     """
     Test Case : Test KernelCI API GET /nodes?attribute_name=attribute_value
     endpoint for the node not found
@@ -165,7 +171,9 @@ def test_get_nodes_by_attributes_endpoint_node_not_found(mock_db_find_by_attribu
         Empty list
     """
 
-    mock_db_find_by_attributes.return_value = PageModel(items=[], total=0, limit=50, offset=0)
+    mock_db_find_by_attributes.return_value = PageModel(
+        items=[], total=0, limit=50, offset=0
+    )
 
     params = {"name": "checkout", "revision.tree": "baseline"}
     response = test_client.get("nodes", params=params)
@@ -233,7 +241,9 @@ def test_get_node_by_id_endpoint(mock_db_find_by_id, test_client):
     }
 
 
-def test_get_node_by_id_endpoint_empty_response(mock_db_find_by_id, test_client):
+def test_get_node_by_id_endpoint_empty_response(
+    mock_db_find_by_id, test_client
+):
     """
     Test Case : Test KernelCI API GET /node/{node_id} endpoint
     for negative path
@@ -340,7 +350,9 @@ def test_get_all_nodes_empty_response(mock_db_find_by_attributes, test_client):
         HTTP Response Code 200 OK
         Empty list as no Node object is added.
     """
-    mock_db_find_by_attributes.return_value = PageModel(items=[], total=0, limit=50, offset=0)
+    mock_db_find_by_attributes.return_value = PageModel(
+        items=[], total=0, limit=50, offset=0
+    )
 
     response = test_client.get("nodes")
     print("response.json()", response.json())

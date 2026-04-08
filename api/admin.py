@@ -29,10 +29,14 @@ async def setup_admin_user(db, username, email, password=None):
         if not password:
             password = os.getenv("KCI_INITIAL_PASSWORD")
             if not password:
-                print("Password is empty and KCI_INITIAL_PASSWORD is not set, aborting.")
+                print(
+                    "Password is empty and KCI_INITIAL_PASSWORD is not set, aborting."
+                )
                 return None
         else:
-            retyped = getpass.getpass(f"Retype password for user '{username}': ")
+            retyped = getpass.getpass(
+                f"Retype password for user '{username}': "
+            )
             if password != retyped:
                 print("Sorry, passwords do not match, aborting.")
                 return None
@@ -67,7 +71,9 @@ async def main(args):
     db = Database(args.mongo, args.database)
     await db.initialize_beanie()
     await db.create_indexes()
-    created = await setup_admin_user(db, args.username, args.email, password=args.password)
+    created = await setup_admin_user(
+        db, args.username, args.email, password=args.password
+    )
     return created is not None
 
 
@@ -79,8 +85,12 @@ if __name__ == "__main__":
         help="Mongo server connection string",
     )
     parser.add_argument("--username", default="admin", help="Admin username")
-    parser.add_argument("--database", default="kernelci", help="KernelCI database name")
-    parser.add_argument("--email", required=True, help="Admin user email address")
+    parser.add_argument(
+        "--database", default="kernelci", help="KernelCI database name"
+    )
+    parser.add_argument(
+        "--email", required=True, help="Admin user email address"
+    )
     parser.add_argument(
         "--password",
         default="",

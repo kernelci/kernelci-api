@@ -26,9 +26,13 @@ class EmailSender:  # pylint: disable=too-few-public-methods
     def _smtp_connect(self):
         """Method to create a connection with SMTP server"""
         if self._settings.smtp_port == 465:
-            smtp = smtplib.SMTP_SSL(self._settings.smtp_host, self._settings.smtp_port)
+            smtp = smtplib.SMTP_SSL(
+                self._settings.smtp_host, self._settings.smtp_port
+            )
         else:
-            smtp = smtplib.SMTP(self._settings.smtp_host, self._settings.smtp_port)
+            smtp = smtplib.SMTP(
+                self._settings.smtp_host, self._settings.smtp_port
+            )
             smtp.starttls()
         smtp.login(self._settings.email_sender, self._settings.email_password)
         return smtp
@@ -60,7 +64,11 @@ class EmailSender:  # pylint: disable=too-few-public-methods
                 detail="Failed to send email",
             ) from exc
 
-    def create_and_send_email(self, email_subject, email_content, email_recipient):
+    def create_and_send_email(
+        self, email_subject, email_content, email_recipient
+    ):
         """Method to create and send email"""
-        email_msg = self._create_email(email_subject, email_content, email_recipient)
+        email_msg = self._create_email(
+            email_subject, email_content, email_recipient
+        )
         self._send_email(email_msg)

@@ -111,7 +111,8 @@ def _validate_startup_environment():
             details.append("empty: " + ", ".join(sorted(empty)))
         raise RuntimeError(
             "Startup environment validation failed. "
-            "Set required environment variables before starting the API. " + "; ".join(details)
+            "Set required environment variables before starting the API. "
+            + "; ".join(details)
         )
 
 
@@ -159,7 +160,9 @@ async def subscription_cleanup_task():
     while True:
         try:
             await asyncio.sleep(SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES * 60)
-            cleaned = await pubsub.cleanup_stale_subscriptions(SUBSCRIPTION_MAX_AGE_MINUTES)
+            cleaned = await pubsub.cleanup_stale_subscriptions(
+                SUBSCRIPTION_MAX_AGE_MINUTES
+            )
             if cleaned > 0:
                 metrics.add("subscriptions_cleaned", 1)
                 print(f"Cleaned up {cleaned} stale subscriptions")
@@ -219,7 +222,9 @@ async def ensure_initial_admin_user():
         await db.create(
             User(
                 username=username,
-                hashed_password=Authentication.get_password_hash(initial_password),
+                hashed_password=Authentication.get_password_hash(
+                    initial_password
+                ),
                 email=email,
                 is_superuser=1,
                 is_verified=1,
@@ -280,7 +285,9 @@ def get_current_user(
 
 
 def get_current_superuser(
-    user: User = Depends(fastapi_users_instance.current_user(active=True, superuser=True)),
+    user: User = Depends(
+        fastapi_users_instance.current_user(active=True, superuser=True)
+    ),
 ):
     """Get current active superuser"""
     return user
@@ -381,11 +388,17 @@ def _resolve_public_base_url(request: Request) -> str:
 
     forwarded_header = request.headers.get("forwarded")
     if forwarded_header and is_proxy_request:
-        forwarded_host, forwarded_proto = _parse_forwarded_header(forwarded_header)
+        forwarded_host, forwarded_proto = _parse_forwarded_header(
+            forwarded_header
+        )
 
     if is_proxy_request:
-        forwarded_host = forwarded_host or request.headers.get("x-forwarded-host")
-        forwarded_proto = forwarded_proto or request.headers.get("x-forwarded-proto")
+        forwarded_host = forwarded_host or request.headers.get(
+            "x-forwarded-host"
+        )
+        forwarded_proto = forwarded_proto or request.headers.get(
+            "x-forwarded-proto"
+        )
 
     if forwarded_host:
         scheme = forwarded_proto or request.url.scheme
@@ -447,7 +460,9 @@ async def _create_user_for_invite(
     )
     user_create.groups = groups
 
-    created_user = await register_router.routes[0].endpoint(request, user_create, user_manager)
+    created_user = await register_router.routes[0].endpoint(
+        request, user_create, user_manager
+    )
 
     if invite.is_superuser:
         user_from_id = await db.find_by_id(User, created_user.id)
@@ -458,12 +473,16 @@ async def _create_user_for_invite(
 
 
 app.include_router(
-    fastapi_users_instance.get_auth_router(auth_backend, requires_verification=True),
+    fastapi_users_instance.get_auth_router(
+        auth_backend, requires_verification=True
+    ),
     prefix="/user",
     tags=["user"],
 )
 
-register_router = fastapi_users_instance.get_register_router(UserRead, UserCreate)
+register_router = fastapi_users_instance.get_register_router(
+    UserRead, UserCreate
+)
 
 
 @app.post(
@@ -566,7 +585,9 @@ async def accept_invite_page():
 
 
 @app.get("/user/invite/url", response_model=InviteUrlResponse, tags=["user"])
-async def invite_url_preview(request: Request, current_user: User = Depends(get_current_superuser)):
+async def invite_url_preview(
+    request: Request, current_user: User = Depends(get_current_superuser)
+):
     """Preview the resolved public URL used in invite links (admin-only)"""
     metrics.add("http_requests_total", 1)
     public_base_url = _resolve_public_base_url(request)
@@ -611,7 +632,9 @@ async def accept_invite(accept: InviteAcceptRequest):
             detail="Invite already accepted",
         )
 
-    user_from_id.hashed_password = user_manager.password_helper.hash(accept.password)
+    user_from_id.hashed_password = user_manager.password_helper.hash(
+        accept.password
+    )
     user_from_id.is_verified = True
     updated_user = await db.update(user_from_id)
 
@@ -628,7 +651,9 @@ app.include_router(
     tags=["user"],
 )
 
-users_router = fastapi_users_instance.get_users_router(UserRead, UserUpdate, requires_verification=True)
+users_router = fastapi_users_instance.get_users_router(
+    UserRead, UserUpdate, requires_verification=True
+)
 
 app.add_api_route(
     path="/whoami",
@@ -655,7 +680,12 @@ app.add_api_route(
 )
 
 
-@app.patch("/user/me", response_model=UserRead, tags=["user"], response_model_by_alias=False)
+@app.patch(
+    "/user/me",
+    response_model=UserRead,
+    tags=["user"],
+    response_model_by_alias=False,
+)
 async def update_me(
     request: Request,
     user: UserUpdateRequest,
@@ -686,13 +716,23 @@ async def update_me(
             if not group:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=(f"User group does not exist with name: {group_name}"),
+                    detail=(
+                        f"User group does not exist with name: {group_name}"
+                    ),
                 )
             groups.append(group)
-    user_update = UserUpdate(**(user.model_dump(exclude={"groups", "is_superuser"}, exclude_none=True)))
+    user_update = UserUpdate(
+        **(
+            user.model_dump(
+                exclude={"groups", "is_superuser"}, exclude_none=True
+            )
+        )
+    )
     if groups:
         user_update.groups = groups
-    return await users_router.routes[1].endpoint(request, user_update, current_user, user_manager)
+    return await users_router.routes[1].endpoint(
+        request, user_update, current_user, user_manager
+    )
 
 
 @app.patch(
@@ -731,15 +771,21 @@ async def update_user(
             if not group:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=(f"User group does not exist with name: {group_name}"),
+                    detail=(
+                        f"User group does not exist with name: {group_name}"
+                    ),
                 )
             groups.append(group)
-    user_update = UserUpdate(**(user.model_dump(exclude={"groups"}, exclude_none=True)))
+    user_update = UserUpdate(
+        **(user.model_dump(exclude={"groups"}, exclude_none=True))
+    )
 
     if groups:
         user_update.groups = groups
 
-    updated_user = await users_router.routes[3].endpoint(user_update, request, user_from_id, user_manager)
+    updated_user = await users_router.routes[3].endpoint(
+        user_update, request, user_from_id, user_manager
+    )
     # Update superuser explicitly since fastapi-users update route ignores it.
     if user.is_superuser is not None:
         user_from_id = await db.find_by_id(User, updated_user.id)
@@ -749,14 +795,18 @@ async def update_user(
 
 
 @app.get("/user-groups", response_model=PageModel, tags=["user"])
-async def get_user_groups(request: Request, current_user: User = Depends(get_current_superuser)):
+async def get_user_groups(
+    request: Request, current_user: User = Depends(get_current_superuser)
+):
     """List user groups (admin-only)."""
     metrics.add("http_requests_total", 1)
     query_params = dict(request.query_params)
     for pg_key in ["limit", "offset"]:
         query_params.pop(pg_key, None)
     paginated_resp = await db.find_by_attributes(UserGroup, query_params)
-    paginated_resp.items = serialize_paginated_data(UserGroup, paginated_resp.items)
+    paginated_resp.items = serialize_paginated_data(
+        UserGroup, paginated_resp.items
+    )
     return paginated_resp
 
 
@@ -766,7 +816,9 @@ async def get_user_groups(request: Request, current_user: User = Depends(get_cur
     tags=["user"],
     response_model_by_alias=False,
 )
-async def get_user_group(group_id: str, current_user: User = Depends(get_current_superuser)):
+async def get_user_group(
+    group_id: str, current_user: User = Depends(get_current_superuser)
+):
     """Get a user group by id (admin-only)."""
     metrics.add("http_requests_total", 1)
     group = await db.find_by_id(UserGroup, group_id)
@@ -785,7 +837,8 @@ async def get_user_group(group_id: str, current_user: User = Depends(get_current
     response_model_by_alias=False,
 )
 async def create_user_group(
-    group: UserGroupCreateRequest, current_user: User = Depends(get_current_superuser)
+    group: UserGroupCreateRequest,
+    current_user: User = Depends(get_current_superuser),
 ):
     """Create a user group (admin-only)."""
     metrics.add("http_requests_total", 1)
@@ -798,8 +851,14 @@ async def create_user_group(
     return await db.create(UserGroup(name=group.name))
 
 
-@app.delete("/user-groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["user"])
-async def delete_user_group(group_id: str, current_user: User = Depends(get_current_superuser)):
+@app.delete(
+    "/user-groups/{group_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["user"],
+)
+async def delete_user_group(
+    group_id: str, current_user: User = Depends(get_current_superuser)
+):
     """Delete a user group (admin-only)."""
     metrics.add("http_requests_total", 1)
     group = await db.find_by_id(UserGroup, group_id)
@@ -812,7 +871,9 @@ async def delete_user_group(group_id: str, current_user: User = Depends(get_curr
     if assigned_count:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=("User group is assigned to users and cannot be deleted. Remove it from users first."),
+            detail=(
+                "User group is assigned to users and cannot be deleted. Remove it from users first."
+            ),
         )
     await db.delete_by_id(UserGroup, group_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -835,13 +896,19 @@ def _user_can_edit_node(user: User, node: Node) -> bool:
     user_group_names = {group.name for group in user.groups}
     if "node:edit:any" in user_group_names:
         return True
-    if any(group_name in user_group_names for group_name in getattr(node, "user_groups", [])):
+    if any(
+        group_name in user_group_names
+        for group_name in getattr(node, "user_groups", [])
+    ):
         return True
     runtime = _get_node_runtime(node)
     if runtime:
         runtime_editor = ":".join(["runtime", runtime, "node-editor"])
         runtime_admin = ":".join(["runtime", runtime, "node-admin"])
-        if runtime_editor in user_group_names or runtime_admin in user_group_names:
+        if (
+            runtime_editor in user_group_names
+            or runtime_admin in user_group_names
+        ):
             return True
     return False
 
@@ -871,7 +938,9 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
     tags=["user"],
     response_model_exclude={"items": {"__all__": {"hashed_password"}}},
 )
-async def get_users(request: Request, current_user: User = Depends(get_current_user)):
+async def get_users(
+    request: Request, current_user: User = Depends(get_current_user)
+):
     """Get all the users if no request parameters have passed.
     Get the matching users otherwise."""
     metrics.add("http_requests_total", 1)
@@ -900,14 +969,18 @@ async def update_password(
         )
     user_update = UserUpdate(password=new_password)
     user_from_username = await db.find_one(User, username=credentials.username)
-    await users_router.routes[3].endpoint(user_update, request, user_from_username, user_manager)
+    await users_router.routes[3].endpoint(
+        user_update, request, user_from_username, user_manager
+    )
 
 
 # EventHistory is now stored by pubsub.publish_cloudevent()
 # No need for separate _get_eventhistory function
 
 
-def _parse_event_id_filter(query_params: dict, event_id: str, event_ids: str) -> None:
+def _parse_event_id_filter(
+    query_params: dict, event_id: str, event_ids: str
+) -> None:
     """Parse and validate event id/ids filter parameters.
 
     Modifies query_params in place to add _id filter.
@@ -922,12 +995,20 @@ def _parse_event_id_filter(query_params: dict, event_id: str, event_ids: str) ->
         try:
             query_params["_id"] = ObjectId(event_id)
         except (errors.InvalidId, TypeError) as exc:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid id format") from exc
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid id format",
+            ) from exc
     elif event_ids:
         try:
-            ids_list = [ObjectId(x.strip()) for x in event_ids.split(",") if x.strip()]
+            ids_list = [
+                ObjectId(x.strip()) for x in event_ids.split(",") if x.strip()
+            ]
         except (errors.InvalidId, TypeError) as exc:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid ids format") from exc
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid ids format",
+            ) from exc
         if not ids_list:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -1140,7 +1221,9 @@ async def get_telemetry(request: Request):
             query_params["is_infra_error"] = False
 
     paginated_resp = await db.find_by_attributes(TelemetryEvent, query_params)
-    paginated_resp.items = serialize_paginated_data(TelemetryEvent, paginated_resp.items)
+    paginated_resp.items = serialize_paginated_data(
+        TelemetryEvent, paginated_resp.items
+    )
     return paginated_resp
 
 
@@ -1223,10 +1306,20 @@ async def get_telemetry_stats(request: Request):
             "$group": {
                 "_id": {f: f"${f}" for f in group_by},
                 "total": {"$sum": 1},
-                "pass": {"$sum": {"$cond": [{"$eq": ["$result", "pass"]}, 1, 0]}},
-                "fail": {"$sum": {"$cond": [{"$eq": ["$result", "fail"]}, 1, 0]}},
-                "incomplete": {"$sum": {"$cond": [{"$eq": ["$result", "incomplete"]}, 1, 0]}},
-                "skip": {"$sum": {"$cond": [{"$eq": ["$result", "skip"]}, 1, 0]}},
+                "pass": {
+                    "$sum": {"$cond": [{"$eq": ["$result", "pass"]}, 1, 0]}
+                },
+                "fail": {
+                    "$sum": {"$cond": [{"$eq": ["$result", "fail"]}, 1, 0]}
+                },
+                "incomplete": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$result", "incomplete"]}, 1, 0]
+                    }
+                },
+                "skip": {
+                    "$sum": {"$cond": [{"$eq": ["$result", "skip"]}, 1, 0]}
+                },
                 "infra_error": {"$sum": {"$cond": ["$is_infra_error", 1, 0]}},
             }
         }
@@ -1265,14 +1358,18 @@ ANOMALY_WINDOW_MAP = {
 
 @app.get("/telemetry/anomalies", tags=["telemetry"])
 async def get_telemetry_anomalies(
-    window: str = Query("6h", description="Time window: 1h, 3h, 6h, 12h, 24h, 48h"),
+    window: str = Query(
+        "6h", description="Time window: 1h, 3h, 6h, 12h, 24h, 48h"
+    ),
     threshold: float = Query(
         0.5,
         ge=0.0,
         le=1.0,
         description="Min failure/infra error rate to flag (0.0-1.0)",
     ),
-    min_total: int = Query(3, ge=1, description="Min events in window to consider (avoids noise)"),
+    min_total: int = Query(
+        3, ge=1, description="Min events in window to consider (avoids noise)"
+    ),
 ):
     """Detect anomalies in telemetry data.
 
@@ -1307,8 +1404,14 @@ async def get_telemetry_anomalies(
                     "device_type": "$device_type",
                 },
                 "total": {"$sum": 1},
-                "fail": {"$sum": {"$cond": [{"$eq": ["$result", "fail"]}, 1, 0]}},
-                "incomplete": {"$sum": {"$cond": [{"$eq": ["$result", "incomplete"]}, 1, 0]}},
+                "fail": {
+                    "$sum": {"$cond": [{"$eq": ["$result", "fail"]}, 1, 0]}
+                },
+                "incomplete": {
+                    "$sum": {
+                        "$cond": [{"$eq": ["$result", "incomplete"]}, 1, 0]
+                    }
+                },
                 "infra_error": {"$sum": {"$cond": ["$is_infra_error", 1, 0]}},
             }
         },
@@ -1316,7 +1419,9 @@ async def get_telemetry_anomalies(
         {
             "$addFields": {
                 "infra_rate": {"$divide": ["$infra_error", "$total"]},
-                "fail_rate": {"$divide": [{"$add": ["$fail", "$incomplete"]}, "$total"]},
+                "fail_rate": {
+                    "$divide": [{"$add": ["$fail", "$incomplete"]}, "$total"]
+                },
             }
         },
         {
@@ -1408,7 +1513,11 @@ async def translate_null_query_params(query_params: dict):
     return translated
 
 
-@app.get("/node/{node_id}", response_model=Union[Node, None], response_model_by_alias=False)
+@app.get(
+    "/node/{node_id}",
+    response_model=Union[Node, None],
+    response_model_by_alias=False,
+)
 async def get_node(node_id: str):
     """Get node information from the provided node id"""
     metrics.add("http_requests_total", 1)
@@ -1455,7 +1564,9 @@ async def get_nodes(request: Request):
         model = Node
         translated_params = model.translate_fields(query_params)
         paginated_resp = await db.find_by_attributes(model, translated_params)
-        paginated_resp.items = serialize_paginated_data(model, paginated_resp.items)
+        paginated_resp.items = serialize_paginated_data(
+            model, paginated_resp.items
+        )
         return paginated_resp
     except KeyError as error:
         raise HTTPException(
@@ -1488,7 +1599,9 @@ async def get_nodes_fast(request: Request):
     try:
         # Query using the base Node model, regardless of the specific
         # node type, use asyncio.wait_for with timeout 30 seconds
-        resp = await asyncio.wait_for(db_find_node_nonpaginated(query_params), timeout=15)
+        resp = await asyncio.wait_for(
+            db_find_node_nonpaginated(query_params), timeout=15
+        )
         return resp
     except asyncio.TimeoutError as error:
         raise HTTPException(
@@ -1618,15 +1731,21 @@ async def put_node(
     # Sanity checks
     # Note: do not update node ownership fields, don't update 'state'
     # until we've checked the state transition is valid.
-    update_data = node.model_dump(exclude={"owner", "submitter", "user_groups", "state"})
+    update_data = node.model_dump(
+        exclude={"owner", "submitter", "user_groups", "state"}
+    )
     new_node_def = node_from_id.model_copy(update=update_data)
     # 1- Parse and validate node to specific subtype
     specialized_node = parse_node_obj(new_node_def)
 
     # 2 - State transition checks
-    is_valid, message = specialized_node.validate_node_state_transition(node.state)
+    is_valid, message = specialized_node.validate_node_state_transition(
+        node.state
+    )
     if not is_valid:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=message
+        )
     # if state changes, reset processed_by_kcidb_bridge flag
     if node.state != new_node_def.state:
         new_node_def.processed_by_kcidb_bridge = False
@@ -1666,7 +1785,9 @@ class NodePatchRequest(BaseModel):
     processed_by_kcidb_bridge: Optional[bool] = None
 
 
-@app.patch("/node/{node_id}", response_model=Node, response_model_by_alias=False)
+@app.patch(
+    "/node/{node_id}", response_model=Node, response_model_by_alias=False
+)
 async def patch_node(
     node_id: str,
     patch: NodePatchRequest,
@@ -1703,11 +1824,6 @@ async def patch_node(
 
     # State transition checks
     if new_state is not None:
-<<<<<<< HEAD
-        is_valid, message = specialized_node.validate_node_state_transition(new_state)
-        if not is_valid:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
-=======
         is_valid, message = specialized_node.validate_node_state_transition(
             new_state
         )
@@ -1715,7 +1831,6 @@ async def patch_node(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail=message
             )
->>>>>>> 7df261e (api: Implement PATCH endpoint for node)
         if new_state != new_node_def.state:
             new_node_def.processed_by_kcidb_bridge = False
         new_node_def.state = new_state
@@ -1744,7 +1859,9 @@ class NodeUpdateRequest(BaseModel):
 
 
 @app.put("/batch/nodeset", response_model=int)
-async def put_batch_nodeset(data: NodeUpdateRequest, user: str = Depends(get_current_user)):
+async def put_batch_nodeset(
+    data: NodeUpdateRequest, user: str = Depends(get_current_user)
+):
     """
     Set a field to a value for multiple nodes
     TBD: Make db.bulkupdate to update multiple nodes in one go
@@ -1775,11 +1892,16 @@ async def put_batch_nodeset(data: NodeUpdateRequest, user: str = Depends(get_cur
             await db.update(node_from_id)
             updated += 1
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Field not supported")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Field not supported",
+            )
     return updated
 
 
-async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy, submitter: str, treeid: str):
+async def _set_node_ownership_recursively(
+    user: User, hierarchy: Hierarchy, submitter: str, treeid: str
+):
     """Set node ownership information for a hierarchy of nodes"""
     if not hierarchy.node.owner:
         hierarchy.node.owner = user.username
@@ -1789,7 +1911,9 @@ async def _set_node_ownership_recursively(user: User, hierarchy: Hierarchy, subm
         await _set_node_ownership_recursively(user, node, submitter, treeid)
 
 
-@app.put("/nodes/{node_id}", response_model=List[Node], response_model_by_alias=False)
+@app.put(
+    "/nodes/{node_id}", response_model=List[Node], response_model_by_alias=False
+)
 async def put_nodes(
     node_id: str,
     nodes: Hierarchy,
@@ -1823,7 +1947,9 @@ async def put_nodes(
 # -----------------------------------------------------------------------------
 # Key/Value namespace enabled store
 @app.get("/kv/{namespace}/{key}", response_model=Union[str, None])
-async def get_kv(namespace: str, key: str, user: User = Depends(get_current_user)):
+async def get_kv(
+    namespace: str, key: str, user: User = Depends(get_current_user)
+):
     """Get a key value pair from the store"""
     metrics.add("http_requests_total", 1)
     return await db.get_kv(namespace, key)
@@ -1853,7 +1979,9 @@ async def post_kv(
 
 # Delete a key-value pair from the store
 @app.delete("/kv/{namespace}/{key}", response_model=Optional[str])
-async def delete_kv(namespace: str, key: str, user: User = Depends(get_current_user)):
+async def delete_kv(
+    namespace: str, key: str, user: User = Depends(get_current_user)
+):
     """Delete a key-value pair from the store"""
     metrics.add("http_requests_total", 1)
     await db.del_kv(namespace, key)
@@ -1911,7 +2039,9 @@ async def unsubscribe(sub_id: int, user: User = Depends(get_current_user)):
             detail=f"Subscription id not found: {str(error)}",
         ) from error
     except RuntimeError as error:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(error)) from error
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(error)
+        ) from error
 
 
 @app.get("/listen/{sub_id}")
@@ -1933,7 +2063,9 @@ async def listen(sub_id: int, user: User = Depends(get_current_user)):
 
 
 @app.post("/publish/{channel}")
-async def publish(event: PublishEvent, channel: str, user: User = Depends(get_current_user)):
+async def publish(
+    event: PublishEvent, channel: str, user: User = Depends(get_current_user)
+):
     """Publish an event on the provided Pub/Sub channel"""
     metrics.add("http_requests_total", 1)
     event_dict = PublishEvent.dict(event)
@@ -1953,7 +2085,9 @@ async def publish(event: PublishEvent, channel: str, user: User = Depends(get_cu
 
 
 @app.post("/push/{list_name}")
-async def push(raw: dict, list_name: str, user: User = Depends(get_current_user)):
+async def push(
+    raw: dict, list_name: str, user: User = Depends(get_current_user)
+):
     """Push a message on the provided list"""
     metrics.add("http_requests_total", 1)
     attributes = dict(raw)
@@ -2067,7 +2201,9 @@ async def icons(icon_name: str):
     metrics.add("http_requests_total", 1)
     root_dir = os.path.dirname(os.path.abspath(__file__))
     if not re.match(r"^[A-Za-z0-9_.-]+\.png$", icon_name):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid icon name")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid icon name"
+        )
     icon_path = os.path.join(root_dir, "templates", icon_name)
     return FileResponse(icon_path)
 
@@ -2082,13 +2218,17 @@ async def serve_css(filename: str):
     # Security: only allow safe filenames
     if not re.match(r"^[A-Za-z0-9_.-]+\.css$", filename):
         print(f"[CSS] Invalid filename pattern: {filename}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename"
+        )
     file_path = os.path.join(root_dir, "static", "css", filename)
     print(f"[CSS] Looking for file at: {file_path}")
     print(f"[CSS] File exists: {os.path.isfile(file_path)}")
     if not os.path.isfile(file_path):
         print(f"[CSS] File not found: {file_path}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
     print(f"[CSS] Serving file: {file_path}")
     return FileResponse(
         file_path,
@@ -2109,13 +2249,17 @@ async def serve_js(filename: str):
     # Security: only allow safe filenames
     if not re.match(r"^[A-Za-z0-9_.-]+\.js$", filename):
         print(f"[JS] Invalid filename pattern: {filename}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid filename"
+        )
     file_path = os.path.join(root_dir, "static", "js", filename)
     print(f"[JS] Looking for file at: {file_path}")
     print(f"[JS] File exists: {os.path.isfile(file_path)}")
     if not os.path.isfile(file_path):
         print(f"[JS] File not found: {file_path}")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+        )
     print(f"[JS] Serving file: {file_path}")
     return FileResponse(
         file_path,
@@ -2188,10 +2332,16 @@ def traceback_exception_handler(request: Request, exc: Exception):
 # https://github.com/DeanWay/fastapi-versioning/issues/30
 for sub_app in versioned_app.routes:
     if hasattr(sub_app.app, "add_exception_handler"):
-        sub_app.app.add_exception_handler(ValueError, value_error_exception_handler)
-        sub_app.app.add_exception_handler(errors.InvalidId, invalid_id_exception_handler)
+        sub_app.app.add_exception_handler(
+            ValueError, value_error_exception_handler
+        )
+        sub_app.app.add_exception_handler(
+            errors.InvalidId, invalid_id_exception_handler
+        )
         # print traceback for all other exceptions
-        sub_app.app.add_exception_handler(Exception, traceback_exception_handler)
+        sub_app.app.add_exception_handler(
+            Exception, traceback_exception_handler
+        )
 
 
 @versioned_app.middleware("http")

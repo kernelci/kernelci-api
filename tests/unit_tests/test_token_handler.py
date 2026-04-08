@@ -16,7 +16,9 @@ from api.models import User
 
 
 @pytest.mark.asyncio
-async def test_token_endpoint(test_async_client, mock_user_find, mock_beanie_user_update):
+async def test_token_endpoint(
+    test_async_client, mock_user_find, mock_beanie_user_update
+):
     """
     Test Case : Test KernelCI API /user/login endpoint
     Expected Result :
@@ -49,7 +51,9 @@ async def test_token_endpoint(test_async_client, mock_user_find, mock_beanie_use
 
 
 @pytest.mark.asyncio
-async def test_token_endpoint_incorrect_password(test_async_client, mock_user_find):
+async def test_token_endpoint_incorrect_password(
+    test_async_client, mock_user_find
+):
     """
     Test Case : Test KernelCI API /user/login endpoint for negative path
     Incorrect password should be passed to the endpoint

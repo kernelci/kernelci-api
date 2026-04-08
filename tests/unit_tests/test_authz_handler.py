@@ -73,14 +73,18 @@ def test_user_can_edit_node_with_matching_group():
 
 def test_user_can_edit_node_with_runtime_editor_group():
     """Runtime editor group grants edit access."""
-    user = _make_user(groups=[UserGroup(name="runtime:lava-collabora:node-editor")])
+    user = _make_user(
+        groups=[UserGroup(name="runtime:lava-collabora:node-editor")]
+    )
     node = _make_node(runtime="lava-collabora")
     assert _user_can_edit_node(user, node)
 
 
 def test_user_can_edit_node_with_runtime_admin_group():
     """Runtime admin group grants edit access."""
-    user = _make_user(groups=[UserGroup(name="runtime:lava-collabora:node-admin")])
+    user = _make_user(
+        groups=[UserGroup(name="runtime:lava-collabora:node-admin")]
+    )
     node = _make_node(runtime="lava-collabora")
     assert _user_can_edit_node(user, node)
 
@@ -102,7 +106,9 @@ def test_user_can_edit_node_as_superuser():
 def test_user_cannot_edit_node_without_access():
     """Unrelated user cannot edit when no access applies."""
     user = _make_user(username="alice")
-    node = _make_node(owner="bob", user_groups=["team-a"], runtime="lava-collabora")
+    node = _make_node(
+        owner="bob", user_groups=["team-a"], runtime="lava-collabora"
+    )
     assert not _user_can_edit_node(user, node)
 
 
@@ -118,4 +124,7 @@ def test_user_me_rejects_groups_update(test_client):
         data=json.dumps(payload),
     )
     assert response.status_code == 400
-    assert response.json()["detail"] == "User groups can only be updated by an admin user"
+    assert (
+        response.json()["detail"]
+        == "User groups can only be updated by an admin user"
+    )

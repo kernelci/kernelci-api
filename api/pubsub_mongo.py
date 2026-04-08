@@ -68,14 +68,22 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         await pubsub._init()
         return pubsub
 
-    def __init__(self, mongo_client=None, host=None, db_number=None, mongo_db_name="kernelci"):
+    def __init__(
+        self,
+        mongo_client=None,
+        host=None,
+        db_number=None,
+        mongo_db_name="kernelci",
+    ):
         self._settings = PubSubSettings()
         if host is None:
             host = self._settings.redis_host
         if db_number is None:
             db_number = self._settings.redis_db_number
 
-        self._redis = aioredis.from_url("redis://" + host + "/" + str(db_number), health_check_interval=30)
+        self._redis = aioredis.from_url(
+            "redis://" + host + "/" + str(db_number), health_check_interval=30
+        )
 
         # MongoDB setup
         if mongo_client is None:
@@ -115,7 +123,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         # Check if collection exists
         collections = await self._mongo_db.list_collection_names()
         if self.EVENT_HISTORY_COLLECTION not in collections:
-            logger.info("eventhistory collection does not exist, will be created")
+            logger.info(
+                "eventhistory collection does not exist, will be created"
+            )
             return
 
         # Check existing indexes
@@ -131,7 +141,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
                 ttl = index_info["expireAfterSeconds"]
                 if ttl == 86400:
                     old_format_detected = True
-                    logger.warning("Detected old eventhistory format (24h TTL). Migration required.")
+                    logger.warning(
+                        "Detected old eventhistory format (24h TTL). Migration required."
+                    )
 
             # Check for new sequence_id index
             if "key" in index_info:
@@ -160,7 +172,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
             # Drop all documents (they lack required fields)
             result = await col.delete_many({})
-            logger.info("Deleted %d old eventhistory documents", result.deleted_count)
+            logger.info(
+                "Deleted %d old eventhistory documents", result.deleted_count
+            )
 
             logger.info("eventhistory migration complete")
 
@@ -183,12 +197,15 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
         # Compound index for filtered event queries (kind + timestamp)
         await event_col.create_index(
-            [("data.kind", ASCENDING), ("timestamp", ASCENDING)], name="kind_timestamp"
+            [("data.kind", ASCENDING), ("timestamp", ASCENDING)],
+            name="kind_timestamp",
         )
 
         # Subscriber state indexes
         # Unique index on subscriber_id
-        await sub_col.create_index("subscriber_id", unique=True, name="unique_subscriber_id")
+        await sub_col.create_index(
+            "subscriber_id", unique=True, name="unique_subscriber_id"
+        )
         # Index for stale cleanup
         await sub_col.create_index("last_poll", name="last_poll")
 
@@ -198,7 +215,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
             return
         if not self._keep_alive_timer or self._keep_alive_timer.done():
             loop = asyncio.get_running_loop()
-            self._keep_alive_timer = asyncio.run_coroutine_threadsafe(self._keep_alive(), loop)
+            self._keep_alive_timer = asyncio.run_coroutine_threadsafe(
+                self._keep_alive(), loop
+            )
 
     async def _keep_alive(self):
         """Send periodic BEEP to keep connections alive"""
@@ -233,7 +252,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         """Get next sequential event ID from Redis"""
         return await self._redis.incr(self.EVENT_SEQ_KEY)
 
-    async def _store_event(self, channel: str, data: Dict[str, Any], owner: Optional[str] = None) -> int:
+    async def _store_event(
+        self, channel: str, data: Dict[str, Any], owner: Optional[str] = None
+    ) -> int:
         """Store event in eventhistory collection and return sequence ID
 
         Uses the same collection as /events API endpoint (EventHistory model).
@@ -249,7 +270,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         }
         col = self._mongo_db[self.EVENT_HISTORY_COLLECTION]
         # Use w=1 for acknowledged writes (durability)
-        await col.with_options(write_concern=WriteConcern(w=1)).insert_one(event_doc)
+        await col.with_options(write_concern=WriteConcern(w=1)).insert_one(
+            event_doc
+        )
         return sequence_id
 
     async def _get_subscriber_state(self, subscriber_id: str) -> Optional[Dict]:
@@ -272,11 +295,21 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         """Decode Redis message bytes to strings for JSON serialization"""
         return {
             "type": msg.get("type"),
-            "pattern": (msg.get("pattern").decode("utf-8") if msg.get("pattern") else None),
-            "channel": (
-                msg["channel"].decode("utf-8") if isinstance(msg["channel"], bytes) else msg["channel"]
+            "pattern": (
+                msg.get("pattern").decode("utf-8")
+                if msg.get("pattern")
+                else None
             ),
-            "data": (msg["data"].decode("utf-8") if isinstance(msg["data"], bytes) else msg["data"]),
+            "channel": (
+                msg["channel"].decode("utf-8")
+                if isinstance(msg["channel"], bytes)
+                else msg["channel"]
+            ),
+            "data": (
+                msg["data"].decode("utf-8")
+                if isinstance(msg["data"], bytes)
+                else msg["data"]
+            ),
         }
 
     def _eventhistory_to_cloudevent(self, event: Dict) -> str:
@@ -327,7 +360,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         cursor = col.find(query).sort("sequence_id", ASCENDING).limit(limit)
         return await cursor.to_list(length=limit)
 
-    async def subscribe(self, channel: str, user: str, options: Optional[Dict] = None) -> Subscription:
+    async def subscribe(
+        self, channel: str, user: str, options: Optional[Dict] = None
+    ) -> Subscription:
         """Subscribe to a Pub/Sub channel
 
         Args:
@@ -346,7 +381,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
         async with self._lock:
             redis_sub = self._redis.pubsub()
-            sub = Subscription(id=sub_id, channel=channel, user=user, promiscuous=promiscuous)
+            sub = Subscription(
+                id=sub_id, channel=channel, user=user, promiscuous=promiscuous
+            )
             await redis_sub.subscribe(channel)
 
             self._subscriptions[sub_id] = {
@@ -390,7 +427,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         if existing:
             # Existing subscriber - verify ownership
             if existing["user"] != user:
-                raise RuntimeError(f"Subscriber {subscriber_id} owned by different user")
+                raise RuntimeError(
+                    f"Subscriber {subscriber_id} owned by different user"
+                )
             # Load pending catch-up events
             missed = await self._get_missed_events(
                 channel=existing["channel"],
@@ -447,7 +486,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
             await sub["redis_sub"].unsubscribe()
             await sub["redis_sub"].close()
 
-    async def _get_listen_subscription(self, sub_id: int, user: Optional[str] = None):
+    async def _get_listen_subscription(
+        self, sub_id: int, user: Optional[str] = None
+    ):
         async with self._lock:
             sub_data = self._subscriptions.get(sub_id)
             if not sub_data:
@@ -460,7 +501,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
         return sub, sub_data
 
-    async def _update_listen_subscription_state(self, sub: Subscription, sub_data: dict):
+    async def _update_listen_subscription_state(
+        self, sub: Subscription, sub_data: dict
+    ):
         subscriber_id = sub_data.get("subscriber_id")
         if subscriber_id and sub_data.get("last_delivered_id"):
             await self._update_subscriber_state(
@@ -470,7 +513,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
         return subscriber_id
 
-    def _consume_pending_catchup(self, sub_id: int, sub: Subscription, sub_data: dict) -> Optional[Dict]:
+    def _consume_pending_catchup(
+        self, sub_id: int, sub: Subscription, sub_data: dict
+    ) -> Optional[Dict]:
         if not sub_data.get("pending_catchup"):
             return None
 
@@ -486,7 +531,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
             "type": "message",
         }
 
-    async def _rebuild_redis_subscription(self, sub_id: int, sub: Subscription, sub_data: dict):
+    async def _rebuild_redis_subscription(
+        self, sub_id: int, sub: Subscription, sub_data: dict
+    ):
         async with self._lock:
             channel = sub.channel
             new_redis_sub = self._redis.pubsub()
@@ -494,7 +541,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
             self._subscriptions[sub_id]["redis_sub"] = new_redis_sub
             sub_data["redis_sub"] = new_redis_sub
 
-    def _maybe_update_delivery_offset(self, subscriber_id: Optional[str], sub_data: dict, msg_data: Any):
+    def _maybe_update_delivery_offset(
+        self, subscriber_id: Optional[str], sub_data: dict, msg_data: Any
+    ):
         if not subscriber_id or not isinstance(msg_data, dict):
             return
 
@@ -502,7 +551,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         if sequence_id:
             sub_data["last_delivered_id"] = sequence_id
 
-    def _should_deliver_to_user(self, sub: Subscription, msg_data: dict) -> bool:
+    def _should_deliver_to_user(
+        self, sub: Subscription, msg_data: dict
+    ) -> bool:
         if sub.promiscuous:
             return True
 
@@ -518,7 +569,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         while True:
             self._subscriptions[sub_id]["last_poll"] = datetime.utcnow()
             try:
-                msg = await sub_data["redis_sub"].get_message(ignore_subscribe_messages=True, timeout=1.0)
+                msg = await sub_data["redis_sub"].get_message(
+                    ignore_subscribe_messages=True, timeout=1.0
+                )
             except aioredis.ConnectionError:
                 await self._rebuild_redis_subscription(sub_id, sub, sub_data)
                 continue
@@ -530,13 +583,17 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
                 continue
 
             msg_data = json.loads(msg["data"])
-            self._maybe_update_delivery_offset(subscriber_id, sub_data, msg_data)
+            self._maybe_update_delivery_offset(
+                subscriber_id, sub_data, msg_data
+            )
             if not self._should_deliver_to_user(sub, msg_data):
                 continue
 
             return self._decode_redis_message(msg)
 
-    async def listen(self, sub_id: int, user: Optional[str] = None) -> Optional[Dict]:
+    async def listen(
+        self, sub_id: int, user: Optional[str] = None
+    ) -> Optional[Dict]:
         """Listen for Pub/Sub messages
 
         For durable subscriptions (with subscriber_id):
@@ -547,7 +604,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         Returns message dict or None on error.
         """
         sub, sub_data = await self._get_listen_subscription(sub_id, user)
-        subscriber_id = await self._update_listen_subscription_state(sub, sub_data)
+        subscriber_id = await self._update_listen_subscription_state(
+            sub, sub_data
+        )
         pending_msg = self._consume_pending_catchup(sub_id, sub, sub_data)
         if pending_msg:
             return pending_msg
@@ -555,13 +614,17 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
         if not sub_data.get("catchup_done"):
             sub_data["catchup_done"] = True
 
-        return await self._listen_for_message(sub_id, sub, subscriber_id, sub_data)
+        return await self._listen_for_message(
+            sub_id, sub, subscriber_id, sub_data
+        )
 
     async def publish(self, channel: str, message: str):
         """Publish a message on a channel (Redis only, no durability)"""
         await self._redis.publish(channel, message)
 
-    async def publish_cloudevent(self, channel: str, data: Any, attributes: Optional[Dict] = None):
+    async def publish_cloudevent(
+        self, channel: str, data: Any, attributes: Optional[Dict] = None
+    ):
         """Publish a CloudEvent on a Pub/Sub channel
 
         Events are:
@@ -606,7 +669,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
             if data is not None:
                 return data
 
-    async def push_cloudevent(self, list_name: str, data: Any, attributes: Optional[Dict] = None):
+    async def push_cloudevent(
+        self, list_name: str, data: Any, attributes: Optional[Dict] = None
+    ):
         """Push a CloudEvent on a list"""
         if not attributes:
             attributes = {
@@ -631,7 +696,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
             subscriptions.append(stats)
         return subscriptions
 
-    async def cleanup_stale_subscriptions(self, max_age_minutes: int = 30) -> int:
+    async def cleanup_stale_subscriptions(
+        self, max_age_minutes: int = 30
+    ) -> int:
         """Remove subscriptions not polled recently
 
         For durable subscriptions, only the in-memory state is cleaned up.
@@ -654,7 +721,9 @@ class PubSub:  # pylint: disable=too-many-instance-attributes
 
         return len(stale_ids)
 
-    async def cleanup_stale_subscriber_states(self, max_age_days: int = 30) -> int:
+    async def cleanup_stale_subscriber_states(
+        self, max_age_days: int = 30
+    ) -> int:
         """Remove subscriber states not used for a long time
 
         This is separate from subscription cleanup - it removes the
