@@ -1703,9 +1703,19 @@ async def patch_node(
 
     # State transition checks
     if new_state is not None:
+<<<<<<< HEAD
         is_valid, message = specialized_node.validate_node_state_transition(new_state)
         if not is_valid:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=message)
+=======
+        is_valid, message = specialized_node.validate_node_state_transition(
+            new_state
+        )
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=message
+            )
+>>>>>>> 7df261e (api: Implement PATCH endpoint for node)
         if new_state != new_node_def.state:
             new_node_def.processed_by_kcidb_bridge = False
         new_node_def.state = new_state

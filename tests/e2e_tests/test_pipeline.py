@@ -10,7 +10,7 @@ import pytest
 from cloudevents.http import from_json
 
 from .listen_handler import create_listen_task
-from .test_node_handler import create_node, get_node_by_id, update_node
+from .test_node_handler import create_node, get_node_by_id, patch_node, update_node
 
 
 @pytest.mark.dependency(

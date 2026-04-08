@@ -46,8 +46,8 @@ tests = [
 ]
 dev = [
   "kernelci-api[tests]",
-  "pycodestyle == 2.8.0",
-  "pylint == 4.0.4",
+  "ruff >= 0.9.0",
+  "pre-commit >= 4.0.0",
 ]
 
 [project.urls]
@@ -64,3 +64,21 @@ scripts = ["*"]
 "api.static.css" = ["*.css"]
 "api.static.js" = ["*.js"]
 migrations = ["*.py"]
+
+# Ruff — used by CI and pre-commit hooks
+[tool.ruff]
+target-version = "py310"
+# Soft limit for formatter wrapping
+line-length = 80
+
+[tool.ruff.lint]
+# Ruff defaults (E, F, W) plus import sorting and complexity checking
+select = ["E", "F", "W", "I", "C901"]
+
+[tool.ruff.lint.pycodestyle]
+# Hard limit — lines beyond this are errors regardless of formatter
+max-line-length = 110
+
+[tool.ruff.lint.per-file-ignores]
+# Legacy high-complexity entrypoint, to be refactored incrementally
+"api/main.py" = ["C901"]
