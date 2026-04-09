@@ -41,10 +41,10 @@ from fastapi.responses import (
     JSONResponse,
     PlainTextResponse,
 )
+from fastapi.routing import APIRoute, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
 from fastapi_users import FastAPIUsers
-from fastapi_versioning import VersionedFastAPI
 from jose import jwt
 from jose.exceptions import JWTError
 from kernelci.api.models import (
@@ -2300,12 +2300,19 @@ async def purge_handler(
     return await purge_old_nodes(age_days=days, batch_size=batch_size)
 
 
-versioned_app = VersionedFastAPI(
-    app,
-    version_format="{major}",
-    prefix_format="/v{major}",
-    enable_latest=True,
-    default_version=(0, 0),
+# Build versioned app using include_router instead of fastapi-versioning.
+# VersionedFastAPI (fastapi-versioning==0.10.0) is incompatible with
+# FastAPI >= 0.118.0: it transplants route objects by directly appending
+# to sub-app router.routes, which bypasses FastAPI's request_response
+# wrapper and causes 'fastapi_inner_astack not found in request scope'.
+# Using include_router re-creates APIRoute objects properly.
+_api_router = APIRouter()
+for _route in app.routes:
+    if isinstance(_route, APIRoute):
+        _api_router.routes.append(_route)
+
+versioned_app = FastAPI(
+    title=app.title,
     on_startup=[
         pubsub_startup,
         create_indexes,
@@ -2315,9 +2322,10 @@ versioned_app = VersionedFastAPI(
     ],
 )
 
+versioned_app.include_router(_api_router, prefix="/v0")
+versioned_app.include_router(_api_router, prefix="/latest")
 
-# traceback_exception_handler is a global exception handler that will be
-# triggered for all exceptions that are not handled by specific exception
+
 def traceback_exception_handler(request: Request, exc: Exception):
     """Global exception handler to print traceback"""
     print(f"Exception: {exc}")
@@ -2328,29 +2336,15 @@ def traceback_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Workaround to use global exception handlers for versioned API.
-# The issue has already been reported here:
-# https://github.com/DeanWay/fastapi-versioning/issues/30
-for sub_app in versioned_app.routes:
-    if hasattr(sub_app.app, "add_exception_handler"):
-        sub_app.app.add_exception_handler(
-            ValueError, value_error_exception_handler
-        )
-        sub_app.app.add_exception_handler(
-            errors.InvalidId, invalid_id_exception_handler
-        )
-        # print traceback for all other exceptions
-        sub_app.app.add_exception_handler(
-            Exception, traceback_exception_handler
-        )
+versioned_app.add_exception_handler(ValueError, value_error_exception_handler)
+versioned_app.add_exception_handler(
+    errors.InvalidId, invalid_id_exception_handler
+)
+versioned_app.add_exception_handler(Exception, traceback_exception_handler)
 
 
 class VersionRedirectMiddleware:
-    """Pure ASGI middleware to redirect requests with version prefix.
-
-    Avoids BaseHTTPMiddleware which can corrupt the request scope
-    (fastapi_inner_astack not found in request scope).
-    """
+    """Pure ASGI middleware to redirect requests with version prefix."""
 
     def __init__(self, app):
         self.app = app
