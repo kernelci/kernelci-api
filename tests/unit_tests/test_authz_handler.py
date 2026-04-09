@@ -4,8 +4,6 @@
 
 """Unit tests for authorization helpers and user self-update."""
 
-# pylint: disable=duplicate-code
-
 import json
 
 from kernelci.api.models import Node, Revision

@@ -3,8 +3,6 @@
 # Copyright (C) 2022, 2023 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
-# pylint: disable=unused-argument
-
 """Unit test function for KernelCI API user handler"""
 
 import json

@@ -23,7 +23,7 @@ def create_listen_task(test_async_client, subscription_id):
             listen_path,
             headers={
                 "Accept": "application/json",
-                "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
+                "Authorization": f"Bearer {pytest.BEARER_TOKEN}",
             },
         )
     )

@@ -3,8 +3,6 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 
-# pylint: disable=unused-argument
-
 """Unit test function for KernelCI API subscribe handler"""
 
 from api.pubsub import Subscription
