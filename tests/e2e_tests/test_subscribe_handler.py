@@ -24,9 +24,7 @@ async def test_subscribe_node_channel(test_async_client):
     """
     response = await test_async_client.post(
         "subscribe/node",
-        headers={
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
-        },
+        headers={"Authorization": f"Bearer {pytest.BEARER_TOKEN}"},
     )
     pytest.node_channel_subscription_id = response.json()["id"]
     assert response.status_code == 200
@@ -52,9 +50,7 @@ async def test_subscribe_test_channel(test_async_client):
     """
     response = await test_async_client.post(
         "subscribe/test_channel",
-        headers={
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
-        },
+        headers={"Authorization": f"Bearer {pytest.BEARER_TOKEN}"},
     )
     pytest.test_channel_subscription_id = response.json()["id"]
     assert response.status_code == 200
@@ -81,9 +77,7 @@ async def test_subscribe_user_group_channel(test_async_client):
     """
     response = await test_async_client.post(
         "subscribe/user_group",
-        headers={
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
-        },
+        headers={"Authorization": f"Bearer {pytest.BEARER_TOKEN}"},
     )
     pytest.user_group_channel_subscription_id = response.json()["id"]
     assert response.status_code == 200

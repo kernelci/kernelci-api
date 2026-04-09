@@ -4,8 +4,6 @@
 # Author: Michal Galka <michal.galka@collabora.com>
 # Author: Alexandra Pereira <alexandra.pereira@collabora.com>
 
-# pylint: disable=protected-access
-
 """Unit test functions for KernelCI API Pub/Sub"""
 
 import json

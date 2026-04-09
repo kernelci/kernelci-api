@@ -6,8 +6,6 @@
 # Copyright (C) 2023 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
-# pylint: disable=unused-argument
-
 """Unit test function for KernelCI API whoami handler"""
 
 import pytest

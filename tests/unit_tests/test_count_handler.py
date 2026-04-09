@@ -3,8 +3,6 @@
 # Copyright (C) 2022 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
-# pylint: disable=unused-argument
-
 """Unit test functions for KernelCI API count handler"""
 
 

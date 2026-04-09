@@ -6,8 +6,6 @@
 # Copyright (C) 2022, 2023 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
-# pylint: disable=protected-access
-
 """pytest fixtures for KernelCI API"""
 
 from unittest.mock import AsyncMock

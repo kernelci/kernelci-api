@@ -6,8 +6,6 @@
 # Copyright (C) 2022 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 
-# pylint: disable=unused-argument
-
 """Unit test functions for KernelCI API listen handler"""
 
 from tests.unit_tests.conftest import BEARER_TOKEN

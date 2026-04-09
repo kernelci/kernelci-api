@@ -2,8 +2,6 @@
 #
 # Copyright (C) 2025 Collabora Limited
 #
-# pylint: disable=unused-argument
-
 """End-to-end test functions for KernelCI API invite flow"""
 
 import json

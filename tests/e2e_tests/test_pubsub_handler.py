@@ -28,7 +28,7 @@ async def test_pubsub_handler(test_async_client):
     # Create Task to listen pubsub event on 'test_channel' channel
     task_listen = create_listen_task(
         test_async_client, pytest.test_channel_subscription_id
-    )  # pylint: disable=no-member
+    )
 
     # Created and publish CloudEvent
     attributes = {
@@ -38,7 +38,7 @@ async def test_pubsub_handler(test_async_client):
     data = {"message": "Test message"}
     event = CloudEvent(attributes, data)
     headers, body = to_structured(event)
-    headers["Authorization"] = f"Bearer {pytest.BEARER_TOKEN}"  # pylint: disable=no-member
+    headers["Authorization"] = f"Bearer {pytest.BEARER_TOKEN}"
     response = await test_async_client.post(
         "publish/test_channel", headers=headers, data=body
     )
