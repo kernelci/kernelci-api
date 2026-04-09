@@ -2345,19 +2345,36 @@ for sub_app in versioned_app.routes:
         )
 
 
-@versioned_app.middleware("http")
-async def redirect_http_requests(request: Request, call_next):
-    """Redirect request with version prefix when no version is provided"""
-    response = None
-    path = request.scope["path"]
-    match = re.match(r"^/(v[\d.]+)", path)
-    if match:
-        prefix = match.group(1)
-        if prefix not in API_VERSIONS:
-            response = PlainTextResponse(
-                f"Unsupported API version: {prefix}",
-                status_code=status.HTTP_400_BAD_REQUEST,
-            )
-    elif not path.startswith("/latest"):
-        request.scope["path"] = "/latest" + path
-    return response or await call_next(request)
+class VersionRedirectMiddleware:
+    """Pure ASGI middleware to redirect requests with version prefix.
+
+    Avoids BaseHTTPMiddleware which can corrupt the request scope
+    (fastapi_inner_astack not found in request scope).
+    """
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope["path"]
+        match = re.match(r"^/(v[\d.]+)", path)
+        if match:
+            prefix = match.group(1)
+            if prefix not in API_VERSIONS:
+                response = PlainTextResponse(
+                    f"Unsupported API version: {prefix}",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+                await response(scope, receive, send)
+                return
+        elif not path.startswith("/latest"):
+            scope["path"] = "/latest" + path
+
+        await self.app(scope, receive, send)
+
+
+versioned_app.add_middleware(VersionRedirectMiddleware)
