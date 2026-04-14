@@ -13,6 +13,7 @@ class AuthSettings(BaseSettings):
     """Authentication settings"""
 
     secret_key: str
+    unified_secret: str = ""
     algorithm: str = "HS256"
     # Set to None so tokens don't expire
     access_token_expire_seconds: float = 315360000
