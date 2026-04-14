@@ -9,7 +9,6 @@
 from typing import Optional
 
 import jwt as pyjwt
-
 from fastapi_users import exceptions, models
 from fastapi_users.authentication import (
     AuthenticationBackend,
