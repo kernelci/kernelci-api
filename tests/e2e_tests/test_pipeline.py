@@ -45,7 +45,7 @@ async def test_node_pipeline(test_async_client):
     # Create Task to listen pubsub event on 'node' channel
     task_listen = create_listen_task(
         test_async_client, pytest.node_channel_subscription_id
-    )  # pylint: disable=no-member
+    )
 
     # Create a node
     node = {
@@ -94,7 +94,7 @@ async def test_node_pipeline(test_async_client):
     # Create Task to listen 'updated' event on 'node' channel
     task_listen = create_listen_task(
         test_async_client, pytest.node_channel_subscription_id
-    )  # pylint: disable=no-member
+    )
 
     # Update node.state
     node.update({"state": "done"})

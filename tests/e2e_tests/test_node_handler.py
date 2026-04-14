@@ -24,7 +24,7 @@ async def create_node(test_async_client, node):
         "node",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",
         },
         data=json.dumps(node),
     )
@@ -44,7 +44,7 @@ async def get_node_by_id(test_async_client, node_id):
         f"node/{node_id}",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",
         },
     )
     assert response.status_code == 200
@@ -65,7 +65,7 @@ async def get_node_by_attribute(test_async_client, params):
         params=params,
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",
         },
     )
     assert response.status_code == 200
@@ -85,7 +85,7 @@ async def update_node(test_async_client, node):
         f"node/{node['id']}",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",
         },
         data=json.dumps(node),
     )
@@ -104,7 +104,7 @@ async def patch_node(test_async_client, node_id, patch_data):
         f"node/{node_id}",
         headers={
             "Accept": "application/json",
-            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",  # pylint: disable=no-member
+            "Authorization": f"Bearer {pytest.BEARER_TOKEN}",
         },
         data=json.dumps(patch_data),
     )

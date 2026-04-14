@@ -3,12 +3,6 @@
 # Copyright (C) 2023 Collabora Limited
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 
-# Disable flag as user models don't require any public methods
-# at the moment
-# pylint: disable=too-few-public-methods
-
-# pylint: disable=no-name-in-module
-
 """Server-side model definitions"""
 
 from datetime import datetime
@@ -120,7 +114,7 @@ class UserGroupCreateRequest(BaseModel):
 
 class User(
     BeanieBaseUser,
-    Document,  # pylint: disable=too-many-ancestors
+    Document,
     DatabaseModel,
 ):
     """API User model"""
@@ -131,7 +125,7 @@ class User(
     )
 
     @field_validator("groups")
-    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
+    def validate_groups(cls, groups):
         """Unique group constraint"""
         unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
@@ -159,7 +153,7 @@ class UserRead(schemas.BaseUser[PydanticObjectId], ModelId):
     groups: List[UserGroup] = Field(default=[])
 
     @field_validator("groups")
-    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
+    def validate_groups(cls, groups):
         """Unique group constraint"""
         unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
@@ -174,7 +168,7 @@ class UserCreateRequest(schemas.BaseUserCreate):
     groups: List[str] = Field(default=[])
 
     @field_validator("groups")
-    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
+    def validate_groups(cls, groups):
         """Unique group constraint"""
         unique_names = set(groups)
         if len(unique_names) != len(groups):
@@ -189,7 +183,7 @@ class UserCreate(schemas.BaseUserCreate):
     groups: List[UserGroup] = Field(default=[])
 
     @field_validator("groups")
-    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
+    def validate_groups(cls, groups):
         """Unique group constraint"""
         unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
@@ -206,7 +200,7 @@ class UserUpdateRequest(schemas.BaseUserUpdate):
     groups: List[str] = Field(default=[])
 
     @field_validator("groups")
-    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
+    def validate_groups(cls, groups):
         """Unique group constraint"""
         unique_names = set(groups)
         if len(unique_names) != len(groups):
@@ -223,7 +217,7 @@ class UserUpdate(schemas.BaseUserUpdate):
     groups: List[UserGroup] = Field(default=[])
 
     @field_validator("groups")
-    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
+    def validate_groups(cls, groups):
         """Unique group constraint"""
         unique_names = {group.name for group in groups}
         if len(unique_names) != len(groups):
@@ -246,7 +240,7 @@ class UserInviteRequest(BaseModel):
     resend_if_exists: bool = False
 
     @field_validator("groups")
-    def validate_groups(cls, groups):  # pylint: disable=no-self-argument
+    def validate_groups(cls, groups):
         """Unique group constraint"""
         unique_names = set(groups)
         if len(unique_names) != len(groups):

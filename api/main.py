@@ -5,8 +5,6 @@
 # Author: Jeny Sadadia <jeny.sadadia@collabora.com>
 # Author: Denys Fedoryshchenko <denys.f@collabora.com>
 
-# pylint: disable=unused-argument,global-statement,too-many-lines
-
 """KernelCI API main module"""
 
 import asyncio
@@ -120,7 +118,7 @@ _validate_startup_environment()
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):  # pylint: disable=redefined-outer-name
+async def lifespan(app: FastAPI):
     """Lifespan functions for startup and shutdown events"""
     await pubsub_startup()
     await create_indexes()
@@ -139,7 +137,7 @@ metrics = Metrics()
 app = FastAPI(lifespan=lifespan, debug=True, docs_url=None, redoc_url=None)
 db = Database(service=os.getenv("MONGO_SERVICE", DEFAULT_MONGO_SERVICE))
 auth = Authentication(token_url="user/login")
-pubsub = None  # pylint: disable=invalid-name
+pubsub = None
 
 auth_backend = auth.get_user_authentication_backend()
 fastapi_users_instance = FastAPIUsers[User, PydanticObjectId](
@@ -151,7 +149,7 @@ user_manager = create_user_manager()
 
 async def pubsub_startup():
     """Startup event handler to create Pub/Sub object"""
-    global pubsub  # pylint: disable=invalid-name
+    global pubsub
     pubsub = await PubSub.create()
 
 
@@ -557,7 +555,7 @@ async def invite_user(
                 invite_url,
             )
             email_sent = True
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except Exception as exc:
             print(f"Failed to send invite email: {exc}")
 
     return UserInviteResponse(
@@ -640,7 +638,7 @@ async def accept_invite(accept: InviteAcceptRequest):
 
     try:
         await user_manager.send_invite_accepted_email(updated_user)
-    except Exception as exc:  # pylint: disable=broad-exception-caught
+    except Exception as exc:
         print(f"Failed to send invite accepted email: {exc}")
     return updated_user
 

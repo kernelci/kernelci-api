@@ -9,11 +9,11 @@ from pydantic import EmailStr
 from pydantic_settings import BaseSettings
 
 
-# pylint: disable=too-few-public-methods
 class AuthSettings(BaseSettings):
     """Authentication settings"""
 
     secret_key: str
+    unified_secret: str = ""
     algorithm: str = "HS256"
     # Set to None so tokens don't expire
     access_token_expire_seconds: float = 315360000
@@ -21,7 +21,6 @@ class AuthSettings(BaseSettings):
     public_base_url: str | None = None
 
 
-# pylint: disable=too-few-public-methods
 class PubSubSettings(BaseSettings):
     """Pub/Sub settings loaded from the environment"""
 
@@ -35,7 +34,6 @@ class PubSubSettings(BaseSettings):
     subscriber_state_ttl_days: int = 30  # Cleanup unused subscriber states
 
 
-# pylint: disable=too-few-public-methods
 class EmailSettings(BaseSettings):
     """Email settings"""
 
