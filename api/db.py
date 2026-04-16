@@ -8,7 +8,7 @@
 
 from beanie import init_beanie
 from bson import ObjectId
-from fastapi_pagination.ext.motor import paginate
+from fastapi_pagination.ext.pymongo import apaginate as paginate
 from kernelci.api.models import (
     EventHistory,
     Hierarchy,
@@ -16,7 +16,7 @@ from kernelci.api.models import (
     TelemetryEvent,
     parse_node_obj,
 )
-from motor import motor_asyncio
+from pymongo import AsyncMongoClient
 from redis import asyncio as aioredis
 
 from .models import User, UserGroup
@@ -52,10 +52,10 @@ class Database:
     BOOL_VALUE_MAP = {"true": True, "false": False}
 
     def __init__(self, service="mongodb://db:27017", db_name="kernelci"):
-        self._motor = motor_asyncio.AsyncIOMotorClient(service)
+        self._mongo = AsyncMongoClient(service)
         # TBD: Make redis host configurable
         self._redis = aioredis.from_url("redis://redis:6379")
-        self._db = self._motor[db_name]
+        self._db = self._mongo[db_name]
 
     async def initialize_beanie(self):
         """Initialize Beanie ODM to use `fastapi-users` tools for MongoDB"""

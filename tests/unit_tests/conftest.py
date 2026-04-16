@@ -12,11 +12,9 @@ from unittest.mock import AsyncMock
 
 import fakeredis.aioredis
 import pytest
-from beanie import init_beanie
 from fastapi import HTTPException, Request, status
 from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
-from mongomock_motor import AsyncMongoMockClient
 
 from api.main import (
     app,
@@ -245,16 +243,17 @@ def mock_unsubscribe(mocker):
 
 @pytest.fixture(autouse=True)
 async def mock_init_beanie(mocker):
-    """Mocks async call to Database method to initialize Beanie"""
+    """Mocks async call to Database method to initialize Beanie.
+
+    All tests mock api.db.Database.* directly, so beanie never issues real
+    queries. Patching initialize_beanie to a no-op avoids pulling in an async
+    mongo mock, which beanie 2.x (pymongo AsyncMongoClient) has no replacement
+    for.
+    """
     async_mock = AsyncMock()
-    client = AsyncMongoMockClient()
-    init = await init_beanie(
-        document_models=[User], database=client.get_database(name="db")
-    )
     mocker.patch(
         "api.db.Database.initialize_beanie",
         side_effect=async_mock,
-        return_value=init,
     )
     return async_mock
 
