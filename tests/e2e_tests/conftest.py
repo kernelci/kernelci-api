@@ -6,10 +6,12 @@
 
 """pytest fixtures for KernelCI API end-to-end tests"""
 
+import asyncio
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from kernelci.api.models import Node, Regression
-from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo import AsyncMongoClient
 
 from api.main import versioned_app
 
@@ -17,7 +19,7 @@ BASE_URL = "http://api:8000/latest/"
 DB_URL = "mongodb://db:27017"
 DB_NAME = "kernelci"
 
-db_client = AsyncIOMotorClient(DB_URL)
+db_client = AsyncMongoClient(DB_URL)
 db = db_client[DB_NAME]
 node_model_fields = set(Node.model_fields.keys())
 regression_model_fields = set(Regression.model_fields.keys())
@@ -51,9 +53,7 @@ async def db_create(collection, obj):
 
 @pytest.fixture(scope="session")
 def event_loop():
-    """Get an instance of the default event loop using database client.
-    The event loop will be used for all async tests.
-    """
-    loop = db_client.get_io_loop()
+    """Session-scoped event loop shared by all async tests."""
+    loop = asyncio.new_event_loop()
     yield loop
     loop.close()

@@ -6,4 +6,3 @@ pytest-dependency==0.5.1
 pytest-mock==3.6.1
 pytest-order==1.0.1
 httpx>=0.27.0,<1.0.0
-mongomock_motor==0.0.21

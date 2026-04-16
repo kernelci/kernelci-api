@@ -24,8 +24,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 from cloudevents.http import CloudEvent, to_json
-from motor import motor_asyncio
-from pymongo import ASCENDING, WriteConcern
+from pymongo import ASCENDING, AsyncMongoClient, WriteConcern
 from redis import asyncio as aioredis
 
 from .config import PubSubSettings
@@ -87,7 +86,7 @@ class PubSub:
         # MongoDB setup
         if mongo_client is None:
             mongo_service = os.getenv("MONGO_SERVICE") or "mongodb://db:27017"
-            self._mongo_client = motor_asyncio.AsyncIOMotorClient(mongo_service)
+            self._mongo_client = AsyncMongoClient(mongo_service)
         else:
             self._mongo_client = mongo_client
         self._mongo_db = self._mongo_client[mongo_db_name]
