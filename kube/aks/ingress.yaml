@@ -16,6 +16,7 @@ metadata:
     nginx.ingress.kubernetes.io/compression-level: "6"  # 1-9, higher = better compression
     nginx.ingress.kubernetes.io/compression-types: "application/json text/html text/plain application/javascript text/css application/x-javascript"  # MIME types to compress
     nginx.ingress.kubernetes.io/compression-min-length: "1000"  # bytes
+    nginx.ingress.kubernetes.io/proxy-body-size: "32m"  # large kunit result trees exceed the 1m default
 spec:
   ingressClassName: ingressclass-api
   tls:
