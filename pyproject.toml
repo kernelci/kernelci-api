@@ -18,7 +18,7 @@ license = {text = "LGPL-2.1-or-later"}
 dependencies = [
   "cloudevents == 2.0.0",
   "beanie == 2.1.0",
-  "fastapi[all] == 0.135.3",
+  "fastapi[all] == 0.136.1",
   "fastapi-pagination == 0.15.12",
   "fastapi-users[beanie, oauth] == 15.0.5",
   "fastapi-users-db-beanie == 5.0.0",
