@@ -50,6 +50,15 @@ spec:
                 secretKeyRef:
                   name: kernelci-api-secret
                   key: secret-key
+            # Optional unified HS256 key shared with kernelci-pipeline,
+            # kernelci-storage and kcidb-restd-rs.  Add a `unified-secret`
+            # key to the kernelci-api-secret Secret to enable.
+            - name: UNIFIED_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: kernelci-api-secret
+                  key: unified-secret
+                  optional: true
             - name: EMAIL_SENDER
               valueFrom:
                 configMapKeyRef:
