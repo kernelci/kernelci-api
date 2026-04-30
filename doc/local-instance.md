@@ -53,6 +53,28 @@ $ echo MONGO_SERVICE=mongodb://db:27017 >> .env
 `SECRET_KEY` and `MONGO_SERVICE` are always required.
 `KCI_INITIAL_PASSWORD` is required only when no admin user exists yet.
 
+#### Unified secret (shared across KernelCI services)
+
+The API can additionally accept JWTs signed with a shared HS256 key called
+`UNIFIED_SECRET`.  When set, each incoming token is validated against
+`SECRET_KEY` first and falls back to `UNIFIED_SECRET` on signature failure
+(see `DualSecretJWTStrategy` in `api/auth.py`).  The same key is installed
+on `kernelci-pipeline` (`[jwt].unified_secret`), `kernelci-storage`
+(`unified_secret` in its TOML) and `kcidb-restd-rs` (`--unified-secret` /
+`UNIFIED_SECRET`), so a single token authenticates a user across all four
+services.
+
+Generate it the same way as `SECRET_KEY`:
+
+```
+$ echo UNIFIED_SECRET=$(openssl rand -hex 32) >> .env
+```
+
+`UNIFIED_SECRET` is optional; leave it unset to disable the fallback.  The
+full token spec, per-service claim validation, and step-by-step deployment
+migration are documented in `UNIFIED_TOKEN.md` in the `kernelci-deploy`
+repository.
+
 ### Start docker-compose
 
 To build the Docker images and start `docker-compose`:
