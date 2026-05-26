@@ -25,7 +25,7 @@ dependencies = [
   "MarkupSafe == 3.0.3",
   "pymongo == 4.16.0",
   "passlib == 1.7.4",
-  "pydantic == 2.13.3",
+  "pydantic == 2.13.4",
   "pymongo-migrate == 1.0.0",
   "python-jose[cryptography] == 3.5.0",
   "redis == 7.4.0",
