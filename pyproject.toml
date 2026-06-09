@@ -19,7 +19,7 @@ dependencies = [
   "cloudevents == 2.1.0",
   "beanie == 2.1.0",
   "fastapi[all] == 0.136.1",
-  "fastapi-pagination == 0.15.12",
+  "fastapi-pagination == 0.15.14",
   "fastapi-users[beanie, oauth] == 15.0.5",
   "fastapi-users-db-beanie == 5.0.0",
   "MarkupSafe == 3.0.3",
