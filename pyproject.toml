@@ -28,7 +28,7 @@ dependencies = [
   "pydantic == 2.13.4",
   "pymongo-migrate == 1.0.0",
   "python-jose[cryptography] == 3.5.0",
-  "redis == 7.4.0",
+  "redis == 8.0.0",
   "uvicorn[standard] == 0.44.0",
 ]
 
