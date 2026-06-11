@@ -636,10 +636,50 @@ const ViewerApp = (() => {
     }
 
     /**
+     * Fetch all nodes matching a query, paginating through every page
+     *
+     * The /nodes endpoint returns documents in insertion order without
+     * sorting, so a single truncated page only covers the oldest part of
+     * the queried window. Fetching all pages avoids silently dropping
+     * recent nodes.
+     *
+     * @param {string} query - Query string without limit/offset,
+     *                         e.g. "kind=checkout&created__gt=..."
+     * @returns {Promise<Array<Object>>} All matching nodes
+     */
+    async function fetchAllNodes(query) {
+        const pageSize = 1000;
+        const maxPages = 20;
+        const items = [];
+
+        for (let page = 0; page < maxPages; page++) {
+            const offset = page * pageSize;
+            const url = `${state.apiUrl}/latest/nodes?${query}&limit=${pageSize}&offset=${offset}`;
+            console.log('Fetching nodes:', url);
+
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            items.push(...data.items);
+
+            if (data.items.length === 0 || items.length >= data.total) {
+                break;
+            }
+        }
+
+        return items;
+    }
+
+    /**
      * Fetch available tree+branch combinations from the API
      *
      * Strategy:
-     * 1. Query recent kbuilds (last 4 weeks)
+     * 1. Query recent checkouts (last 4 weeks). Checkouts are used instead
+     *    of kbuilds as there is one per revision rather than dozens of
+     *    builds.
      * 2. Extract unique tree+branch combinations from data.kernel_revision
      * 3. Sort alphabetically by "tree/branch" format
      *
@@ -653,21 +693,15 @@ const ViewerApp = (() => {
             fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
             const dateStr = fourWeeksAgo.toISOString().split('.')[0];
 
-            // Query kbuilds from last 4 weeks to find active tree/branch combinations
-            const url = `${state.apiUrl}/latest/nodes?kind=kbuild&created__gt=${dateStr}&limit=1000`;
-            console.log('Fetching tree/branch combinations from:', url);
-
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            // Query checkouts from last 4 weeks to find active tree/branch combinations
+            const checkouts = await fetchAllNodes(
+                `kind=checkout&created__gt=${dateStr}`
+            );
 
             // Extract unique tree+branch combinations
             // Use a Map to deduplicate by "tree/branch" key
             const treeBranchMap = new Map();
-            data.items.forEach(item => {
+            checkouts.forEach(item => {
                 const tree = item.data?.kernel_revision?.tree;
                 const branch = item.data?.kernel_revision?.branch;
 
@@ -721,22 +755,18 @@ const ViewerApp = (() => {
 
             // Fetch all kbuilds for this tree+branch in the date range
             // IMPORTANT: Filter by BOTH tree AND branch
-            const url = `${state.apiUrl}/latest/nodes?kind=kbuild&data.kernel_revision.tree=${treeBranch.tree}&data.kernel_revision.branch=${treeBranch.branch}&created__gt=${dateStr}&limit=1000`;
-            console.log('Fetching kbuilds:', url);
-
-            const response = await fetch(url);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-
-            const data = await response.json();
+            const kbuilds = await fetchAllNodes(
+                `kind=kbuild&data.kernel_revision.tree=${treeBranch.tree}` +
+                `&data.kernel_revision.branch=${treeBranch.branch}` +
+                `&created__gt=${dateStr}`
+            );
             hideModal();
 
             const displayName = `${treeBranch.tree}/${treeBranch.branch}`;
-            console.log(`Fetched ${data.items.length} kbuilds for ${displayName}`);
+            console.log(`Fetched ${kbuilds.length} kbuilds for ${displayName}`);
 
             // Process and display the matrix
-            displayKbuildMatrix(data.items, displayName);
+            displayKbuildMatrix(kbuilds, displayName);
 
         } catch (error) {
             hideModal();
