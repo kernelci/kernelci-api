@@ -86,6 +86,11 @@ from .user_manager import create_user_manager, get_user_manager
 SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES = 15  # How often to run cleanup task
 SUBSCRIPTION_MAX_AGE_MINUTES = 15  # Max age before stale
 SUBSCRIPTION_CLEANUP_RETRY_MINUTES = 1  # Retry interval if cleanup fails
+NODE_PURGE_INTERVAL_HOURS = 24  # How often to purge old nodes
+NODE_PURGE_STARTUP_DELAY_MINUTES = 10  # Delay before first purge after start
+NODE_PURGE_RETRY_HOURS = 1  # Retry interval if purge fails
+NODE_PURGE_AGE_DAYS = int(os.getenv("NODE_PURGE_AGE_DAYS", "180"))
+NODE_PURGE_BATCH_SIZE = 10000
 DEFAULT_MONGO_SERVICE = "mongodb://db:27017"
 
 
@@ -169,9 +174,31 @@ async def subscription_cleanup_task():
             await asyncio.sleep(SUBSCRIPTION_CLEANUP_RETRY_MINUTES * 60)
 
 
+async def node_purge_task():
+    """Background task to purge old nodes once per day"""
+    await asyncio.sleep(NODE_PURGE_STARTUP_DELAY_MINUTES * 60)
+    while True:
+        try:
+            result = await purge_old_nodes(
+                age_days=NODE_PURGE_AGE_DAYS,
+                batch_size=NODE_PURGE_BATCH_SIZE,
+            )
+            metrics.add("nodes_purged", result["deleted"])
+            await asyncio.sleep(NODE_PURGE_INTERVAL_HOURS * 3600)
+        except (
+            ConnectionError,
+            OSError,
+            RuntimeError,
+            pymongo.errors.PyMongoError,
+        ) as e:
+            print(f"Node purge error: {e}")
+            await asyncio.sleep(NODE_PURGE_RETRY_HOURS * 3600)
+
+
 async def start_background_tasks():
     """Start background cleanup tasks"""
     asyncio.create_task(subscription_cleanup_task())
+    asyncio.create_task(node_purge_task())
 
 
 async def create_indexes():
@@ -2279,23 +2306,6 @@ async def get_metrics():
     for key, value in all_metrics.items():
         response += f'{key}{{instance="api"}} {value}\n'
     return PlainTextResponse(response)
-
-
-@app.get("/maintenance/purge-old-nodes")
-async def purge_handler(
-    current_user: User = Depends(get_current_superuser),
-    days: int = 180,
-    batch_size: int = 1000,
-):
-    """Purge old nodes from the database
-    This is a maintenance operation and should be performed
-    only by superusers.
-    Accepts GET parameters:
-    - days: Number of days to keep nodes, default is 180.
-    - batch_size: Number of nodes to delete in one batch, default is 1000.
-    """
-    metrics.add("http_requests_total", 1)
-    return await purge_old_nodes(age_days=days, batch_size=batch_size)
 
 
 # Build versioned app using include_router instead of fastapi-versioning.
