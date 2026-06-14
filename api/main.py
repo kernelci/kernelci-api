@@ -1513,8 +1513,8 @@ async def get_telemetry_anomalies(
 
 # -----------------------------------------------------------------------------
 # Nodes
-def _get_node_event_data(operation, node, is_hierarchy=False):
-    return {
+def _get_node_event_data(operation, node, is_hierarchy=False, previous=None):
+    data = {
         "op": operation,
         "id": str(node.id),
         "kind": node.kind,
@@ -1527,6 +1527,14 @@ def _get_node_event_data(operation, node, is_hierarchy=False):
         "data": node.data,
         "is_hierarchy": is_hierarchy,
     }
+    if previous is not None:
+        # Carry the pre-update state/result so event consumers (e.g. the
+        # pipeline scheduler) can act on the transition INTO a state rather
+        # than re-firing on every update that keeps the node in the same
+        # matching state. See kernelci-core#2912.
+        data["previous_state"] = previous.get("state")
+        data["previous_result"] = previous.get("result")
+    return data
 
 
 async def translate_null_query_params(query_params: dict):
@@ -1784,8 +1792,9 @@ async def put_node(
         new_node_def.processed_by_kcidb_bridge = False
 
     # Update node in the DB
+    previous = {"state": node_from_id.state, "result": node_from_id.result}
     obj = await db.update(new_node_def)
-    data = _get_node_event_data("updated", obj)
+    data = _get_node_event_data("updated", obj, previous=previous)
     attributes = {}
     if data.get("owner", None):
         attributes["owner"] = data["owner"]
@@ -1866,8 +1875,9 @@ async def patch_node(
         new_node_def.processed_by_kcidb_bridge = False
 
     # Update node in the DB
+    previous = {"state": node_from_id.state, "result": node_from_id.result}
     obj = await db.update(new_node_def)
-    data = _get_node_event_data("updated", obj)
+    data = _get_node_event_data("updated", obj, previous=previous)
     attributes = {}
     if data.get("owner", None):
         attributes["owner"] = data["owner"]
@@ -1960,8 +1970,9 @@ async def put_nodes(
     treeid = node_from_id.treeid
 
     await _set_node_ownership_recursively(user, nodes, submitter, treeid)
+    previous = {"state": node_from_id.state, "result": node_from_id.result}
     obj_list = await db.create_hierarchy(nodes, Node)
-    data = _get_node_event_data("updated", obj_list[0], True)
+    data = _get_node_event_data("updated", obj_list[0], True, previous=previous)
     attributes = {}
     if data.get("owner", None):
         attributes["owner"] = data["owner"]
