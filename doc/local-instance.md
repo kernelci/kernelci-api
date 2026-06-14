@@ -89,8 +89,8 @@ It can take a few minutes to build the images from scratch the first time.
 Then the services should be up and running.  To confirm the API is available:
 
 ```
-$ curl http://localhost:8001/latest/
-{"message":"KernelCI API"}
+$ curl http://localhost:8001/latest/health
+{"status":"ok","service":"KernelCI API"}
 ```
 
 > **Port numbers** for the services exposed by `docker-compose` can be
@@ -101,7 +101,7 @@ $ curl http://localhost:8001/latest/
 Following the `curl` command from the example above, the container log should
 show:
 ```
-kernelci-api | INFO:     172.20.0.1:49228 - "GET / HTTP/1.1" 200 OK
+kernelci-api | INFO:     172.20.0.1:49228 - "GET /latest/health HTTP/1.1" 200 OK
 ```
 
 ### Bootstrap the initial admin user

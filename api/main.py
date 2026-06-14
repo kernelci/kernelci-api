@@ -298,6 +298,13 @@ async def root():
         return HTMLResponse(file.read())
 
 
+@app.get("/health")
+async def health():
+    """Health endpoint handler"""
+    metrics.add("http_requests_total", 1)
+    return {"status": "ok", "service": "KernelCI API"}
+
+
 # -----------------------------------------------------------------------------
 # Users
 
