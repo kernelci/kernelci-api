@@ -16,7 +16,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "LGPL-2.1-or-later"}
 dependencies = [
-  "cloudevents == 2.1.0",
+  "cloudevents == 2.2.0",
   "beanie == 2.1.0",
   "fastapi[all] == 0.136.1",
   "fastapi-pagination == 0.15.12",
