@@ -283,10 +283,10 @@ class PubSub:
     ):
         """Update subscriber's last_event_id and last_poll"""
         col = self._mongo_db[self.SUBSCRIBER_STATE_COLLECTION]
-        update = {"last_event_id": last_event_id}
+        update = {"$max": {"last_event_id": last_event_id}}
         if last_poll:
-            update["last_poll"] = last_poll
-        await col.update_one({"subscriber_id": subscriber_id}, {"$set": update})
+            update["$set"] = {"last_poll": last_poll}
+        await col.update_one({"subscriber_id": subscriber_id}, update)
 
     @staticmethod
     def _decode_redis_message(msg: Dict) -> Dict:
