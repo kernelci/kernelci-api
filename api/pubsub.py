@@ -8,15 +8,38 @@
 import asyncio
 import json
 import logging
-from datetime import datetime, timedelta
+import uuid
+from datetime import datetime, timedelta, timezone
 
-from cloudevents.http import CloudEvent, to_json
 from redis import asyncio as aioredis
 
 from .config import PubSubSettings
 from .models import Subscription, SubscriptionStats
 
 logger = logging.getLogger(__name__)
+
+
+def to_cloudevent_json(data, attributes) -> bytes:
+    """Serialize an event as a CloudEvents 1.0 JSON envelope
+
+    Produce the same JSON as the cloudevents library used to: the
+    "specversion", "id" and "time" attributes are auto-generated if
+    not provided and extension attributes (e.g. "owner") are emitted
+    at the top level after "data".
+    """
+    event = {
+        "specversion": attributes.get("specversion", "1.0"),
+        "id": attributes.get("id") or str(uuid.uuid4()),
+        "source": attributes.get("source"),
+        "type": attributes.get("type"),
+        "time": attributes.get("time")
+        or datetime.now(timezone.utc).isoformat(),
+        "data": data,
+    }
+    for key, value in attributes.items():
+        if key not in event:
+            event[key] = value
+    return json.dumps(event).encode("utf-8")
 
 
 class PubSub:
@@ -214,8 +237,7 @@ class PubSub:
             attributes["type"] = "api.kernelci.org"
         if not attributes.get("source"):
             attributes["source"] = self._settings.cloud_events_source
-        event = CloudEvent(attributes=attributes, data=data)
-        await self.publish(channel, to_json(event))
+        await self.publish(channel, to_cloudevent_json(data, attributes))
 
     async def push_cloudevent(self, list_name, data, attributes=None):
         """Push a CloudEvent on a list
@@ -230,8 +252,7 @@ class PubSub:
                 "type": "api.kernelci.org",
                 "source": self._settings.cloud_events_source,
             }
-        event = CloudEvent(attributes=attributes, data=data)
-        await self.push(list_name, to_json(event))
+        await self.push(list_name, to_cloudevent_json(data, attributes))
 
     async def subscription_stats(self):
         """Get existing subscription details"""

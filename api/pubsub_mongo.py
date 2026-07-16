@@ -23,12 +23,12 @@ import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from cloudevents.http import CloudEvent, to_json
 from pymongo import ASCENDING, AsyncMongoClient, WriteConcern
 from redis import asyncio as aioredis
 
 from .config import PubSubSettings
 from .models import SubscriberState, Subscription, SubscriptionStats
+from .pubsub import to_cloudevent_json
 
 logger = logging.getLogger(__name__)
 
@@ -235,8 +235,7 @@ class PubSub:
             "type": "api.kernelci.org",
             "source": self._settings.cloud_events_source,
         }
-        event = CloudEvent(attributes=attributes, data=data)
-        await self._redis.publish(channel, to_json(event))
+        await self._redis.publish(channel, to_cloudevent_json(data, attributes))
 
     def _update_channels(self):
         """Update tracked channels from active subscriptions"""
@@ -323,8 +322,9 @@ class PubSub:
         if event.get("owner"):
             attributes["owner"] = event["owner"]
 
-        ce = CloudEvent(attributes=attributes, data=event.get("data", {}))
-        return to_json(ce).decode("utf-8")
+        return to_cloudevent_json(event.get("data", {}), attributes).decode(
+            "utf-8"
+        )
 
     async def _get_missed_events(
         self,
@@ -645,8 +645,7 @@ class PubSub:
         sequence_id = await self._store_event(channel, data, owner)
 
         # Create CloudEvent for Redis real-time delivery
-        event = CloudEvent(attributes=attributes, data=data)
-        event_json = to_json(event).decode("utf-8")
+        event_json = to_cloudevent_json(data, attributes).decode("utf-8")
 
         # Add sequence_id to message for tracking durable subscriptions
         msg_with_id = json.loads(event_json)
@@ -674,8 +673,7 @@ class PubSub:
                 "type": "api.kernelci.org",
                 "source": self._settings.cloud_events_source,
             }
-        event = CloudEvent(attributes=attributes, data=data)
-        await self.push(list_name, to_json(event))
+        await self.push(list_name, to_cloudevent_json(data, attributes))
 
     async def subscription_stats(self) -> List[SubscriptionStats]:
         """Get existing subscription details"""

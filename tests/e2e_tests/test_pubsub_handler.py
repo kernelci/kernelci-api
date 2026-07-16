@@ -6,8 +6,9 @@
 
 """End-to-end test function for KernelCI API pubsub handler"""
 
+import json
+
 import pytest
-from cloudevents.http import CloudEvent, from_json, to_structured
 
 from .listen_handler import create_listen_task
 
@@ -30,17 +31,15 @@ async def test_pubsub_handler(test_async_client):
         test_async_client, pytest.test_channel_subscription_id
     )
 
-    # Created and publish CloudEvent
-    attributes = {
+    # Create and publish an event
+    event = {
         "type": "api.kernelci.org",
         "source": "https://api.kernelci.org/",
+        "data": {"message": "Test message"},
     }
-    data = {"message": "Test message"}
-    event = CloudEvent(attributes, data)
-    headers, body = to_structured(event)
-    headers["Authorization"] = f"Bearer {pytest.BEARER_TOKEN}"
+    headers = {"Authorization": f"Bearer {pytest.BEARER_TOKEN}"}
     response = await test_async_client.post(
-        "publish/test_channel", headers=headers, data=body
+        "publish/test_channel", headers=headers, json=event
     )
     assert response.status_code == 200
 
@@ -52,7 +51,7 @@ async def test_pubsub_handler(test_async_client):
         "pattern",
         "type",
     }
-    event_data = from_json(task_listen.result().json().get("data")).data
+    event_data = json.loads(task_listen.result().json().get("data"))["data"]
     assert event_data != "BEEP"
     assert ("message",) == tuple(event_data.keys())
     assert event_data.get("message") == "Test message"
