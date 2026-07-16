@@ -6,8 +6,9 @@
 
 """Run test pipeline for KernelCI API"""
 
+import json
+
 import pytest
-from cloudevents.http import from_json
 
 from .listen_handler import create_listen_task
 from .test_node_handler import (
@@ -68,7 +69,7 @@ async def test_node_pipeline(test_async_client):
 
     # Get result of pubsub event listen task
     await task_listen
-    event_data = from_json(task_listen.result().json().get("data")).data
+    event_data = json.loads(task_listen.result().json().get("data"))["data"]
     assert event_data != "BEEP"
     keys = {
         "op",
@@ -103,7 +104,7 @@ async def test_node_pipeline(test_async_client):
 
     # Get result of pubsub event listen task
     await task_listen
-    event_data = from_json(task_listen.result().json().get("data")).data
+    event_data = json.loads(task_listen.result().json().get("data"))["data"]
     assert event_data != "BEEP"
     keys = {
         "op",

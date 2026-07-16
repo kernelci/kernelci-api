@@ -1,4 +1,3 @@
-cloudevents==2.0.0
 beanie==2.1.0
 fastapi[all]==0.135.3
 fastapi-pagination==0.14.3
