@@ -1284,3 +1284,31 @@ full node object:
   }
 ]
 ```
+
+## Telemetry device health
+
+The telemetry anomaly endpoint can aggregate either device types or physical
+devices. To find devices whose recent jobs have all failed, use physical-device
+scope with a 100% threshold:
+
+```shell
+curl 'https://api.kernelci.org/latest/telemetry/anomalies?scope=device&window=48h&threshold=1.0&min_total=3'
+```
+
+Physical-device scope uses only `job_result` events. This avoids counting the
+many test-case results emitted by one boot as independent device-health
+samples. Each result includes `device_id`, `device_type`, `runtime`, result
+counts and rates, the latest error and timestamp, plus these classifications:
+
+- `constant_failure`: every job in the window was `fail` or `incomplete`.
+- `constant_infra_failure`: every job was classified as an infrastructure
+  error. This is the strongest signal that a device is not booting or that its
+  lab connection is broken; inspect its raw telemetry errors to distinguish
+  those cases.
+
+The statistics endpoint also accepts `device_id` as a filter and a `group_by`
+field for custom analysis:
+
+```shell
+curl 'https://api.kernelci.org/latest/telemetry/stats?group_by=runtime,device_id&kind=job_result&since=2026-07-20T00:00:00'
+```
