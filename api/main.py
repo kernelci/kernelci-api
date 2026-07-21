@@ -1254,6 +1254,7 @@ async def get_telemetry(request: Request):
 
 TELEMETRY_STATS_GROUP_FIELDS = {
     "runtime",
+    "lab",
     "device_type",
     "device_id",
     "job_name",
@@ -1278,7 +1279,7 @@ async def get_telemetry_stats(request: Request):
 
     Query parameters:
     - group_by: Comma-separated fields to group by
-      (runtime, device_type, device_id, job_name, tree, branch, arch,
+      (runtime, lab, device_type, device_id, job_name, tree, branch, arch,
       kind, error_type)
     - kind: Filter by event kind before aggregating
     - runtime: Filter by runtime name
@@ -1318,6 +1319,15 @@ async def get_telemetry_stats(request: Request):
         )
         if query_params.get(key)
     }
+    lab = query_params.pop("lab", None)
+    if lab:
+        runtime = match_stage.get("runtime")
+        if runtime and runtime != lab:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="'lab' and 'runtime' must match when both are provided",
+            )
+        match_stage["runtime"] = lab
 
     since = query_params.pop("since", None)
     until = query_params.pop("until", None)
@@ -1331,7 +1341,9 @@ async def get_telemetry_stats(request: Request):
     pipeline.append(
         {
             "$group": {
-                "_id": {f: f"${f}" for f in group_by},
+                "_id": {
+                    f: "$runtime" if f == "lab" else f"${f}" for f in group_by
+                },
                 "total": {"$sum": 1},
                 "pass": {
                     "$sum": {"$cond": [{"$eq": ["$result", "pass"]}, 1, 0]}
@@ -1437,6 +1449,10 @@ async def get_telemetry_anomalies(
     }
     result_group = {
         "runtime": "$runtime",
+        # LAVA runtimes are configured one-to-one with labs. Keep the
+        # existing runtime field and expose the same grouping key as lab so
+        # clients can reason about cross-lab results explicitly.
+        "lab": "$runtime",
         "device_type": "$device_type",
     }
     if scope == "device":

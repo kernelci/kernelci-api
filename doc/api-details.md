@@ -1297,8 +1297,11 @@ curl 'https://api.kernelci.org/latest/telemetry/anomalies?scope=device&window=48
 
 Physical-device scope uses only `job_result` events. This avoids counting the
 many test-case results emitted by one boot as independent device-health
-samples. Each result includes `device_id`, `device_type`, `runtime`, result
-counts and rates, the latest error and timestamp, plus these classifications:
+samples. Each result includes `device_id`, `device_type`, `lab`, `runtime`,
+result counts and rates, the latest error and timestamp, plus these
+classifications. For LAVA device events, `lab` is the explicit name for the
+existing runtime grouping key. Thus, a platform passing in one lab does not
+hide the same platform or device identifier failing in another lab.
 
 - `constant_failure`: every job in the window was `fail` or `incomplete`.
 - `constant_infra_failure`: every job was classified as an infrastructure
@@ -1306,9 +1309,9 @@ counts and rates, the latest error and timestamp, plus these classifications:
   lab connection is broken; inspect its raw telemetry errors to distinguish
   those cases.
 
-The statistics endpoint also accepts `device_id` as a filter and a `group_by`
-field for custom analysis:
+The statistics endpoint accepts both `lab` and `device_id` as filters and
+`group_by` fields for custom analysis:
 
 ```shell
-curl 'https://api.kernelci.org/latest/telemetry/stats?group_by=runtime,device_id&kind=job_result&since=2026-07-20T00:00:00'
+curl 'https://api.kernelci.org/latest/telemetry/stats?group_by=lab,device_id&kind=job_result&since=2026-07-20T00:00:00'
 ```
