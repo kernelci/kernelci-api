@@ -6,6 +6,8 @@
 
 """Database abstraction"""
 
+import logging
+
 from beanie import init_beanie
 from bson import ObjectId
 from fastapi_pagination.ext.pymongo import apaginate as paginate
@@ -16,10 +18,13 @@ from kernelci.api.models import (
     TelemetryEvent,
     parse_node_obj,
 )
-from pymongo import AsyncMongoClient
+from pymongo import AsyncMongoClient, IndexModel
+from pymongo.errors import OperationFailure
 from redis import asyncio as aioredis
 
 from .models import User, UserGroup
+
+logger = logging.getLogger(__name__)
 
 
 class Database:
@@ -50,6 +55,21 @@ class Database:
     }
 
     BOOL_VALUE_MAP = {"true": True, "false": False}
+
+    _INDEX_OPTIONS = (
+        "unique",
+        "sparse",
+        "expireAfterSeconds",
+        "partialFilterExpression",
+        "collation",
+        "wildcardProjection",
+        "hidden",
+    )
+    _INDEX_OPTION_DEFAULTS = {
+        "unique": False,
+        "sparse": False,
+        "hidden": False,
+    }
 
     def __init__(self, service="mongodb://db:27017", db_name="kernelci"):
         self._mongo = AsyncMongoClient(service)
@@ -94,6 +114,35 @@ class Database:
         keyname = ":".join([namespace, key])
         return await self._redis.delete(keyname)
 
+    @staticmethod
+    def _normalize_index_keys(field):
+        if isinstance(field, str):
+            return [(field, 1)]
+        return [tuple(key) for key in field]
+
+    @classmethod
+    def _find_equivalent_index(cls, index_information, index):
+        desired_keys = cls._normalize_index_keys(index.field)
+        options = set(cls._INDEX_OPTIONS) | set(index.attributes)
+        options.discard("name")
+        options.discard("background")
+
+        for name, existing in index_information.items():
+            existing_keys = [tuple(key) for key in existing.get("key", [])]
+            if existing_keys != desired_keys:
+                continue
+
+            for option in options:
+                default = cls._INDEX_OPTION_DEFAULTS.get(option)
+                if existing.get(option, default) != index.attributes.get(
+                    option, default
+                ):
+                    break
+            else:
+                return name
+
+        return None
+
     async def create_indexes(self):
         """Create indexes for models"""
         for model in self.COLLECTIONS:
@@ -101,8 +150,40 @@ class Database:
             if not indexes:
                 continue
             col = self._get_collection(model)
+            existing_indexes = await col.index_information()
             for index in indexes:
-                await col.create_index(index.field, **index.attributes)
+                requested_name = IndexModel(
+                    index.field, **index.attributes
+                ).document["name"]
+                equivalent = self._find_equivalent_index(
+                    existing_indexes, index
+                )
+                if equivalent:
+                    if equivalent != requested_name:
+                        logger.warning(
+                            "Reusing index %s for %s instead of equivalent %s",
+                            equivalent,
+                            model.__name__,
+                            requested_name,
+                        )
+                    continue
+
+                try:
+                    await col.create_index(index.field, **index.attributes)
+                except OperationFailure as exc:
+                    if exc.code != 85:
+                        raise
+                    existing_indexes = await col.index_information()
+                    equivalent = self._find_equivalent_index(
+                        existing_indexes, index
+                    )
+                    if not equivalent:
+                        raise
+                    logger.info(
+                        "Reusing concurrently created index %s for %s",
+                        equivalent,
+                        model.__name__,
+                    )
 
     async def find_one(self, model, **kwargs):
         """Find one object with matching attributes
