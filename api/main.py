@@ -269,6 +269,46 @@ async def ensure_initial_admin_user():
         ) from exc
 
 
+TEMPLATES_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "templates"
+)
+
+# Allowlist of HTML templates that may be served to clients.  Serving is
+# restricted to these names so a helper can never be tricked into reading
+# other files from the templates directory (e.g. email templates).
+ALLOWED_HTML_TEMPLATES = {
+    "index.html",
+    "invite.html",
+    "accept-invite.html",
+    "viewer.html",
+    "dashboard.html",
+    "manage.html",
+    "analytics.html",
+    "stats.html",
+}
+
+NO_CACHE_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
+
+
+def _serve_template(name: str, no_cache: bool = True) -> HTMLResponse:
+    """Serve an HTML template page from the allowlist"""
+    metrics.add("http_requests_total", 1)
+    if name not in ALLOWED_HTML_TEMPLATES:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Template not found: {name}",
+        )
+    page_path = os.path.join(TEMPLATES_DIR, name)
+    with open(page_path, "r", encoding="utf-8") as file:
+        return HTMLResponse(
+            file.read(), headers=NO_CACHE_HEADERS if no_cache else None
+        )
+
+
 @app.exception_handler(ValueError)
 async def value_error_exception_handler(request: Request, exc: ValueError):
     """Global exception handler for 'ValueError'"""
@@ -291,11 +331,7 @@ async def invalid_id_exception_handler(request: Request, exc: errors.InvalidId):
 @app.get("/")
 async def root():
     """Root endpoint handler"""
-    metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    index_path = os.path.join(root_dir, "templates", "index.html")
-    with open(index_path, "r", encoding="utf-8") as file:
-        return HTMLResponse(file.read())
+    return _serve_template("index.html", no_cache=False)
 
 
 # -----------------------------------------------------------------------------
@@ -537,11 +573,7 @@ async def register(
 @app.get("/user/invite", response_class=HTMLResponse, include_in_schema=False)
 async def invite_user_page():
     """Web UI for inviting a user (admin token required)"""
-    metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    page_path = os.path.join(root_dir, "templates", "invite.html")
-    with open(page_path, "r", encoding="utf-8") as file:
-        return HTMLResponse(file.read())
+    return _serve_template("invite.html", no_cache=False)
 
 
 @app.post(
@@ -602,11 +634,7 @@ async def invite_user(
 )
 async def accept_invite_page():
     """Web UI for accepting an invite (sets password + verifies)"""
-    metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    page_path = os.path.join(root_dir, "templates", "accept-invite.html")
-    with open(page_path, "r", encoding="utf-8") as file:
-        return HTMLResponse(file.read())
+    return _serve_template("accept-invite.html", no_cache=False)
 
 
 @app.get("/user/invite/url", response_model=InviteUrlResponse, tags=["user"])
@@ -2207,98 +2235,43 @@ async def stats(user: User = Depends(get_current_superuser)):
 async def viewer():
     """Serve simple HTML page to view the API /static/viewer.html
     Set various no-cache tag we might update it often"""
-    metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    viewer_path = os.path.join(root_dir, "templates", "viewer.html")
-    with open(viewer_path, "r", encoding="utf-8") as file:
-        # set header to text/html and no-cache stuff
-        hdr = {
-            "Content-Type": "text/html",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-        }
-        return PlainTextResponse(file.read(), headers=hdr)
+    return _serve_template("viewer.html")
 
 
 @app.get("/dashboard")
 async def dashboard():
     """Serve simple HTML page to view the API dashboard.html
     Set various no-cache tag we might update it often"""
-    metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    dashboard_path = os.path.join(root_dir, "templates", "dashboard.html")
-    with open(dashboard_path, "r", encoding="utf-8") as file:
-        # set header to text/html and no-cache stuff
-        hdr = {
-            "Content-Type": "text/html",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-        }
-        return PlainTextResponse(file.read(), headers=hdr)
+    return _serve_template("dashboard.html")
 
 
 @app.get("/manage")
 async def manage():
     """Serve simple HTML page to submit custom nodes"""
-    metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    manage_path = os.path.join(root_dir, "templates", "manage.html")
-    with open(manage_path, "r", encoding="utf-8") as file:
-        # set header to text/html and no-cache stuff
-        hdr = {
-            "Content-Type": "text/html",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-        }
-        return PlainTextResponse(file.read(), headers=hdr)
+    return _serve_template("manage.html")
 
 
 @app.get("/analytics")
 async def analytics_page():
     """Serve pipeline analytics dashboard with telemetry data"""
-    metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    analytics_path = os.path.join(root_dir, "templates", "analytics.html")
-    with open(analytics_path, "r", encoding="utf-8") as file:
-        hdr = {
-            "Content-Type": "text/html",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-        }
-        return PlainTextResponse(file.read(), headers=hdr)
+    return _serve_template("analytics.html")
 
 
 @app.get("/stats")
 async def stats_page():
     """Serve simple HTML page to view infrastructure statistics"""
-    metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    stats_path = os.path.join(root_dir, "templates", "stats.html")
-    with open(stats_path, "r", encoding="utf-8") as file:
-        # set header to text/html and no-cache stuff
-        hdr = {
-            "Content-Type": "text/html",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
-        }
-        return PlainTextResponse(file.read(), headers=hdr)
+    return _serve_template("stats.html")
 
 
 @app.get("/icons/{icon_name}")
 async def icons(icon_name: str):
     """Serve icons from /static/icons"""
     metrics.add("http_requests_total", 1)
-    root_dir = os.path.dirname(os.path.abspath(__file__))
     if not re.match(r"^[A-Za-z0-9_.-]+\.png$", icon_name):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid icon name"
         )
-    icon_path = os.path.join(root_dir, "templates", icon_name)
+    icon_path = os.path.join(TEMPLATES_DIR, icon_name)
     return FileResponse(icon_path)
 
 
