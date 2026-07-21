@@ -102,7 +102,7 @@ class Database:
                 continue
             col = self._get_collection(model)
             for index in indexes:
-                col.create_index(index.field, **index.attributes)
+                await col.create_index(index.field, **index.attributes)
 
     async def find_one(self, model, **kwargs):
         """Find one object with matching attributes
@@ -291,7 +291,7 @@ class Database:
     async def aggregate(self, model, pipeline):
         """Run an aggregation pipeline on a model's collection"""
         col = self._get_collection(model)
-        cursor = col.aggregate(pipeline)
+        cursor = await col.aggregate(pipeline)
         return await cursor.to_list(length=None)
 
     async def delete_by_id(self, model, obj_id):
