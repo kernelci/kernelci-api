@@ -1255,6 +1255,7 @@ async def get_telemetry(request: Request):
 TELEMETRY_STATS_GROUP_FIELDS = {
     "runtime",
     "device_type",
+    "device_id",
     "job_name",
     "tree",
     "branch",
@@ -1277,7 +1278,7 @@ async def get_telemetry_stats(request: Request):
 
     Query parameters:
     - group_by: Comma-separated fields to group by
-      (runtime, device_type, job_name, tree, branch, arch,
+      (runtime, device_type, device_id, job_name, tree, branch, arch,
       kind, error_type)
     - kind: Filter by event kind before aggregating
     - runtime: Filter by runtime name
@@ -1309,6 +1310,7 @@ async def get_telemetry_stats(request: Request):
             "kind",
             "runtime",
             "device_type",
+            "device_id",
             "job_name",
             "tree",
             "branch",
@@ -1395,12 +1397,23 @@ async def get_telemetry_anomalies(
     min_total: int = Query(
         3, ge=1, description="Min events in window to consider (avoids noise)"
     ),
+    scope: str = Query(
+        "device_type",
+        pattern="^(device_type|device)$",
+        description=(
+            "Group results by device type (default) or physical device ID"
+        ),
+    ),
 ):
     """Detect anomalies in telemetry data.
 
     Finds runtime+device_type combinations where the infra error
     rate or failure rate exceeds the threshold within the given
     time window. Also detects runtimes with submission errors.
+
+    Use ``scope=device`` to identify individual devices with repeated
+    failures. Physical-device health uses job results only, so per-test
+    events do not dilute boot and infrastructure failure rates.
 
     Returns a list sorted by severity (highest error rate first).
     """
@@ -1412,23 +1425,38 @@ async def get_telemetry_anomalies(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid window '{window}'. Use: {', '.join(ANOMALY_WINDOW_MAP.keys())}",
         )
-    since = datetime.utcnow() - timedelta(hours=hours)
+    since = datetime.now(timezone.utc) - timedelta(hours=hours)
 
-    # Anomaly 1: High infra error / failure rate per runtime+device_type
+    result_match = {
+        "kind": (
+            "job_result"
+            if scope == "device"
+            else {"$in": ["job_result", "test_result"]}
+        ),
+        "ts": {"$gte": since},
+    }
+    result_group = {
+        "runtime": "$runtime",
+        "device_type": "$device_type",
+    }
+    if scope == "device":
+        result_match["device_id"] = {"$nin": [None, ""]}
+        result_group["device_id"] = "$device_id"
+
+    # Anomaly 1: High infra error / failure rate per selected device scope
     result_pipeline = [
-        {
-            "$match": {
-                "kind": {"$in": ["job_result", "test_result"]},
-                "ts": {"$gte": since},
-            }
-        },
+        {"$match": result_match},
+        {"$sort": {"ts": -1}},
         {
             "$group": {
-                "_id": {
-                    "runtime": "$runtime",
-                    "device_type": "$device_type",
-                },
+                "_id": result_group,
+                "last_seen": {"$first": "$ts"},
+                "latest_error_type": {"$first": "$error_type"},
+                "latest_error_msg": {"$first": "$error_msg"},
                 "total": {"$sum": 1},
+                "pass": {
+                    "$sum": {"$cond": [{"$eq": ["$result", "pass"]}, 1, 0]}
+                },
                 "fail": {
                     "$sum": {"$cond": [{"$eq": ["$result", "fail"]}, 1, 0]}
                 },
@@ -1436,6 +1464,9 @@ async def get_telemetry_anomalies(
                     "$sum": {
                         "$cond": [{"$eq": ["$result", "incomplete"]}, 1, 0]
                     }
+                },
+                "skip": {
+                    "$sum": {"$cond": [{"$eq": ["$result", "skip"]}, 1, 0]}
                 },
                 "infra_error": {"$sum": {"$cond": ["$is_infra_error", 1, 0]}},
             }
@@ -1488,6 +1519,7 @@ async def get_telemetry_anomalies(
         "window": window,
         "threshold": threshold,
         "min_total": min_total,
+        "scope": scope,
         "since": since.isoformat(),
         "result_anomalies": [],
         "error_anomalies": [],
@@ -1496,11 +1528,20 @@ async def get_telemetry_anomalies(
     for doc in result_anomalies:
         row = doc["_id"].copy()
         row["total"] = doc["total"]
+        row["pass"] = doc["pass"]
         row["fail"] = doc["fail"]
         row["incomplete"] = doc["incomplete"]
+        row["skip"] = doc["skip"]
         row["infra_error"] = doc["infra_error"]
         row["infra_rate"] = round(doc["infra_rate"], 3)
         row["fail_rate"] = round(doc["fail_rate"], 3)
+        row["constant_failure"] = (
+            doc["pass"] == 0 and doc["fail"] + doc["incomplete"] == doc["total"]
+        )
+        row["constant_infra_failure"] = doc["infra_error"] == doc["total"]
+        row["last_seen"] = doc.get("last_seen")
+        row["latest_error_type"] = doc.get("latest_error_type")
+        row["latest_error_msg"] = doc.get("latest_error_msg")
         output["result_anomalies"].append(row)
 
     for doc in error_anomalies:
