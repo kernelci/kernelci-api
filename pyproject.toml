@@ -16,7 +16,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "LGPL-2.1-or-later"}
 dependencies = [
-  "beanie == 2.1.0",
+  "beanie == 2.2.0",
   "fastapi[all] == 0.139.2",
   "fastapi-pagination == 0.15.14",
   "fastapi-users[beanie, oauth] == 15.0.5",
