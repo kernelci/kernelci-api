@@ -3,7 +3,7 @@
 # Copyright (C) 2021 Jeny Sadadia
 # Author: Jeny Sadadia <jeny.sadadia@gmail.com>
 
-FROM debian:bullseye-slim
+FROM debian:trixie-slim
 MAINTAINER "KernelCI TSC" <kernelci-tsc@groups.io>
 
 # Install openssh-server
