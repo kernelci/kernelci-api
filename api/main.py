@@ -1777,6 +1777,31 @@ def _translate_version_fields(node: Node):
     return node
 
 
+async def _validate_node_parent(node: Node, existing: Optional[Node] = None):
+    """Keep existing ancestry when clients submit incomplete result roots."""
+    if node.parent is None and existing is not None:
+        node.parent = existing.parent
+    if node.parent is None:
+        # Regressions link runs through data.fail_node/data.pass_node rather
+        # than belonging to a single checkout's hierarchy.
+        if node.kind not in ("checkout", "regression"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Parent is required for node kind: {node.kind}",
+            )
+        return
+    if node.parent == node.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Parent cannot be the same as the node",
+        )
+    if not await db.find_by_id(Node, node.parent):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Parent not found with id: {node.parent}",
+        )
+
+
 @app.post("/node", response_model=Node, response_model_by_alias=False)
 async def post_node(
     node: Node,
@@ -1791,14 +1816,7 @@ async def post_node(
     # Explicit pydantic model validation
     parse_node_obj(node)
 
-    # [TODO] Implement sanity checks depending on the node kind
-    if node.parent:
-        parent = await db.find_by_id(Node, node.parent)
-        if not parent:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Parent not found with id: {node.parent}",
-            )
+    await _validate_node_parent(node)
 
     await _verify_user_group_existence(node.user_groups)
     node.owner = current_user.username
@@ -1938,6 +1956,7 @@ async def put_node(
     await _check_done_node_update(
         node_from_id, node.state, node.result, user, force
     )
+    await _validate_node_parent(node, node_from_id)
 
     # Sanity checks
     # Note: do not update node ownership fields, don't update 'state'
@@ -2044,6 +2063,7 @@ async def patch_node(
 
     # Validate node subtype
     specialized_node = parse_node_obj(new_node_def)
+    await _validate_node_parent(new_node_def)
 
     # State transition checks
     if new_state is not None:
@@ -2162,6 +2182,10 @@ async def put_nodes(
     await _check_done_hierarchy_update(nodes, node_from_id, user, force)
     submitter = node_from_id.submitter
     treeid = node_from_id.treeid
+
+    # A hierarchy root replaces an existing document. Missing/null parent
+    # fields in chunked result uploads must not detach it from its build.
+    await _validate_node_parent(nodes.node, node_from_id)
 
     await _set_node_ownership_recursively(user, nodes, submitter, treeid)
     previous = {"state": node_from_id.state, "result": node_from_id.result}
