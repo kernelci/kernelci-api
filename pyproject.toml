@@ -23,7 +23,7 @@ dependencies = [
   "fastapi-users-db-beanie == 5.0.0",
   "MarkupSafe == 3.0.3",
   "pymongo == 4.17.0",
-  "passlib == 1.7.4",
+  "bcrypt == 5.0.0",
   "pydantic == 2.13.4",
   "pymongo-migrate == 1.0.0",
   "python-jose[cryptography] == 3.5.0",
