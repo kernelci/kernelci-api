@@ -10,6 +10,7 @@
 
 import pytest
 
+from api.auth import Authentication
 from api.models import User
 
 
@@ -74,3 +75,8 @@ async def test_token_endpoint_incorrect_password(
     print("response json", response.json())
     assert response.status_code == 400
     assert response.json() == {"detail": "LOGIN_BAD_CREDENTIALS"}
+
+
+def test_get_password_hash():
+    hashed = Authentication.get_password_hash("test-password")
+    assert hashed.startswith("$2b$12$")
