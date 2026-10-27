@@ -17,7 +17,7 @@ from fastapi_users.authentication import (
 )
 from fastapi_users.jwt import SecretType, decode_jwt
 from fastapi_users.manager import BaseUserManager
-from passlib.context import CryptContext
+import bcrypt
 
 from .config import AuthSettings
 
@@ -96,8 +96,6 @@ class DualSecretJWTStrategy(JWTStrategy):
 class Authentication:
     """Authentication utility class"""
 
-    CRYPT_CTX = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
     def __init__(self, token_url: str):
         self._settings = AuthSettings()
         self._token_url = token_url
@@ -105,7 +103,9 @@ class Authentication:
     @classmethod
     def get_password_hash(cls, password):
         """Get a password hash for a given clear text password string"""
-        return cls.CRYPT_CTX.hash(password)
+        return bcrypt.hashpw(
+            password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
 
     def get_jwt_strategy(self) -> DualSecretJWTStrategy:
         """Get JWT strategy for authentication backend"""
