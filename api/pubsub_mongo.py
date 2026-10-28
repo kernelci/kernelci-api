@@ -33,6 +33,10 @@ from .pubsub import to_cloudevent_json
 logger = logging.getLogger(__name__)
 
 
+class SubscriptionLimitError(Exception):
+    """Raised when a user already holds too many active subscriptions"""
+
+
 class PubSub:
     """Hybrid Pub/Sub implementation with MongoDB durability
 
@@ -80,7 +84,9 @@ class PubSub:
             db_number = self._settings.redis_db_number
 
         self._redis = aioredis.from_url(
-            "redis://" + host + "/" + str(db_number), health_check_interval=30
+            "redis://" + host + "/" + str(db_number),
+            health_check_interval=30,
+            max_connections=self._settings.redis_max_connections,
         )
 
         # MongoDB setup
@@ -226,8 +232,25 @@ class PubSub:
                 break
             for channel in channels:
                 # Use _publish_keepalive to avoid storing BEEP in MongoDB
-                await self._publish_keepalive(channel, "BEEP")
+                try:
+                    await self._publish_keepalive(channel, "BEEP")
+                except aioredis.RedisError as exc:
+                    # A transient Redis error (e.g. exhausted connection
+                    # pool) must not kill the keep-alive loop for good
+                    logger.warning("Keep-alive publish failed: %s", exc)
             await asyncio.sleep(self._settings.keep_alive_period)
+
+    @staticmethod
+    async def _close_redis_sub(redis_sub):
+        """Best-effort close of a Redis PubSub, releasing its connection"""
+        try:
+            await redis_sub.unsubscribe()
+        except aioredis.RedisError as exc:
+            logger.debug("PubSub unsubscribe failed: %s", exc)
+        try:
+            await redis_sub.aclose()
+        except aioredis.RedisError as exc:
+            logger.debug("PubSub close failed: %s", exc)
 
     async def _publish_keepalive(self, channel: str, data: str):
         """Publish keep-alive message (Redis only, no MongoDB storage)"""
@@ -372,16 +395,23 @@ class PubSub:
         Returns:
             Subscription object with id, channel, user, promiscuous fields
         """
-        sub_id = await self._redis.incr(self.ID_KEY)
         subscriber_id = options.get("subscriber_id") if options else None
         promiscuous = options.get("promiscuous", False) if options else False
+
+        await self._enforce_subscription_limit(user)
+        sub_id = await self._redis.incr(self.ID_KEY)
 
         async with self._lock:
             redis_sub = self._redis.pubsub()
             sub = Subscription(
                 id=sub_id, channel=channel, user=user, promiscuous=promiscuous
             )
-            await redis_sub.subscribe(channel)
+            try:
+                await redis_sub.subscribe(channel)
+            except aioredis.RedisError:
+                # Never leave a half-initialised PubSub holding a connection
+                await self._close_redis_sub(redis_sub)
+                raise
 
             self._subscriptions[sub_id] = {
                 "redis_sub": redis_sub,
@@ -406,6 +436,54 @@ class PubSub:
             )
 
         return sub
+
+    async def _enforce_subscription_limit(self, user: str):
+        """Evict the user's abandoned subscriptions, then enforce the cap
+
+        A subscription that has never been polled and is older than
+        abandoned_subscription_seconds belongs to a client that died (or
+        crash-loops) right after subscribing.  Those are evicted first so
+        they do not count against the user.  If the user still holds
+        max_subscriptions_per_user active subscriptions afterwards, a
+        SubscriptionLimitError is raised.
+        """
+        limit = self._settings.max_subscriptions_per_user
+        cutoff = datetime.utcnow() - timedelta(
+            seconds=self._settings.abandoned_subscription_seconds
+        )
+
+        async with self._lock:
+            user_sub_ids = []
+            abandoned_ids = []
+            for sub_id, sub_data in self._subscriptions.items():
+                if sub_data["sub"].user != user:
+                    continue
+                user_sub_ids.append(sub_id)
+                if (
+                    sub_data.get("last_poll") is None
+                    and sub_data["created"] < cutoff
+                ):
+                    abandoned_ids.append(sub_id)
+
+        # unsubscribe() takes the lock itself, so call it outside of it
+        for sub_id in abandoned_ids:
+            try:
+                await self.unsubscribe(sub_id)
+            except KeyError:
+                pass
+        if abandoned_ids:
+            logger.warning(
+                "Evicted %d abandoned (never polled) subscriptions of %s",
+                len(abandoned_ids),
+                user,
+            )
+
+        active = len(user_sub_ids) - len(abandoned_ids)
+        if limit and active >= limit:
+            raise SubscriptionLimitError(
+                f"User {user} already holds {active} active subscriptions "
+                f"(limit {limit}); unsubscribe or poll them first"
+            )
 
     async def _setup_durable_subscription(
         self,
@@ -479,8 +557,7 @@ class PubSub:
 
             self._subscriptions.pop(sub_id)
             self._update_channels()
-            await sub["redis_sub"].unsubscribe()
-            await sub["redis_sub"].close()
+            await self._close_redis_sub(sub["redis_sub"])
 
     async def _get_listen_subscription(
         self, sub_id: int, user: Optional[str] = None
@@ -532,10 +609,14 @@ class PubSub:
     ):
         async with self._lock:
             channel = sub.channel
+            old_redis_sub = sub_data.get("redis_sub")
             new_redis_sub = self._redis.pubsub()
             await new_redis_sub.subscribe(channel)
             self._subscriptions[sub_id]["redis_sub"] = new_redis_sub
             sub_data["redis_sub"] = new_redis_sub
+        # Release the broken PubSub, otherwise its pooled connection leaks
+        if old_redis_sub is not None:
+            await self._close_redis_sub(old_redis_sub)
 
     def _maybe_update_delivery_offset(
         self, subscriber_id: Optional[str], sub_data: dict, msg_data: Any
@@ -695,6 +776,10 @@ class PubSub:
     ) -> int:
         """Remove subscriptions not polled recently
 
+        Subscriptions that were never polled at all are aged from their
+        creation time, otherwise a client that subscribes and dies before
+        its first listen() leaks a Redis connection forever.
+
         For durable subscriptions, only the in-memory state is cleaned up.
         The MongoDB subscriber state is preserved for reconnection.
         """
@@ -703,8 +788,10 @@ class PubSub:
 
         async with self._lock:
             for sub_id, sub_data in self._subscriptions.items():
-                last_poll = sub_data.get("last_poll")
-                if last_poll and last_poll < cutoff:
+                last_activity = sub_data.get("last_poll") or sub_data.get(
+                    "created"
+                )
+                if last_activity and last_activity < cutoff:
                     stale_ids.append(sub_id)
 
         for sub_id in stale_ids:

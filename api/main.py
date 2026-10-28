@@ -57,6 +57,7 @@ from kernelci.api.models import (
     parse_node_obj,
 )
 from pydantic import BaseModel
+from redis import exceptions as redis_exceptions
 
 from .auth import Authentication
 from .config import AuthSettings
@@ -80,7 +81,7 @@ from .models import (
     UserUpdate,
     UserUpdateRequest,
 )
-from .pubsub_mongo import PubSub
+from .pubsub_mongo import PubSub, SubscriptionLimitError
 from .user_manager import create_user_manager, get_user_manager
 
 SUBSCRIPTION_CLEANUP_INTERVAL_MINUTES = 15  # How often to run cleanup task
@@ -2146,7 +2147,13 @@ async def subscribe(
         options["promiscuous"] = promisc
     if subscriber_id:
         options["subscriber_id"] = subscriber_id
-    return await pubsub.subscribe(channel, user.username, options)
+    try:
+        return await pubsub.subscribe(channel, user.username, options)
+    except SubscriptionLimitError as error:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=str(error),
+        ) from error
 
 
 @app.post("/unsubscribe/{sub_id}")
@@ -2385,9 +2392,26 @@ def traceback_exception_handler(request: Request, exc: Exception):
     )
 
 
+def redis_unavailable_exception_handler(request: Request, exc: Exception):
+    """Report Redis connection problems as a retryable 503, not a 500"""
+    print(f"Redis unavailable: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        headers={"Retry-After": "5"},
+        content={"message": "Redis unavailable, please retry"},
+    )
+
+
 versioned_app.add_exception_handler(ValueError, value_error_exception_handler)
 versioned_app.add_exception_handler(
     errors.InvalidId, invalid_id_exception_handler
+)
+versioned_app.add_exception_handler(
+    redis_exceptions.MaxConnectionsError,
+    redis_unavailable_exception_handler,
+)
+versioned_app.add_exception_handler(
+    redis_exceptions.ConnectionError, redis_unavailable_exception_handler
 )
 versioned_app.add_exception_handler(Exception, traceback_exception_handler)
 
