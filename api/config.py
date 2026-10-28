@@ -27,6 +27,16 @@ class PubSubSettings(BaseSettings):
     cloud_events_source: str = "https://api.kernelci.org/"
     redis_host: str = "redis"
     redis_db_number: int = 1
+    # Every pub/sub subscription pins one dedicated Redis connection, so the
+    # pool must be large enough for all concurrent subscribers plus regular
+    # commands.  redis-py >= 8 defaults to only 100.
+    redis_max_connections: int = 1000
+    # Maximum number of concurrent subscriptions a single user may hold.
+    # Before the limit is enforced, that user's subscriptions which were
+    # never polled and are older than abandoned_subscription_seconds are
+    # evicted, so a crash-looping client cannot pile them up.
+    max_subscriptions_per_user: int = 20
+    abandoned_subscription_seconds: int = 60
     keep_alive_period: int = 45
     # MongoDB durable pub/sub settings
     event_ttl_days: int = 7  # Auto-delete events after N days
