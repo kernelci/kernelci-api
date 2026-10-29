@@ -13,14 +13,18 @@ If you contribute to the kernelci-core, kernelci-pipeline, or kernelci-api repos
 open a pull request, staging will automatically incorporate your changes (provided you're on the [contributor list](https://github.com/kernelci/kernelci-deploy/blob/main/data/staging.ini))
 and deploy them to the staging instance. This enables you to receive feedback
 from other contributors before merging changes into the production API.
-The staging instance updates every 8 hours or can be manually triggered by
-the sysadmin team. You can also exclude a pull request from deployment by adding the `staging-skip` label.
+The staging instance updates every 8 hours (00:00, 08:00 and 16:00 UTC) and can also be
+triggered manually from the [staging control panel](https://staging.kernelci.org/).
+You can also exclude a pull request from deployment by adding the `staging-skip` label.
 It is highly recommended to set such label if your pull request is not ready for
 deployment and might break the staging instance.
 
-The staging deployment runs only
-kernelci-stable, kernelci-mainline, and kernelci-next branches by default, which are mirrors of 
-Linux kernel trees. If you need to test changes with a different tree or are adding a new
+The staging deployment runs only the
+`staging-stable`, `staging-mainline` and `staging-next` branches of
+[kernelci/linux](https://github.com/kernelci/linux) by default, which are mirrors of
+Linux kernel trees. See the [staging](/components/maestro/staging) page for how staging
+works, including which pull requests are deployed and how these kernel trees are updated.
+If you need to test changes with a different tree or are adding a new
 tree, you can use the [kci-dev](https://github.com/kernelci/kci-dev) tool to trigger jobs on the staging instance.
 The staging instance is not intended for production use and stability is not
 guaranteed. Occasional crashes are expected.
