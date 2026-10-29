@@ -1827,12 +1827,100 @@ def is_same_flags(old_node, new_node):
     return False
 
 
+# Rejected (or admin-forced) changes to completed nodes are published on this
+# channel, so they can be monitored via /events?channel=node-integrity.
+NODE_INTEGRITY_CHANNEL = "node-integrity"
+
+
+def _done_node_update_allowed(existing: Node, new_state, new_result) -> bool:
+    """Check if an update may be applied to a node that is already done"""
+    if existing.state != "done":
+        return True
+    if new_state != "done":
+        return False
+    if new_result == existing.result:
+        return True
+    # A node closed without a final result (e.g. by node_timeout) can still
+    # receive the late result from its lab.
+    return existing.result in (None, "incomplete")
+
+
+async def _check_done_node_update(
+    existing: Node, new_state, new_result, user: User, force: Optional[bool]
+):
+    """Reject state/result changes to done nodes and report every attempt
+
+    The first final result wins: once a node is done, its state and result
+    can only be changed by an admin with force=true.  Both rejected and
+    forced changes are published on NODE_INTEGRITY_CHANNEL.
+    """
+    # PATCH passes StateValues/ResultValues enums, PUT plain strings
+    new_state = getattr(new_state, "value", new_state)
+    new_result = getattr(new_result, "value", new_result)
+    if _done_node_update_allowed(existing, new_state, new_result):
+        return
+    forced = bool(force and user.is_superuser)
+    op = "done_update_forced" if forced else "done_update_rejected"
+    metrics.add(f"node_{op}_total", 1)
+    data = {
+        "op": op,
+        "id": str(existing.id),
+        "kind": existing.kind,
+        "name": existing.name,
+        "path": existing.path,
+        "group": existing.group,
+        "owner": existing.owner,
+        "runtime": (existing.data or {}).get("runtime"),
+        "platform": (existing.data or {}).get("platform"),
+        "state": existing.state,
+        "result": existing.result,
+        "attempted_state": new_state,
+        "attempted_result": new_result,
+        "user": user.username,
+    }
+    try:
+        await pubsub.publish_cloudevent(
+            NODE_INTEGRITY_CHANNEL, data, {"owner": existing.owner}
+        )
+    except Exception as exc:
+        # Reporting must not turn the rejection into a server error
+        print(f"Failed to publish {op} event for {existing.id}: {exc}")
+    if not forced:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Node {existing.id} is already done with result "
+                f"'{existing.result}', refusing to change it to "
+                f"state '{new_state}' result '{new_result}'"
+            ),
+        )
+
+
+async def _check_done_hierarchy_update(
+    hierarchy: Hierarchy, root: Node, user: User, force: Optional[bool]
+):
+    """Run _check_done_node_update on every existing node of a hierarchy"""
+    node = hierarchy.node
+    existing = root
+    if existing is None and node.id:
+        existing = await db.find_by_id(Node, node.id)
+    if existing is not None:
+        await _check_done_node_update(
+            existing, node.state, node.result, user, force
+        )
+    for child in hierarchy.child_nodes:
+        await _check_done_hierarchy_update(child, None, user, force)
+
+
 @app.put("/node/{node_id}", response_model=Node, response_model_by_alias=False)
 async def put_node(
     node_id: str,
     node: Node,
     user: str = Depends(authorize_user),
     noevent: Optional[bool] = Query(None),
+    force: Optional[bool] = Query(
+        None, description="Admin only: allow changing a done node"
+    ),
 ):
     """Update an already added node"""
     metrics.add("http_requests_total", 1)
@@ -1846,6 +1934,10 @@ async def put_node(
 
     # [TODO] Remove translation below once we can use it in the pipeline
     node = _translate_version_fields(node)
+
+    await _check_done_node_update(
+        node_from_id, node.state, node.result, user, force
+    )
 
     # Sanity checks
     # Note: do not update node ownership fields, don't update 'state'
@@ -1913,6 +2005,9 @@ async def patch_node(
     patch: NodePatchRequest,
     user: str = Depends(authorize_user),
     noevent: Optional[bool] = Query(None),
+    force: Optional[bool] = Query(
+        None, description="Admin only: allow changing a done node"
+    ),
 ):
     """Partial update of an existing node"""
     metrics.add("http_requests_total", 1)
@@ -1929,6 +2024,14 @@ async def patch_node(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="No fields to update",
         )
+
+    await _check_done_node_update(
+        node_from_id,
+        update_data.get("state", node_from_id.state),
+        update_data.get("result", node_from_id.result),
+        user,
+        force,
+    )
 
     # Handle state transition separately
     new_state = update_data.pop("state", None)
@@ -2041,6 +2144,9 @@ async def put_nodes(
     nodes: Hierarchy,
     authorization: str | None = Header(default=None),
     user: str = Depends(authorize_user),
+    force: Optional[bool] = Query(
+        None, description="Admin only: allow changing done nodes"
+    ),
 ):
     """Add a hierarchy of nodes to an existing root node"""
     metrics.add("http_requests_total", 1)
@@ -2052,6 +2158,8 @@ async def put_nodes(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Node not found with id: {node_id}",
         )
+    # Check the whole hierarchy before writing any of it
+    await _check_done_hierarchy_update(nodes, node_from_id, user, force)
     submitter = node_from_id.submitter
     treeid = node_from_id.treeid
 
