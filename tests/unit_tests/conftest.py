@@ -89,6 +89,7 @@ def mock_get_current_admin_user(request: Request):
 # Mock dependency callables for getting current user
 app.dependency_overrides[get_current_user] = mock_get_current_user
 app.dependency_overrides[get_current_superuser] = mock_get_current_admin_user
+versioned_app.dependency_overrides.update(app.dependency_overrides)
 
 
 @pytest.fixture(scope="session")
