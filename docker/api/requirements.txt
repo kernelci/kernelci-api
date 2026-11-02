@@ -4,7 +4,7 @@ fastapi-pagination==0.14.3
 fastapi-users[beanie, oauth]==15.0.5
 fastapi-users-db-beanie==5.0.0
 MarkupSafe==2.0.1
-pymongo==4.16.0
+pymongo==4.18.3
 passlib==1.7.4
 pydantic==2.9.2
 pymongo-migrate==0.11.0
