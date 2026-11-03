@@ -282,7 +282,10 @@ class CustomLimitOffsetParams(LimitOffsetParams):
     The model is required to redefine limit parameter to remove the number
     validation on maximum value"""
 
-    limit: int = Query(50, ge=1, description="Page size limit")
+    # Keep defaults outside Query metadata for FastAPI's Annotated dependencies.
+    # Override offset too, as the inherited field also puts its default in Query.
+    limit: Annotated[int, Query(ge=1, description="Page size limit")] = 50
+    offset: Annotated[int, Query(ge=0, description="Page offset")] = 0
 
 
 class PageModel(LimitOffsetPage[TypeVar("T")]):
