@@ -9,8 +9,31 @@
 """Unit test function for KernelCI API token handler"""
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 
+from api.main import versioned_app
 from api.models import User
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("prefix", ["", "/latest", "/v0"])
+@pytest.mark.parametrize(
+    ("endpoint", "expected_status"),
+    [
+        ("login", 422),
+        ("logout", 401),
+        ("forgot-password", 422),
+        ("reset-password", 422),
+    ],
+)
+async def test_user_router_routes(prefix, endpoint, expected_status):
+    """Included user routes handle requests before any database access."""
+    transport = ASGITransport(app=versioned_app)
+    async with AsyncClient(
+        transport=transport, base_url="http://testserver"
+    ) as client:
+        response = await client.post(f"{prefix}/user/{endpoint}")
+    assert response.status_code == expected_status
 
 
 @pytest.mark.asyncio

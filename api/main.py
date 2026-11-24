@@ -21,6 +21,7 @@ import pymongo
 from beanie import PydanticObjectId
 from bson import ObjectId, errors
 from fastapi import (
+    APIRouter,
     Body,
     Depends,
     FastAPI,
@@ -39,7 +40,6 @@ from fastapi.responses import (
     JSONResponse,
     PlainTextResponse,
 )
-from fastapi.routing import APIRoute, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_pagination import add_pagination
 from fastapi_users import FastAPIUsers
@@ -141,6 +141,7 @@ API_VERSIONS = ["v0"]
 
 metrics = Metrics()
 app = FastAPI(lifespan=lifespan, debug=True, docs_url=None, redoc_url=None)
+api_router = APIRouter()
 db = Database(service=os.getenv("MONGO_SERVICE", DEFAULT_MONGO_SERVICE))
 auth = Authentication(token_url="user/login")
 pubsub = None
@@ -329,7 +330,7 @@ async def invalid_id_exception_handler(request: Request, exc: errors.InvalidId):
     )
 
 
-@app.get("/")
+@api_router.get("/")
 async def root():
     """Root endpoint handler"""
     return _serve_template("index.html", no_cache=False)
@@ -534,7 +535,7 @@ async def _create_user_for_invite(
     return created_user
 
 
-app.include_router(
+api_router.include_router(
     fastapi_users_instance.get_auth_router(
         auth_backend, requires_verification=True
     ),
@@ -547,7 +548,7 @@ register_router = fastapi_users_instance.get_register_router(
 )
 
 
-@app.post(
+@api_router.post(
     "/user/register",
     response_model=UserRead,
     tags=["user"],
@@ -571,13 +572,15 @@ async def register(
     )
 
 
-@app.get("/user/invite", response_class=HTMLResponse, include_in_schema=False)
+@api_router.get(
+    "/user/invite", response_class=HTMLResponse, include_in_schema=False
+)
 async def invite_user_page():
     """Web UI for inviting a user (admin token required)"""
     return _serve_template("invite.html", no_cache=False)
 
 
-@app.post(
+@api_router.post(
     "/user/invite",
     response_model=UserInviteResponse,
     tags=["user"],
@@ -628,7 +631,7 @@ async def invite_user(
     )
 
 
-@app.get(
+@api_router.get(
     "/user/accept-invite",
     response_class=HTMLResponse,
     include_in_schema=False,
@@ -638,7 +641,9 @@ async def accept_invite_page():
     return _serve_template("accept-invite.html", no_cache=False)
 
 
-@app.get("/user/invite/url", response_model=InviteUrlResponse, tags=["user"])
+@api_router.get(
+    "/user/invite/url", response_model=InviteUrlResponse, tags=["user"]
+)
 async def invite_url_preview(
     request: Request, current_user: User = Depends(get_current_superuser)
 ):
@@ -651,7 +656,7 @@ async def invite_url_preview(
     )
 
 
-@app.post(
+@api_router.post(
     "/user/accept-invite",
     response_model=UserRead,
     tags=["user"],
@@ -699,7 +704,7 @@ async def accept_invite(accept: InviteAcceptRequest):
     return updated_user
 
 
-app.include_router(
+api_router.include_router(
     fastapi_users_instance.get_reset_password_router(),
     prefix="/user",
     tags=["user"],
@@ -709,14 +714,14 @@ users_router = fastapi_users_instance.get_users_router(
     UserRead, UserUpdate, requires_verification=True
 )
 
-app.add_api_route(
+api_router.add_api_route(
     path="/whoami",
     tags=["user"],
     methods=["GET"],
     description="Get current user information",
     endpoint=users_router.routes[0].endpoint,
 )
-app.add_api_route(
+api_router.add_api_route(
     path="/user/{id}",
     tags=["user"],
     methods=["GET"],
@@ -724,7 +729,7 @@ app.add_api_route(
     dependencies=[Depends(get_current_user)],
     endpoint=users_router.routes[2].endpoint,
 )
-app.add_api_route(
+api_router.add_api_route(
     path="/user/{id}",
     tags=["user"],
     methods=["DELETE"],
@@ -734,7 +739,7 @@ app.add_api_route(
 )
 
 
-@app.patch(
+@api_router.patch(
     "/user/me",
     response_model=UserRead,
     tags=["user"],
@@ -789,7 +794,7 @@ async def update_me(
     )
 
 
-@app.patch(
+@api_router.patch(
     "/user/{user_id}",
     response_model=UserRead,
     tags=["user"],
@@ -848,7 +853,7 @@ async def update_user(
     return updated_user
 
 
-@app.get("/user-groups", response_model=PageModel, tags=["user"])
+@api_router.get("/user-groups", response_model=PageModel, tags=["user"])
 async def get_user_groups(
     request: Request, current_user: User = Depends(get_current_superuser)
 ):
@@ -864,7 +869,7 @@ async def get_user_groups(
     return paginated_resp
 
 
-@app.get(
+@api_router.get(
     "/user-groups/{group_id}",
     response_model=UserGroup,
     tags=["user"],
@@ -884,7 +889,7 @@ async def get_user_group(
     return group
 
 
-@app.post(
+@api_router.post(
     "/user-groups",
     response_model=UserGroup,
     tags=["user"],
@@ -905,7 +910,7 @@ async def create_user_group(
     return await db.create(UserGroup(name=group.name))
 
 
-@app.delete(
+@api_router.delete(
     "/user-groups/{group_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     tags=["user"],
@@ -986,7 +991,7 @@ async def authorize_user(node_id: str, user: User = Depends(get_current_user)):
     return user
 
 
-@app.get(
+@api_router.get(
     "/users",
     response_model=PageModel,
     tags=["user"],
@@ -1007,7 +1012,7 @@ async def get_users(
     return paginated_resp
 
 
-@app.post("/user/update-password", tags=["user"])
+@api_router.post("/user/update-password", tags=["user"])
 async def update_password(
     request: Request,
     credentials: OAuth2PasswordRequestForm = Depends(),
@@ -1155,7 +1160,7 @@ def _build_events_query(query_params: dict) -> tuple:
 
 
 # TBD: Restrict response by Pydantic model
-@app.get("/events")
+@api_router.get("/events")
 async def get_events(request: Request):
     """Get all the events if no request parameters have passed.
        Format: [{event1}, {event2}, ...] or if recursive is set to true,
@@ -1204,7 +1209,7 @@ async def get_events(request: Request):
 # separately.
 
 
-@app.post("/telemetry", response_model=dict, tags=["telemetry"])
+@api_router.post("/telemetry", response_model=dict, tags=["telemetry"])
 async def post_telemetry(
     events: List[dict],
     current_user: User = Depends(get_current_user),
@@ -1237,7 +1242,7 @@ async def post_telemetry(
     return {"inserted": len(inserted_ids)}
 
 
-@app.get("/telemetry", response_model=PageModel, tags=["telemetry"])
+@api_router.get("/telemetry", response_model=PageModel, tags=["telemetry"])
 async def get_telemetry(request: Request):
     """Query telemetry events with optional filters.
 
@@ -1295,7 +1300,7 @@ TELEMETRY_STATS_GROUP_FIELDS = {
 }
 
 
-@app.get("/telemetry/stats", tags=["telemetry"])
+@api_router.get("/telemetry/stats", tags=["telemetry"])
 async def get_telemetry_stats(request: Request):
     """Get aggregated telemetry statistics.
 
@@ -1424,7 +1429,7 @@ ANOMALY_WINDOW_MAP = {
 }
 
 
-@app.get("/telemetry/anomalies", tags=["telemetry"])
+@api_router.get("/telemetry/anomalies", tags=["telemetry"])
 async def get_telemetry_anomalies(
     window: str = Query(
         "6h", description="Time window: 1h, 3h, 6h, 12h, 24h, 48h"
@@ -1632,7 +1637,7 @@ async def translate_null_query_params(query_params: dict):
     return translated
 
 
-@app.get(
+@api_router.get(
     "/node/{node_id}",
     response_model=Union[Node, None],
     response_model_by_alias=False,
@@ -1664,7 +1669,7 @@ def serialize_paginated_data(model, data: list):
     return serialized_data
 
 
-@app.get("/nodes", response_model=PageModel)
+@api_router.get("/nodes", response_model=PageModel)
 async def get_nodes(request: Request):
     """Get all the nodes if no request parameters have passed.
     Get all the matching nodes otherwise, within the pagination limit."""
@@ -1694,9 +1699,6 @@ async def get_nodes(request: Request):
         ) from error
 
 
-add_pagination(app)
-
-
 async def db_find_node_nonpaginated(query_params):
     """Find all the matching nodes without pagination"""
     model = Node
@@ -1704,7 +1706,7 @@ async def db_find_node_nonpaginated(query_params):
     return await db.find_by_attributes_nonpaginated(model, translated_params)
 
 
-@app.get("/nodes/fast", response_model=List[Node])
+@api_router.get("/nodes/fast", response_model=List[Node])
 async def get_nodes_fast(request: Request):
     """Get all the nodes if no request parameters have passed.
     This is non-paginated version of get_nodes.
@@ -1734,7 +1736,7 @@ async def get_nodes_fast(request: Request):
         ) from error
 
 
-@app.get("/count", response_model=int)
+@api_router.get("/count", response_model=int)
 async def get_nodes_count(request: Request):
     """Get the count of all the nodes if no request parameters have passed.
     Get the count of all the matching nodes otherwise."""
@@ -1802,7 +1804,7 @@ async def _validate_node_parent(node: Node, existing: Optional[Node] = None):
         )
 
 
-@app.post("/node", response_model=Node, response_model_by_alias=False)
+@api_router.post("/node", response_model=Node, response_model_by_alias=False)
 async def post_node(
     node: Node,
     authorization: str | None = Header(default=None),
@@ -1930,7 +1932,9 @@ async def _check_done_hierarchy_update(
         await _check_done_hierarchy_update(child, None, user, force)
 
 
-@app.put("/node/{node_id}", response_model=Node, response_model_by_alias=False)
+@api_router.put(
+    "/node/{node_id}", response_model=Node, response_model_by_alias=False
+)
 async def put_node(
     node_id: str,
     node: Node,
@@ -2016,7 +2020,7 @@ class NodePatchRequest(BaseModel):
     processed_by_kcidb_bridge: Optional[bool] = None
 
 
-@app.patch(
+@api_router.patch(
     "/node/{node_id}", response_model=Node, response_model_by_alias=False
 )
 async def patch_node(
@@ -2103,7 +2107,7 @@ class NodeUpdateRequest(BaseModel):
     value: str
 
 
-@app.put("/batch/nodeset", response_model=int)
+@api_router.put("/batch/nodeset", response_model=int)
 async def put_batch_nodeset(
     data: NodeUpdateRequest, user: str = Depends(get_current_user)
 ):
@@ -2156,7 +2160,7 @@ async def _set_node_ownership_recursively(
         await _set_node_ownership_recursively(user, node, submitter, treeid)
 
 
-@app.put(
+@api_router.put(
     "/nodes/{node_id}", response_model=List[Node], response_model_by_alias=False
 )
 async def put_nodes(
@@ -2201,7 +2205,7 @@ async def put_nodes(
 
 # -----------------------------------------------------------------------------
 # Key/Value namespace enabled store
-@app.get("/kv/{namespace}/{key}", response_model=Union[str, None])
+@api_router.get("/kv/{namespace}/{key}", response_model=Union[str, None])
 async def get_kv(
     namespace: str, key: str, user: User = Depends(get_current_user)
 ):
@@ -2210,7 +2214,7 @@ async def get_kv(
     return await db.get_kv(namespace, key)
 
 
-@app.post("/kv/{namespace}/{key}", response_model=Optional[str])
+@api_router.post("/kv/{namespace}/{key}", response_model=Optional[str])
 async def post_kv(
     namespace: str,
     key: str,
@@ -2233,7 +2237,7 @@ async def post_kv(
 
 
 # Delete a key-value pair from the store
-@app.delete("/kv/{namespace}/{key}", response_model=Optional[str])
+@api_router.delete("/kv/{namespace}/{key}", response_model=Optional[str])
 async def delete_kv(
     namespace: str, key: str, user: User = Depends(get_current_user)
 ):
@@ -2248,7 +2252,7 @@ async def delete_kv(
 # Pub/Sub
 
 
-@app.post("/subscribe/{channel}", response_model=Subscription)
+@api_router.post("/subscribe/{channel}", response_model=Subscription)
 async def subscribe(
     channel: str,
     user: User = Depends(get_current_user),
@@ -2288,7 +2292,7 @@ async def subscribe(
         ) from error
 
 
-@app.post("/unsubscribe/{sub_id}")
+@api_router.post("/unsubscribe/{sub_id}")
 async def unsubscribe(sub_id: int, user: User = Depends(get_current_user)):
     """Unsubscribe handler for Pub/Sub channel"""
     metrics.add("http_requests_total", 1)
@@ -2305,7 +2309,7 @@ async def unsubscribe(sub_id: int, user: User = Depends(get_current_user)):
         ) from error
 
 
-@app.get("/listen/{sub_id}")
+@api_router.get("/listen/{sub_id}")
 async def listen(sub_id: int, user: User = Depends(get_current_user)):
     """Listen messages from a subscribed Pub/Sub channel"""
     metrics.add("http_requests_total", 1)
@@ -2323,7 +2327,7 @@ async def listen(sub_id: int, user: User = Depends(get_current_user)):
         ) from error
 
 
-@app.post("/publish/{channel}")
+@api_router.post("/publish/{channel}")
 async def publish(
     event: PublishEvent, channel: str, user: User = Depends(get_current_user)
 ):
@@ -2345,7 +2349,7 @@ async def publish(
     await pubsub.publish_cloudevent(channel, data, attributes)
 
 
-@app.post("/push/{list_name}")
+@api_router.post("/push/{list_name}")
 async def push(
     raw: dict, list_name: str, user: User = Depends(get_current_user)
 ):
@@ -2356,53 +2360,53 @@ async def push(
     await pubsub.push_cloudevent(list_name, data, attributes)
 
 
-@app.get("/pop/{list_name}")
+@api_router.get("/pop/{list_name}")
 async def pop(list_name: str, user: User = Depends(get_current_user)):
     """Pop a message from a given list"""
     metrics.add("http_requests_total", 1)
     return await pubsub.pop(list_name)
 
 
-@app.get("/stats/subscriptions", response_model=List[SubscriptionStats])
+@api_router.get("/stats/subscriptions", response_model=List[SubscriptionStats])
 async def stats(user: User = Depends(get_current_superuser)):
     """Get details of all existing subscriptions"""
     metrics.add("http_requests_total", 1)
     return await pubsub.subscription_stats()
 
 
-@app.get("/viewer")
+@api_router.get("/viewer")
 async def viewer():
     """Serve simple HTML page to view the API /static/viewer.html
     Set various no-cache tag we might update it often"""
     return _serve_template("viewer.html")
 
 
-@app.get("/dashboard")
+@api_router.get("/dashboard")
 async def dashboard():
     """Serve simple HTML page to view the API dashboard.html
     Set various no-cache tag we might update it often"""
     return _serve_template("dashboard.html")
 
 
-@app.get("/manage")
+@api_router.get("/manage")
 async def manage():
     """Serve simple HTML page to submit custom nodes"""
     return _serve_template("manage.html")
 
 
-@app.get("/analytics")
+@api_router.get("/analytics")
 async def analytics_page():
     """Serve pipeline analytics dashboard with telemetry data"""
     return _serve_template("analytics.html")
 
 
-@app.get("/stats")
+@api_router.get("/stats")
 async def stats_page():
     """Serve simple HTML page to view infrastructure statistics"""
     return _serve_template("stats.html")
 
 
-@app.get("/icons/{icon_name}")
+@api_router.get("/icons/{icon_name}")
 async def icons(icon_name: str):
     """Serve icons from /static/icons"""
     metrics.add("http_requests_total", 1)
@@ -2414,7 +2418,7 @@ async def icons(icon_name: str):
     return FileResponse(icon_path)
 
 
-@app.get("/static/css/{filename}")
+@api_router.get("/static/css/{filename}")
 async def serve_css(filename: str):
     """Serve CSS files from api/static/css/"""
     metrics.add("http_requests_total", 1)
@@ -2445,7 +2449,7 @@ async def serve_css(filename: str):
     )
 
 
-@app.get("/static/js/{filename}")
+@api_router.get("/static/js/{filename}")
 async def serve_js(filename: str):
     """Serve JavaScript files from api/static/js/"""
     metrics.add("http_requests_total", 1)
@@ -2476,7 +2480,7 @@ async def serve_js(filename: str):
     )
 
 
-@app.get("/metrics")
+@api_router.get("/metrics")
 async def get_metrics():
     """Get metrics"""
     metrics.add("http_requests_total", 1)
@@ -2488,16 +2492,8 @@ async def get_metrics():
     return PlainTextResponse(response)
 
 
-# Build versioned app using include_router instead of fastapi-versioning.
-# VersionedFastAPI (fastapi-versioning==0.10.0) is incompatible with
-# FastAPI >= 0.118.0: it transplants route objects by directly appending
-# to sub-app router.routes, which bypasses FastAPI's request_response
-# wrapper and causes 'fastapi_inner_astack not found in request scope'.
-# Using include_router re-creates APIRoute objects properly.
-_api_router = APIRouter()
-for _route in app.routes:
-    if isinstance(_route, APIRoute):
-        _api_router.routes.append(_route)
+add_pagination(api_router)
+app.include_router(api_router)
 
 versioned_app = FastAPI(
     title=app.title,
@@ -2510,8 +2506,8 @@ versioned_app = FastAPI(
     ],
 )
 
-versioned_app.include_router(_api_router, prefix="/v0")
-versioned_app.include_router(_api_router, prefix="/latest")
+versioned_app.include_router(api_router, prefix="/v0")
+versioned_app.include_router(api_router, prefix="/latest")
 
 
 def traceback_exception_handler(request: Request, exc: Exception):
